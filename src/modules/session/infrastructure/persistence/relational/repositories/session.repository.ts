@@ -18,9 +18,7 @@ export class SessionRelationalRepository implements SessionRepository {
 
   async findById(id: Session['id']): Promise<NullableType<Session>> {
     const entity = await this.sessionRepository.findOne({
-      where: {
-        id: Number(id),
-      },
+      where: { id },
     });
 
     return entity ? SessionMapper.toDomain(entity) : null;
@@ -28,15 +26,13 @@ export class SessionRelationalRepository implements SessionRepository {
 
   async create(data: Session): Promise<Session> {
     const persistenceModel = SessionMapper.toPersistence(data);
-    return this.sessionRepository.save(this.sessionRepository.create(persistenceModel));
+    const saved = await this.sessionRepository.save(this.sessionRepository.create(persistenceModel));
+    return SessionMapper.toDomain(saved);
   }
 
-  async update(
-    id: Session['id'],
-    payload: Partial<Omit<Session, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>>,
-  ): Promise<Session | null> {
+  async update(id: Session['id'], payload: Partial<Omit<Session, 'id' | 'createdAt'>>): Promise<Session | null> {
     const entity = await this.sessionRepository.findOne({
-      where: { id: Number(id) },
+      where: { id },
     });
 
     if (!entity) {
@@ -56,25 +52,17 @@ export class SessionRelationalRepository implements SessionRepository {
   }
 
   async deleteById(id: Session['id']): Promise<void> {
-    await this.sessionRepository.softDelete({
-      id: Number(id),
-    });
+    await this.sessionRepository.delete({ id });
   }
 
   async deleteByUserId(conditions: { userId: User['id'] }): Promise<void> {
-    await this.sessionRepository.softDelete({
-      user: {
-        id: Number(conditions.userId),
-      },
-    });
+    await this.sessionRepository.delete({ userId: conditions.userId });
   }
 
   async deleteByUserIdWithExclude(conditions: { userId: User['id']; excludeSessionId: Session['id'] }): Promise<void> {
-    await this.sessionRepository.softDelete({
-      user: {
-        id: Number(conditions.userId),
-      },
-      id: Not(Number(conditions.excludeSessionId)),
+    await this.sessionRepository.delete({
+      userId: conditions.userId,
+      id: Not(conditions.excludeSessionId),
     });
   }
 }

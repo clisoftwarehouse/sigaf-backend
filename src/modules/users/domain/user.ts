@@ -2,74 +2,43 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Exclude } from 'class-transformer';
 
 import { Role } from '../../roles/domain/role';
-import { FileType } from '../../files/domain/file';
-import { Status } from '../../statuses/domain/status';
-
-const idType = Number;
 
 export class User {
-  @ApiProperty({
-    type: idType,
-  })
-  id: number | string;
+  @ApiProperty({ type: String })
+  id: string;
 
-  @ApiProperty({
-    type: String,
-    example: 'john.doe@example.com',
-  })
-  @Expose({ groups: ['me', 'admin'] })
-  email: string | null;
+  @ApiProperty({ type: String, example: 'admin' })
+  username: string;
 
   @Exclude({ toPlainOnly: true })
   password?: string;
 
-  @ApiProperty({
-    type: String,
-    example: 'email',
-  })
+  @ApiProperty({ type: String, example: 'Juan Pérez' })
+  fullName: string;
+
+  @ApiProperty({ type: String, example: 'V-12345678' })
   @Expose({ groups: ['me', 'admin'] })
-  provider: string;
+  cedula: string | null;
 
-  @ApiProperty({
-    type: String,
-    example: '1234567890',
-  })
+  @ApiProperty({ type: String, example: 'admin@example.com' })
   @Expose({ groups: ['me', 'admin'] })
-  socialId?: string | null;
+  email: string | null;
 
-  @ApiProperty({
-    type: String,
-    example: 'John',
-  })
-  firstName: string | null;
+  @ApiProperty({ type: String, example: '+58412123456' })
+  phone: string | null;
 
-  @ApiProperty({
-    type: String,
-    example: 'Doe',
-  })
-  lastName: string | null;
-
-  @ApiProperty({
-    type: () => FileType,
-  })
-  photo?: FileType | null;
-
-  @ApiProperty({
-    type: () => Role,
-  })
+  @ApiProperty({ type: () => Role })
   role?: Role | null;
 
-  @ApiProperty({
-    type: () => Status,
-  })
-  status?: Status;
+  @ApiProperty({ type: Boolean })
+  isActive: boolean;
+
+  @ApiProperty()
+  lastLoginAt: Date | null;
 
   @ApiProperty()
   createdAt: Date;
 
   @ApiProperty()
   updatedAt: Date;
-
-  @ApiProperty()
-  deletedAt: Date;
 }

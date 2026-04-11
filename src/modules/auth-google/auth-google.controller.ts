@@ -28,6 +28,7 @@ export class AuthGoogleController {
   async login(@Body() loginDto: AuthGoogleLoginDto): Promise<LoginResponseDto> {
     const socialData = await this.authGoogleService.getProfileByToken(loginDto);
 
-    return this.authService.validateSocialLogin('google', socialData);
+    void socialData;
+    throw new Error('Social login not implemented');
   }
 }

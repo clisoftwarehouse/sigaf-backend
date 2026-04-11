@@ -1,14 +1,23 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, CreateDateColumn, UpdateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
 
 import { EntityRelationalHelper } from '@/common/utils/relational-entity-helper';
 
 @Entity({
-  name: 'role',
+  name: 'roles',
 })
 export class RoleEntity extends EntityRelationalHelper {
-  @PrimaryColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column()
-  name?: string;
+  @Column({ type: 'varchar', length: 50, unique: true })
+  name: string;
+
+  @Column({ type: 'text', nullable: true })
+  description: string | null;
+
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  updatedAt: Date;
 }

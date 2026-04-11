@@ -2,73 +2,59 @@ import {
   Index,
   Column,
   Entity,
-  OneToOne,
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
-  DeleteDateColumn,
   UpdateDateColumn,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
-import { AuthProvidersEnum } from '@/modules/auth/auth-providers.enum';
 import { EntityRelationalHelper } from '@/common/utils/relational-entity-helper';
 import { RoleEntity } from '@/modules/roles/infrastructure/persistence/relational/entities/role.entity';
-import { FileEntity } from '@/modules/files/infrastructure/persistence/relational/entities/file.entity';
-import { StatusEntity } from '@/modules/statuses/infrastructure/persistence/relational/entities/status.entity';
 
 @Entity({
-  name: 'user',
+  name: 'users',
 })
 export class UserEntity extends EntityRelationalHelper {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  // For "string | null" we need to use String type.
-  // More info: https://github.com/typeorm/typeorm/issues/2567
-  @Column({ type: String, unique: true, nullable: true })
+  @Index()
+  @Column({ type: 'varchar', length: 50, unique: true })
+  username: string;
+
+  @Column({ type: 'varchar', length: 255, name: 'password_hash' })
+  password: string;
+
+  @Column({ type: 'varchar', length: 150, name: 'full_name' })
+  fullName: string;
+
+  @Column({ type: 'varchar', length: 20, nullable: true, unique: true })
+  cedula: string | null;
+
+  @Index()
+  @Column({ type: 'varchar', length: 150, nullable: true })
   email: string | null;
 
-  @Column({ nullable: true })
-  password?: string;
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  phone: string | null;
 
-  @Column({ default: AuthProvidersEnum.email })
-  provider: string;
+  @Column({ type: 'uuid', name: 'role_id' })
+  roleId: string;
 
-  @Index()
-  @Column({ type: String, nullable: true })
-  socialId?: string | null;
+  @ManyToOne(() => RoleEntity, { eager: true })
+  @JoinColumn({ name: 'role_id' })
+  role: RoleEntity;
 
-  @Index()
-  @Column({ type: String, nullable: true })
-  firstName: string | null;
+  @Column({ type: 'boolean', name: 'is_active', default: true })
+  isActive: boolean;
 
-  @Index()
-  @Column({ type: String, nullable: true })
-  lastName: string | null;
+  @Column({ type: 'timestamptz', name: 'last_login_at', nullable: true })
+  lastLoginAt: Date | null;
 
-  @OneToOne(() => FileEntity, {
-    eager: true,
-  })
-  @JoinColumn()
-  photo?: FileEntity | null;
-
-  @ManyToOne(() => RoleEntity, {
-    eager: true,
-  })
-  role?: RoleEntity | null;
-
-  @ManyToOne(() => StatusEntity, {
-    eager: true,
-  })
-  status?: StatusEntity;
-
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
-
-  @DeleteDateColumn()
-  deletedAt: Date;
 }

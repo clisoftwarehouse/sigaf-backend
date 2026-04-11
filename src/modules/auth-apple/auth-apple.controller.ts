@@ -26,8 +26,7 @@ export class AuthAppleController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: AuthAppleLoginDto): Promise<LoginResponseDto> {
-    const socialData = await this.authAppleService.getProfileByToken(loginDto);
-
-    return this.authService.validateSocialLogin('apple', socialData);
+    await this.authAppleService.getProfileByToken(loginDto);
+    throw new Error('Social login not implemented');
   }
 }

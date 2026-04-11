@@ -7,14 +7,12 @@ import appConfig from '@/config/app.config';
 import { RoleSeedModule } from './role/role-seed.module';
 import { UserSeedModule } from './user/user-seed.module';
 import databaseConfig from '../../config/database.config';
-import { StatusSeedModule } from './status/status-seed.module';
+import { ConfigSeedModule } from './config/config-seed.module';
 import { TypeOrmConfigService } from '../../typeorm-config.service';
+import { PermissionSeedModule } from './permission/permission-seed.module';
 
 @Module({
   imports: [
-    RoleSeedModule,
-    StatusSeedModule,
-    UserSeedModule,
     ConfigModule.forRoot({
       isGlobal: true,
       load: [databaseConfig, appConfig],
@@ -26,6 +24,10 @@ import { TypeOrmConfigService } from '../../typeorm-config.service';
         return new DataSource(options).initialize();
       },
     }),
+    RoleSeedModule,
+    PermissionSeedModule,
+    UserSeedModule,
+    ConfigSeedModule,
   ],
 })
 export class SeedModule {}

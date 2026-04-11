@@ -1,0 +1,1068 @@
+{
+  "info": {
+    "name": "SIGAF Backend - Flujo Completo",
+    "description": "Ejecutar en orden: Login → Roles → Users → Config → Catálogos → Productos → Inventario",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "adminUserId", "value": "" },
+    { "key": "newUserId", "value": "" },
+    { "key": "roleIdAdmin", "value": "" },
+    { "key": "roleIdCajero", "value": "" },
+    { "key": "categoryId", "value": "" },
+    { "key": "brandId", "value": "" },
+    { "key": "activeIngredientId", "value": "" },
+    { "key": "supplierId", "value": "" },
+    { "key": "productId", "value": "" },
+    { "key": "branchId", "value": "" },
+    { "key": "terminalId", "value": "" },
+    { "key": "locationId", "value": "" },
+    { "key": "lotId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "01. AUTH - Login y Sesión",
+      "item": [
+        {
+          "name": "1.1 Login (admin/admin123)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has token', () => pm.expect(json.token).to.be.a('string'));",
+                  "if(json.token) pm.collectionVariables.set('accessToken', json.token);",
+                  "if(json.refreshToken) pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                  "if(json.user && json.user.id) pm.collectionVariables.set('adminUserId', json.user.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin\",\n  \"password\": \"admin123\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/auth/email/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "email", "login"]
+            }
+          }
+        },
+        {
+          "name": "1.2 Me (Ver perfil)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has username', () => pm.expect(json.username).to.equal('admin'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] }
+          }
+        },
+        {
+          "name": "1.3 Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "if(json.token) pm.collectionVariables.set('accessToken', json.token);",
+                  "if(json.refreshToken) pm.collectionVariables.set('refreshToken', json.refreshToken);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{refreshToken}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/refresh", "host": ["{{baseUrl}}"], "path": ["auth", "refresh"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. ROLES - Listar roles",
+      "item": [
+        {
+          "name": "2.1 Get All Roles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has roles', () => pm.expect(json).to.be.an('array'));",
+                  "json.forEach(role => {",
+                  "  if(role.name === 'administrador') pm.collectionVariables.set('roleIdAdmin', role.id);",
+                  "  if(role.name === 'cajero') pm.collectionVariables.set('roleIdCajero', role.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/roles", "host": ["{{baseUrl}}"], "path": ["roles"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. USERS - CRUD Usuarios",
+      "item": [
+        {
+          "name": "3.1 Get All Users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has data array', () => pm.expect(json.data).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/users?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.2 Create User (cajero)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(json.id).to.be.a('string'));",
+                  "if(json.id) pm.collectionVariables.set('newUserId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"cajero1\",\n  \"password\": \"cajero123\",\n  \"fullName\": \"Juan Cajero\",\n  \"cedula\": \"V-12345678\",\n  \"email\": \"cajero1@sigaf.com\",\n  \"phone\": \"+58412111111\",\n  \"role\": { \"id\": \"{{roleIdCajero}}\" }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] }
+          }
+        },
+        {
+          "name": "3.3 Get User by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Username matches', () => pm.expect(json.username).to.equal('cajero1'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{newUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{newUserId}}"]
+            }
+          }
+        },
+        {
+          "name": "3.4 Update User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Name updated', () => pm.expect(json.fullName).to.equal('Juan Cajero Actualizado'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"fullName\": \"Juan Cajero Actualizado\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{newUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{newUserId}}"]
+            }
+          }
+        },
+        {
+          "name": "3.5 Delete User (Soft)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{newUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{newUserId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. CONFIG & PERMISSIONS",
+      "item": [
+        {
+          "name": "4.1 Get Config Global",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has config', () => pm.expect(pm.response.json()).to.be.an('object'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/config", "host": ["{{baseUrl}}"], "path": ["config"] }
+          }
+        },
+        {
+          "name": "4.2 Get Permissions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has permissions', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/permissions", "host": ["{{baseUrl}}"], "path": ["permissions"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. BRANCHES - Sucursales",
+      "item": [
+        {
+          "name": "5.1 Create Branch",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "if(json.id) pm.collectionVariables.set('branchId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Farmacia SIGAF Principal\",\n  \"rif\": \"J-12345678-9\",\n  \"address\": \"Av. Principal, Centro Comercial, Local 1\",\n  \"phone\": \"0212-1234567\",\n  \"email\": \"sucursal@farmacia.com\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/branches", "host": ["{{baseUrl}}"], "path": ["branches"] }
+          }
+        },
+        {
+          "name": "5.2 Get All Branches",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/branches", "host": ["{{baseUrl}}"], "path": ["branches"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. TERMINALS - Cajas POS",
+      "item": [
+        {
+          "name": "6.1 Create Terminal",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "if(json.id) pm.collectionVariables.set('terminalId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branchId\": \"{{branchId}}\",\n  \"code\": \"CAJA-01\",\n  \"name\": \"Caja Principal\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/terminals", "host": ["{{baseUrl}}"], "path": ["terminals"] }
+          }
+        },
+        {
+          "name": "6.2 Get Terminals by Branch",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/terminals?branchId={{branchId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["terminals"],
+              "query": [{ "key": "branchId", "value": "{{branchId}}" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. LOCATIONS - Ubicaciones almacén",
+      "item": [
+        {
+          "name": "7.1 Create Location",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "if(json.id) pm.collectionVariables.set('locationId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branchId\": \"{{branchId}}\",\n  \"aisle\": \"A\",\n  \"shelf\": \"1\",\n  \"section\": \"01\",\n  \"capacity\": 100,\n  \"locationCode\": \"A-1-01\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/locations", "host": ["{{baseUrl}}"], "path": ["locations"] }
+          }
+        },
+        {
+          "name": "7.2 Get Locations by Branch",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/locations?branchId={{branchId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["locations"],
+              "query": [{ "key": "branchId", "value": "{{branchId}}" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "08. CATEGORIES - Categorías",
+      "item": [
+        {
+          "name": "8.1 Create Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "if(json.id) pm.collectionVariables.set('categoryId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Medicamentos\",\n  \"code\": \"MED\",\n  \"isPharmaceutical\": true\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"] }
+          }
+        },
+        {
+          "name": "8.2 Get Categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"] }
+          }
+        },
+        {
+          "name": "8.3 Update Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Medicamentos Generales\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["categories", "{{categoryId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "09. BRANDS - Marcas/Laboratorios",
+      "item": [
+        {
+          "name": "9.1 Create Brand",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "if(json.id) pm.collectionVariables.set('brandId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Bayer\",\n  \"isLaboratory\": true\n}" },
+            "url": { "raw": "{{baseUrl}}/brands", "host": ["{{baseUrl}}"], "path": ["brands"] }
+          }
+        },
+        {
+          "name": "9.2 Get Brands",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/brands", "host": ["{{baseUrl}}"], "path": ["brands"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. ACTIVE INGREDIENTS - Principios Activos",
+      "item": [
+        {
+          "name": "10.1 Create Active Ingredient",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "if(json.id) pm.collectionVariables.set('activeIngredientId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acetaminofén\",\n  \"therapeuticGroup\": \"Analgésicos\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/active-ingredients", "host": ["{{baseUrl}}"], "path": ["active-ingredients"] }
+          }
+        },
+        {
+          "name": "10.2 Get Active Ingredients",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/active-ingredients", "host": ["{{baseUrl}}"], "path": ["active-ingredients"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. SUPPLIERS - Proveedores",
+      "item": [
+        {
+          "name": "11.1 Create Supplier",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "if(json.id) pm.collectionVariables.set('supplierId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rif\": \"J-98765432-1\",\n  \"businessName\": \"Distribuidora Farmacéutica ABC\",\n  \"tradeName\": \"DFA\",\n  \"contactName\": \"Juan Pérez\",\n  \"phone\": \"0212-9876543\",\n  \"email\": \"ventas@dfa.com\",\n  \"address\": \"Caracas, Venezuela\",\n  \"isDrugstore\": true,\n  \"paymentTermsDays\": 30\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/suppliers", "host": ["{{baseUrl}}"], "path": ["suppliers"] }
+          }
+        },
+        {
+          "name": "11.2 Get Suppliers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/suppliers", "host": ["{{baseUrl}}"], "path": ["suppliers"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. PRODUCTS - Productos",
+      "item": [
+        {
+          "name": "12.1 Create Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "if(json.id) pm.collectionVariables.set('productId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ean\": \"7501234567890\",\n  \"description\": \"Acetaminofén 500mg x 20 tabletas\",\n  \"shortName\": \"Acetaminofén 500mg\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"brandId\": \"{{brandId}}\",\n  \"productType\": \"pharmaceutical\",\n  \"taxType\": \"exempt\",\n  \"presentation\": \"Caja x 20 tabletas\",\n  \"stockMin\": 10,\n  \"stockMax\": 100\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] }
+          }
+        },
+        {
+          "name": "12.2 Get Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/products?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "12.3 Get Product by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
+            }
+          }
+        },
+        {
+          "name": "12.4 Update Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Acetaminofén 500mg x 20 tabletas - Actualizado\",\n  \"stockMin\": 15\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. INVENTORY LOTS - Lotes",
+      "item": [
+        {
+          "name": "13.1 Create Lot",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "if(json.id) pm.collectionVariables.set('lotId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"lotNumber\": \"LOT-2026-001\",\n  \"expirationDate\": \"2027-12-31\",\n  \"manufactureDate\": \"2026-01-15\",\n  \"acquisitionType\": \"purchase\",\n  \"supplierId\": \"{{supplierId}}\",\n  \"costUsd\": 5.50,\n  \"salePrice\": 8.99,\n  \"quantityReceived\": 100,\n  \"locationId\": \"{{locationId}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/inventory/lots", "host": ["{{baseUrl}}"], "path": ["inventory", "lots"] }
+          }
+        },
+        {
+          "name": "13.2 Get All Lots",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/lots?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "lots"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "13.3 Get Lot by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/lots/{{lotId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "lots", "{{lotId}}"]
+            }
+          }
+        },
+        {
+          "name": "13.4 Update Lot",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"salePrice\": 9.99\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/inventory/lots/{{lotId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "lots", "{{lotId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "14. STOCK & KARDEX",
+      "item": [
+        {
+          "name": "14.1 Get Stock FEFO",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/stock-fefo?branchId={{branchId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "stock-fefo"],
+              "query": [{ "key": "branchId", "value": "{{branchId}}" }]
+            }
+          }
+        },
+        {
+          "name": "14.2 Get Stock Aggregated",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/inventory/stock", "host": ["{{baseUrl}}"], "path": ["inventory", "stock"] }
+          }
+        },
+        {
+          "name": "14.3 Get Kardex",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/kardex?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "kardex"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "15. EXCHANGE RATES",
+      "item": [
+        {
+          "name": "15.1 Create Exchange Rate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currencyFrom\": \"USD\",\n  \"currencyTo\": \"VES\",\n  \"rate\": 36.50,\n  \"source\": \"BCV\",\n  \"effectiveDate\": \"2026-04-11\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/exchange-rates", "host": ["{{baseUrl}}"], "path": ["exchange-rates"] }
+          }
+        },
+        {
+          "name": "15.2 Get Exchange Rates",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/exchange-rates", "host": ["{{baseUrl}}"], "path": ["exchange-rates"] }
+          }
+        },
+        {
+          "name": "15.3 Get Latest Rate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/exchange-rates/latest",
+              "host": ["{{baseUrl}}"],
+              "path": ["exchange-rates", "latest"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "16. LOGOUT",
+      "item": [
+        {
+          "name": "16.1 Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] }
+          }
+        }
+      ]
+    }
+  ]
+}

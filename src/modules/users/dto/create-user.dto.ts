@@ -1,56 +1,43 @@
+import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  Type,
-  // decorators here
-  Transform,
-} from 'class-transformer';
-import {
-  // decorators here
-  IsEmail,
-  MinLength,
-  IsNotEmpty,
-  IsOptional,
-} from 'class-validator';
+import { IsEmail, IsString, MinLength, IsNotEmpty, IsOptional } from 'class-validator';
 
-import { FileDto } from '../../files/dto/file.dto';
 import { RoleDto } from '../../roles/dto/role.dto';
-import { StatusDto } from '../../statuses/dto/status.dto';
 import { lowerCaseTransformer } from '@/common/utils/transformers/lower-case.transformer';
 
 export class CreateUserDto {
-  @ApiProperty({ example: 'test1@example.com', type: String })
-  @Transform(lowerCaseTransformer)
+  @ApiProperty({ example: 'admin', type: String })
   @IsNotEmpty()
-  @IsEmail()
-  email: string | null;
+  @IsString()
+  username: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: 'secret123', type: String })
   @MinLength(6)
   password?: string;
 
-  provider?: string;
-
-  socialId?: string | null;
-
-  @ApiProperty({ example: 'John', type: String })
+  @ApiProperty({ example: 'Juan Pérez', type: String })
   @IsNotEmpty()
-  firstName: string | null;
+  @IsString()
+  fullName: string;
 
-  @ApiProperty({ example: 'Doe', type: String })
-  @IsNotEmpty()
-  lastName: string | null;
-
-  @ApiPropertyOptional({ type: () => FileDto })
+  @ApiPropertyOptional({ example: 'V-12345678', type: String })
   @IsOptional()
-  photo?: FileDto | null;
+  @IsString()
+  cedula?: string | null;
+
+  @ApiPropertyOptional({ example: 'admin@example.com', type: String })
+  @Transform(lowerCaseTransformer)
+  @IsOptional()
+  @IsEmail()
+  email?: string | null;
+
+  @ApiPropertyOptional({ example: '+58412123456', type: String })
+  @IsOptional()
+  @IsString()
+  phone?: string | null;
 
   @ApiPropertyOptional({ type: RoleDto })
   @IsOptional()
   @Type(() => RoleDto)
   role?: RoleDto | null;
-
-  @ApiPropertyOptional({ type: StatusDto })
-  @IsOptional()
-  @Type(() => StatusDto)
-  status?: StatusDto;
 }

@@ -34,12 +34,11 @@ export class UsersRelationalRepository implements UserRepository {
   }): Promise<User[]> {
     const where: FindOptionsWhere<UserEntity> = {};
     if (filterOptions?.roles?.length) {
-      where.role = filterOptions.roles.map((role) => ({
-        id: Number(role.id),
-      }));
+      where.roleId = filterOptions.roles[0].id as string;
     }
 
     const entities = await this.usersRepository.find({
+      relations: ['role'],
       skip: (paginationOptions.page - 1) * paginationOptions.limit,
       take: paginationOptions.limit,
       where: where,
@@ -57,7 +56,8 @@ export class UsersRelationalRepository implements UserRepository {
 
   async findById(id: User['id']): Promise<NullableType<User>> {
     const entity = await this.usersRepository.findOne({
-      where: { id: Number(id) },
+      where: { id },
+      relations: ['role'],
     });
 
     return entity ? UserMapper.toDomain(entity) : null;
@@ -66,6 +66,7 @@ export class UsersRelationalRepository implements UserRepository {
   async findByIds(ids: User['id'][]): Promise<User[]> {
     const entities = await this.usersRepository.find({
       where: { id: In(ids) },
+      relations: ['role'],
     });
 
     return entities.map((user) => UserMapper.toDomain(user));
@@ -76,22 +77,25 @@ export class UsersRelationalRepository implements UserRepository {
 
     const entity = await this.usersRepository.findOne({
       where: { email },
+      relations: ['role'],
     });
 
     return entity ? UserMapper.toDomain(entity) : null;
   }
 
-  async findBySocialIdAndProvider({
-    socialId,
-    provider,
-  }: {
-    socialId: User['socialId'];
-    provider: User['provider'];
-  }): Promise<NullableType<User>> {
-    if (!socialId || !provider) return null;
-
+  async findByUsername(username: string): Promise<NullableType<User>> {
     const entity = await this.usersRepository.findOne({
-      where: { socialId, provider },
+      where: { username },
+      relations: ['role'],
+    });
+
+    return entity ? UserMapper.toDomain(entity) : null;
+  }
+
+  async findByEmailOrUsername(identifier: string): Promise<NullableType<User>> {
+    const entity = await this.usersRepository.findOne({
+      where: [{ email: identifier }, { username: identifier }],
+      relations: ['role'],
     });
 
     return entity ? UserMapper.toDomain(entity) : null;
@@ -99,7 +103,8 @@ export class UsersRelationalRepository implements UserRepository {
 
   async update(id: User['id'], payload: Partial<User>): Promise<User> {
     const entity = await this.usersRepository.findOne({
-      where: { id: Number(id) },
+      where: { id },
+      relations: ['role'],
     });
 
     if (!entity) {
@@ -119,6 +124,6 @@ export class UsersRelationalRepository implements UserRepository {
   }
 
   async remove(id: User['id']): Promise<void> {
-    await this.usersRepository.softDelete(id);
+    await this.usersRepository.update(id, { isActive: false });
   }
 }

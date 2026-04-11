@@ -8,21 +8,28 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import appConfig from './config/app.config';
 import { AllConfigType } from './config/config.type';
 import { AuthModule } from './modules/auth/auth.module';
-import { MailModule } from './modules/mail/mail.module';
 import { HomeModule } from './modules/home/home.module';
 import { UsersModule } from './modules/users/users.module';
 import { FilesModule } from './modules/files/files.module';
 import authConfig from './modules/auth/config/auth.config';
-import mailConfig from './modules/mail/config/mail.config';
+import { AuditModule } from './modules/audit/audit.module';
+import { RolesModule } from './modules/roles/roles.module';
 import fileConfig from './modules/files/config/file.config';
-import { MailerModule } from './modules/mailer/mailer.module';
+import { BrandsModule } from './modules/brands/brands.module';
 import databaseConfig from './database/config/database.config';
 import { SessionModule } from './modules/session/session.module';
-import appleConfig from './modules/auth-apple/config/apple.config';
-import googleConfig from './modules/auth-google/config/google.config';
-import { AuthAppleModule } from './modules/auth-apple/auth-apple.module';
+import { BranchesModule } from './modules/branches/branches.module';
+import { ProductsModule } from './modules/products/products.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
+import { LocationsModule } from './modules/locations/locations.module';
+import { SuppliersModule } from './modules/suppliers/suppliers.module';
+import { TerminalsModule } from './modules/terminals/terminals.module';
 import { TypeOrmConfigService } from './database/typeorm-config.service';
-import { AuthGoogleModule } from './modules/auth-google/auth-google.module';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { PermissionsModule } from './modules/permissions/permissions.module';
+import { ConfigGlobalModule } from './modules/config-global/config-global.module';
+import { ExchangeRatesModule } from './modules/exchange-rates/exchange-rates.module';
+import { ActiveIngredientsModule } from './modules/active-ingredients/active-ingredients.module';
 
 const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
   useClass: TypeOrmConfigService,
@@ -35,7 +42,7 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [databaseConfig, authConfig, appConfig, mailConfig, fileConfig, googleConfig, appleConfig],
+      load: [databaseConfig, authConfig, appConfig, fileConfig],
       envFilePath: ['.env'],
     }),
     infrastructureDatabaseModule,
@@ -65,12 +72,22 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     UsersModule,
     FilesModule,
     AuthModule,
-    AuthGoogleModule,
-    AuthAppleModule,
     SessionModule,
-    MailModule,
-    MailerModule,
     HomeModule,
+    AuditModule,
+    InventoryModule,
+    BranchesModule,
+    LocationsModule,
+    CategoriesModule,
+    BrandsModule,
+    SuppliersModule,
+    ProductsModule,
+    TerminalsModule,
+    ExchangeRatesModule,
+    ConfigGlobalModule,
+    ActiveIngredientsModule,
+    PermissionsModule,
+    RolesModule,
   ],
 })
 export class AppModule {}

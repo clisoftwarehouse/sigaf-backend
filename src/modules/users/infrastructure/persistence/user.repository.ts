@@ -5,7 +5,7 @@ import { SortUserDto, FilterUserDto } from '../../dto/query-user.dto';
 import { IPaginationOptions } from '@/common/utils/types/pagination-options';
 
 export abstract class UserRepository {
-  abstract create(data: Omit<User, 'id' | 'createdAt' | 'deletedAt' | 'updatedAt'>): Promise<User>;
+  abstract create(data: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User>;
 
   abstract findManyWithPagination({
     filterOptions,
@@ -20,13 +20,8 @@ export abstract class UserRepository {
   abstract findById(id: User['id']): Promise<NullableType<User>>;
   abstract findByIds(ids: User['id'][]): Promise<User[]>;
   abstract findByEmail(email: User['email']): Promise<NullableType<User>>;
-  abstract findBySocialIdAndProvider({
-    socialId,
-    provider,
-  }: {
-    socialId: User['socialId'];
-    provider: User['provider'];
-  }): Promise<NullableType<User>>;
+  abstract findByUsername(username: string): Promise<NullableType<User>>;
+  abstract findByEmailOrUsername(identifier: string): Promise<NullableType<User>>;
 
   abstract update(id: User['id'], payload: DeepPartial<User>): Promise<User | null>;
 
