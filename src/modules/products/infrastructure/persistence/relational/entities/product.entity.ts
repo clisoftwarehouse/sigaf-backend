@@ -1,10 +1,26 @@
-import { Index, Column, Entity, CreateDateColumn, UpdateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Index,
+  Column,
+  Entity,
+  OneToMany,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
+import { ProductBarcodeEntity } from './product-barcode.entity';
+import { ProductSubstituteEntity } from './product-substitute.entity';
 import { EntityRelationalHelper } from '@/common/utils/relational-entity-helper';
+import { ProductActiveIngredientEntity } from './product-active-ingredient.entity';
+import { BrandEntity } from '@/modules/brands/infrastructure/persistence/relational/entities/brand.entity';
+import { CategoryEntity } from '@/modules/categories/infrastructure/persistence/relational/entities/category.entity';
 
 @Index('idx_products_ean', ['ean'], {})
 @Index('idx_products_category', ['categoryId'], {})
 @Index('idx_products_type', ['productType'], {})
+@Index('idx_products_blocked', ['inventoryBlocked'], { where: 'inventory_blocked = TRUE' })
 @Entity('products')
 export class ProductEntity extends EntityRelationalHelper {
   @PrimaryGeneratedColumn('uuid')
@@ -25,8 +41,16 @@ export class ProductEntity extends EntityRelationalHelper {
   @Column('uuid', { name: 'category_id' })
   categoryId: string;
 
+  @ManyToOne(() => CategoryEntity, { eager: false })
+  @JoinColumn({ name: 'category_id' })
+  category: CategoryEntity;
+
   @Column('uuid', { name: 'brand_id', nullable: true })
   brandId: string | null;
+
+  @ManyToOne(() => BrandEntity, { eager: false })
+  @JoinColumn({ name: 'brand_id' })
+  brand: BrandEntity;
 
   @Column('varchar', { name: 'product_type', length: 20, default: 'general' })
   productType: string;
@@ -82,9 +106,21 @@ export class ProductEntity extends EntityRelationalHelper {
   @Column('boolean', { name: 'is_active', default: true })
   isActive: boolean;
 
+  @Column('boolean', { name: 'inventory_blocked', default: false })
+  inventoryBlocked: boolean;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
+
+  @OneToMany(() => ProductActiveIngredientEntity, (pai) => pai.product, { cascade: true })
+  activeIngredients: ProductActiveIngredientEntity[];
+
+  @OneToMany(() => ProductSubstituteEntity, (ps) => ps.product, { cascade: true })
+  substitutes: ProductSubstituteEntity[];
+
+  @OneToMany(() => ProductBarcodeEntity, (pb) => pb.product, { cascade: true })
+  barcodes: ProductBarcodeEntity[];
 }

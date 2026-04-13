@@ -8,6 +8,7 @@ import { ValidationPipe, VersioningType, ClassSerializerInterceptor } from '@nes
 import { AppModule } from './app.module';
 import { AllConfigType } from './config/config.type';
 import validationOptions from './common/utils/validation-options';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ResolvePromisesInterceptor } from './common/utils/serializer.interceptor';
 
 async function bootstrap() {
@@ -22,6 +23,7 @@ async function bootstrap() {
   app.enableVersioning({
     type: VersioningType.URI,
   });
+  app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalPipes(new ValidationPipe(validationOptions));
   app.useGlobalInterceptors(
     // ResolvePromisesInterceptor is used to resolve promises in responses because class-transformer can't do it

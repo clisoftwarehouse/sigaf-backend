@@ -20,6 +20,7 @@ const validationOptions: ValidationPipeOptions = {
   exceptionFactory: (errors: ValidationError[]) => {
     return new UnprocessableEntityException({
       status: HttpStatus.UNPROCESSABLE_ENTITY,
+      message: 'Error de validación',
       errors: generateErrors(errors),
     });
   },

@@ -1,5 +1,6 @@
-import { Column, Entity, CreateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, CreateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
 
+import { GoodsReceiptItemEntity } from './goods-receipt-item.entity';
 import { EntityRelationalHelper } from '@/common/utils/relational-entity-helper';
 
 @Entity('goods_receipts')
@@ -42,4 +43,7 @@ export class GoodsReceiptEntity extends EntityRelationalHelper {
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
+
+  @OneToMany(() => GoodsReceiptItemEntity, (item) => item.receipt, { cascade: true })
+  items: GoodsReceiptItemEntity[];
 }

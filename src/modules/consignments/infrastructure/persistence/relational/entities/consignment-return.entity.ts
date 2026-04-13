@@ -1,5 +1,6 @@
-import { Column, Entity, CreateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, CreateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
 
+import { ConsignmentReturnItemEntity } from './consignment-return-item.entity';
 import { EntityRelationalHelper } from '@/common/utils/relational-entity-helper';
 
 @Entity('consignment_returns')
@@ -33,4 +34,7 @@ export class ConsignmentReturnEntity extends EntityRelationalHelper {
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
+
+  @OneToMany(() => ConsignmentReturnItemEntity, (item) => item.consignmentReturn, { cascade: true })
+  items: ConsignmentReturnItemEntity[];
 }

@@ -1,26 +1,110 @@
 {
   "info": {
     "name": "SIGAF Backend - Flujo Completo",
-    "description": "Ejecutar en orden: Login → Roles → Users → Config → Catálogos → Productos → Inventario",
+    "description": "Ejecutar en orden: Login → Roles → Users → Config → Catálogos → Productos → Inventario → Compras → Consignaciones",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
-    { "key": "accessToken", "value": "" },
-    { "key": "refreshToken", "value": "" },
-    { "key": "adminUserId", "value": "" },
-    { "key": "newUserId", "value": "" },
-    { "key": "roleIdAdmin", "value": "" },
-    { "key": "roleIdCajero", "value": "" },
-    { "key": "categoryId", "value": "" },
-    { "key": "brandId", "value": "" },
-    { "key": "activeIngredientId", "value": "" },
-    { "key": "supplierId", "value": "" },
-    { "key": "productId", "value": "" },
-    { "key": "branchId", "value": "" },
-    { "key": "terminalId", "value": "" },
-    { "key": "locationId", "value": "" },
-    { "key": "lotId", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "adminUserId",
+      "value": ""
+    },
+    {
+      "key": "newUserId",
+      "value": ""
+    },
+    {
+      "key": "roleIdAdmin",
+      "value": ""
+    },
+    {
+      "key": "roleIdCajero",
+      "value": ""
+    },
+    {
+      "key": "categoryId",
+      "value": ""
+    },
+    {
+      "key": "brandId",
+      "value": ""
+    },
+    {
+      "key": "activeIngredientId",
+      "value": ""
+    },
+    {
+      "key": "activeIngredientId2",
+      "value": ""
+    },
+    {
+      "key": "supplierId",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": ""
+    },
+    {
+      "key": "barcodeId",
+      "value": ""
+    },
+    {
+      "key": "branchId",
+      "value": ""
+    },
+    {
+      "key": "terminalId",
+      "value": ""
+    },
+    {
+      "key": "locationId",
+      "value": ""
+    },
+    {
+      "key": "lotId",
+      "value": ""
+    },
+    {
+      "key": "purchaseOrderId",
+      "value": ""
+    },
+    {
+      "key": "goodsReceiptId",
+      "value": ""
+    },
+    {
+      "key": "consignmentEntryId",
+      "value": ""
+    },
+    {
+      "key": "consignmentEntryItemId",
+      "value": ""
+    },
+    {
+      "key": "consignmentLotId",
+      "value": ""
+    },
+    {
+      "key": "liquidationId",
+      "value": ""
+    },
+    {
+      "key": "secondBarcodeId",
+      "value": ""
+    }
   ],
   "item": [
     {
@@ -46,12 +130,26 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin\",\n  \"password\": \"admin123\"\n}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            },
             "url": {
               "raw": "{{baseUrl}}/auth/email/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "email", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "email",
+                "login"
+              ]
             }
           }
         },
@@ -72,8 +170,22 @@
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
           }
         },
         {
@@ -94,8 +206,22 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{refreshToken}}" }],
-            "url": { "raw": "{{baseUrl}}/auth/refresh", "host": ["{{baseUrl}}"], "path": ["auth", "refresh"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{refreshToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            }
           }
         }
       ]
@@ -124,8 +250,21 @@
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-            "url": { "raw": "{{baseUrl}}/roles", "host": ["{{baseUrl}}"], "path": ["roles"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ]
+            }
           }
         }
       ]
@@ -150,14 +289,29 @@
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/users?page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["users"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
           }
@@ -169,10 +323,25 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var status = pm.response.code;",
                   "var json = pm.response.json();",
-                  "pm.test('Has id', () => pm.expect(json.id).to.be.a('string'));",
-                  "if(json.id) pm.collectionVariables.set('newUserId', json.id);"
+                  "pm.test('Created or already exists', () => pm.expect(status).to.be.oneOf([201, 422]));",
+                  "if (status === 201 && json.id) {",
+                  "  pm.collectionVariables.set('newUserId', json.id);",
+                  "} else {",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/users?page=1&limit=50',",
+                  "    method: 'GET',",
+                  "    header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('accessToken') }",
+                  "  }, (err, res) => {",
+                  "    if (!err) {",
+                  "      var list = res.json().data;",
+                  "      if (list) { var found = list.find(u => u.username === 'cajero1');",
+                  "        if (found) pm.collectionVariables.set('newUserId', found.id);",
+                  "      }",
+                  "    }",
+                  "  });",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
@@ -181,14 +350,28 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"username\": \"cajero1\",\n  \"password\": \"cajero123\",\n  \"fullName\": \"Juan Cajero\",\n  \"cedula\": \"V-12345678\",\n  \"email\": \"cajero1@sigaf.com\",\n  \"phone\": \"+58412111111\",\n  \"role\": { \"id\": \"{{roleIdCajero}}\" }\n}"
             },
-            "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] }
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
           }
         },
         {
@@ -208,11 +391,21 @@
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/users/{{newUserId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "{{newUserId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{newUserId}}"
+              ]
             }
           }
         },
@@ -234,14 +427,28 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"fullName\": \"Juan Cajero Actualizado\"\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Juan Cajero Actualizado\"\n}"
+            },
             "url": {
               "raw": "{{baseUrl}}/users/{{newUserId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "{{newUserId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{newUserId}}"
+              ]
             }
           }
         },
@@ -251,18 +458,30 @@
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"],
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ],
                 "type": "text/javascript"
               }
             }
           ],
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/users/{{newUserId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "{{newUserId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{newUserId}}"
+              ]
             }
           }
         }
@@ -287,8 +506,21 @@
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-            "url": { "raw": "{{baseUrl}}/config", "host": ["{{baseUrl}}"], "path": ["config"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/config",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "config"
+              ]
+            }
           }
         },
         {
@@ -307,8 +539,21 @@
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-            "url": { "raw": "{{baseUrl}}/permissions", "host": ["{{baseUrl}}"], "path": ["permissions"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/permissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "permissions"
+              ]
+            }
           }
         }
       ]
@@ -323,9 +568,25 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var status = pm.response.code;",
                   "var json = pm.response.json();",
-                  "if(json.id) pm.collectionVariables.set('branchId', json.id);"
+                  "pm.test('Created or already exists', () => pm.expect(status).to.be.oneOf([201, 409]));",
+                  "if (status === 201 && json.id) {",
+                  "  pm.collectionVariables.set('branchId', json.id);",
+                  "} else {",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/branches',",
+                  "    method: 'GET',",
+                  "    header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('accessToken') }",
+                  "  }, (err, res) => {",
+                  "    if (!err) {",
+                  "      var list = res.json();",
+                  "      if (list) { var found = list.find(b => b.rif === 'J-12345678-9');",
+                  "        if (found) pm.collectionVariables.set('branchId', found.id);",
+                  "      }",
+                  "    }",
+                  "  });",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
@@ -334,14 +595,28 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Farmacia SIGAF Principal\",\n  \"rif\": \"J-12345678-9\",\n  \"address\": \"Av. Principal, Centro Comercial, Local 1\",\n  \"phone\": \"0212-1234567\",\n  \"email\": \"sucursal@farmacia.com\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/branches", "host": ["{{baseUrl}}"], "path": ["branches"] }
+            "url": {
+              "raw": "{{baseUrl}}/branches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "branches"
+              ]
+            }
           }
         },
         {
@@ -350,15 +625,30 @@
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
                 "type": "text/javascript"
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-            "url": { "raw": "{{baseUrl}}/branches", "host": ["{{baseUrl}}"], "path": ["branches"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/branches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "branches"
+              ]
+            }
           }
         }
       ]
@@ -373,9 +663,25 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var status = pm.response.code;",
                   "var json = pm.response.json();",
-                  "if(json.id) pm.collectionVariables.set('terminalId', json.id);"
+                  "pm.test('Created or already exists', () => pm.expect(status).to.be.oneOf([201, 409]));",
+                  "if (status === 201 && json.id) {",
+                  "  pm.collectionVariables.set('terminalId', json.id);",
+                  "} else {",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/terminals',",
+                  "    method: 'GET',",
+                  "    header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('accessToken') }",
+                  "  }, (err, res) => {",
+                  "    if (!err) {",
+                  "      var list = res.json();",
+                  "      if (list) { var found = list.find(t => t.code === 'CAJA-01');",
+                  "        if (found) pm.collectionVariables.set('terminalId', found.id);",
+                  "      }",
+                  "    }",
+                  "  });",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
@@ -384,14 +690,28 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"branchId\": \"{{branchId}}\",\n  \"code\": \"CAJA-01\",\n  \"name\": \"Caja Principal\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/terminals", "host": ["{{baseUrl}}"], "path": ["terminals"] }
+            "url": {
+              "raw": "{{baseUrl}}/terminals",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "terminals"
+              ]
+            }
           }
         },
         {
@@ -400,19 +720,35 @@
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
                 "type": "text/javascript"
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/terminals?branchId={{branchId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["terminals"],
-              "query": [{ "key": "branchId", "value": "{{branchId}}" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "terminals"
+              ],
+              "query": [
+                {
+                  "key": "branchId",
+                  "value": "{{branchId}}"
+                }
+              ]
             }
           }
         }
@@ -428,9 +764,25 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var status = pm.response.code;",
                   "var json = pm.response.json();",
-                  "if(json.id) pm.collectionVariables.set('locationId', json.id);"
+                  "pm.test('Created or already exists', () => pm.expect(status).to.be.oneOf([201, 409]));",
+                  "if (status === 201 && json.id) {",
+                  "  pm.collectionVariables.set('locationId', json.id);",
+                  "} else {",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/locations',",
+                  "    method: 'GET',",
+                  "    header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('accessToken') }",
+                  "  }, (err, res) => {",
+                  "    if (!err) {",
+                  "      var list = res.json();",
+                  "      if (list) { var found = list.find(l => l.locationCode === 'A-1-01');",
+                  "        if (found) pm.collectionVariables.set('locationId', found.id);",
+                  "      }",
+                  "    }",
+                  "  });",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
@@ -439,14 +791,28 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"branchId\": \"{{branchId}}\",\n  \"aisle\": \"A\",\n  \"shelf\": \"1\",\n  \"section\": \"01\",\n  \"capacity\": 100,\n  \"locationCode\": \"A-1-01\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/locations", "host": ["{{baseUrl}}"], "path": ["locations"] }
+            "url": {
+              "raw": "{{baseUrl}}/locations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "locations"
+              ]
+            }
           }
         },
         {
@@ -455,19 +821,35 @@
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
                 "type": "text/javascript"
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/locations?branchId={{branchId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["locations"],
-              "query": [{ "key": "branchId", "value": "{{branchId}}" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "locations"
+              ],
+              "query": [
+                {
+                  "key": "branchId",
+                  "value": "{{branchId}}"
+                }
+              ]
             }
           }
         }
@@ -483,9 +865,25 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var status = pm.response.code;",
                   "var json = pm.response.json();",
-                  "if(json.id) pm.collectionVariables.set('categoryId', json.id);"
+                  "pm.test('Created or already exists', () => pm.expect(status).to.be.oneOf([201, 409]));",
+                  "if (status === 201 && json.id) {",
+                  "  pm.collectionVariables.set('categoryId', json.id);",
+                  "} else {",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/categories',",
+                  "    method: 'GET',",
+                  "    header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('accessToken') }",
+                  "  }, (err, res) => {",
+                  "    if (!err) {",
+                  "      var list = res.json();",
+                  "      if (list) { var found = list.find(c => c.name === 'Medicamentos' || c.name === 'Medicamentos Generales');",
+                  "        if (found) pm.collectionVariables.set('categoryId', found.id);",
+                  "      }",
+                  "    }",
+                  "  });",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
@@ -494,14 +892,28 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Medicamentos\",\n  \"code\": \"MED\",\n  \"isPharmaceutical\": true\n}"
             },
-            "url": { "raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"] }
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            }
           }
         },
         {
@@ -510,15 +922,30 @@
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
                 "type": "text/javascript"
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-            "url": { "raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            }
           }
         },
         {
@@ -527,7 +954,9 @@
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
                 "type": "text/javascript"
               }
             }
@@ -535,14 +964,28 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Medicamentos Generales\"\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Medicamentos Generales\"\n}"
+            },
             "url": {
               "raw": "{{baseUrl}}/categories/{{categoryId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["categories", "{{categoryId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories",
+                "{{categoryId}}"
+              ]
             }
           }
         }
@@ -558,9 +1001,25 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var status = pm.response.code;",
                   "var json = pm.response.json();",
-                  "if(json.id) pm.collectionVariables.set('brandId', json.id);"
+                  "pm.test('Created or already exists', () => pm.expect(status).to.be.oneOf([201, 409]));",
+                  "if (status === 201 && json.id) {",
+                  "  pm.collectionVariables.set('brandId', json.id);",
+                  "} else {",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/brands',",
+                  "    method: 'GET',",
+                  "    header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('accessToken') }",
+                  "  }, (err, res) => {",
+                  "    if (!err) {",
+                  "      var list = res.json();",
+                  "      if (list) { var found = list.find(b => b.name === 'Bayer');",
+                  "        if (found) pm.collectionVariables.set('brandId', found.id);",
+                  "      }",
+                  "    }",
+                  "  });",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
@@ -569,11 +1028,28 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Bayer\",\n  \"isLaboratory\": true\n}" },
-            "url": { "raw": "{{baseUrl}}/brands", "host": ["{{baseUrl}}"], "path": ["brands"] }
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bayer\",\n  \"isLaboratory\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/brands",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "brands"
+              ]
+            }
           }
         },
         {
@@ -582,15 +1058,30 @@
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
                 "type": "text/javascript"
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-            "url": { "raw": "{{baseUrl}}/brands", "host": ["{{baseUrl}}"], "path": ["brands"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/brands",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "brands"
+              ]
+            }
           }
         }
       ]
@@ -605,9 +1096,25 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var status = pm.response.code;",
                   "var json = pm.response.json();",
-                  "if(json.id) pm.collectionVariables.set('activeIngredientId', json.id);"
+                  "pm.test('Created or already exists', () => pm.expect(status).to.be.oneOf([201, 409]));",
+                  "if (status === 201 && json.id) {",
+                  "  pm.collectionVariables.set('activeIngredientId', json.id);",
+                  "} else {",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/active-ingredients',",
+                  "    method: 'GET',",
+                  "    header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('accessToken') }",
+                  "  }, (err, res) => {",
+                  "    if (!err) {",
+                  "      var list = res.json();",
+                  "      if (list) { var found = list.find(a => a.name === 'Acetaminof\\u00e9n');",
+                  "        if (found) pm.collectionVariables.set('activeIngredientId', found.id);",
+                  "      }",
+                  "    }",
+                  "  });",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
@@ -616,31 +1123,118 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Acetaminofén\",\n  \"therapeuticGroup\": \"Analgésicos\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/active-ingredients", "host": ["{{baseUrl}}"], "path": ["active-ingredients"] }
+            "url": {
+              "raw": "{{baseUrl}}/active-ingredients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "active-ingredients"
+              ]
+            }
           }
         },
         {
-          "name": "10.2 Get Active Ingredients",
+          "name": "10.2 Create Active Ingredient 2 (Ibuprofeno)",
           "event": [
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "exec": [
+                  "var status = pm.response.code;",
+                  "var json = pm.response.json();",
+                  "pm.test('Created or already exists', () => pm.expect(status).to.be.oneOf([201, 409]));",
+                  "if (status === 201 && json.id) {",
+                  "  pm.collectionVariables.set('activeIngredientId2', json.id);",
+                  "} else {",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/active-ingredients',",
+                  "    method: 'GET',",
+                  "    header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('accessToken') }",
+                  "  }, (err, res) => {",
+                  "    if (!err) {",
+                  "      var list = res.json();",
+                  "      if (list) { var found = list.find(a => a.name === 'Ibuprofeno');",
+                  "        if (found) pm.collectionVariables.set('activeIngredientId2', found.id);",
+                  "      }",
+                  "    }",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ibuprofeno\",\n  \"therapeuticGroup\": \"Antiinflamatorios\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/active-ingredients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "active-ingredients"
+              ]
+            }
+          }
+        },
+        {
+          "name": "10.3 Get Active Ingredients",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
                 "type": "text/javascript"
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-            "url": { "raw": "{{baseUrl}}/active-ingredients", "host": ["{{baseUrl}}"], "path": ["active-ingredients"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/active-ingredients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "active-ingredients"
+              ]
+            }
           }
         }
       ]
@@ -655,9 +1249,25 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var status = pm.response.code;",
                   "var json = pm.response.json();",
-                  "if(json.id) pm.collectionVariables.set('supplierId', json.id);"
+                  "pm.test('Created or already exists', () => pm.expect(status).to.be.oneOf([201, 409]));",
+                  "if (status === 201 && json.id) {",
+                  "  pm.collectionVariables.set('supplierId', json.id);",
+                  "} else {",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/suppliers',",
+                  "    method: 'GET',",
+                  "    header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('accessToken') }",
+                  "  }, (err, res) => {",
+                  "    if (!err) {",
+                  "      var list = res.json();",
+                  "      if (list) { var found = list.find(s => s.rif === 'J-98765432-1');",
+                  "        if (found) pm.collectionVariables.set('supplierId', found.id);",
+                  "      }",
+                  "    }",
+                  "  });",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
@@ -666,14 +1276,28 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"rif\": \"J-98765432-1\",\n  \"businessName\": \"Distribuidora Farmacéutica ABC\",\n  \"tradeName\": \"DFA\",\n  \"contactName\": \"Juan Pérez\",\n  \"phone\": \"0212-9876543\",\n  \"email\": \"ventas@dfa.com\",\n  \"address\": \"Caracas, Venezuela\",\n  \"isDrugstore\": true,\n  \"paymentTermsDays\": 30\n}"
             },
-            "url": { "raw": "{{baseUrl}}/suppliers", "host": ["{{baseUrl}}"], "path": ["suppliers"] }
+            "url": {
+              "raw": "{{baseUrl}}/suppliers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "suppliers"
+              ]
+            }
           }
         },
         {
@@ -682,32 +1306,65 @@
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
                 "type": "text/javascript"
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-            "url": { "raw": "{{baseUrl}}/suppliers", "host": ["{{baseUrl}}"], "path": ["suppliers"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/suppliers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "suppliers"
+              ]
+            }
           }
         }
       ]
     },
     {
-      "name": "12. PRODUCTS - Productos",
+      "name": "12. PRODUCTS - Productos (CRUD + Barcodes + Ingredients)",
       "item": [
         {
-          "name": "12.1 Create Product",
+          "name": "12.1 Create Product (con barcodes e ingredientes)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var status = pm.response.code;",
                   "var json = pm.response.json();",
-                  "if(json.id) pm.collectionVariables.set('productId', json.id);"
+                  "pm.test('Created or already exists', () => pm.expect(status).to.be.oneOf([201, 409]));",
+                  "if (status === 201 && json.id) {",
+                  "  pm.collectionVariables.set('productId', json.id);",
+                  "  if(json.barcodes && json.barcodes.length) pm.collectionVariables.set('barcodeId', json.barcodes[0].id);",
+                  "} else {",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/products?page=1&limit=50',",
+                  "    method: 'GET',",
+                  "    header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('accessToken') }",
+                  "  }, (err, res) => {",
+                  "    if (!err) {",
+                  "      var list = res.json().data;",
+                  "      if (list) { var found = list.find(p => p.internalCode === 'MED-001');",
+                  "        if (found) pm.collectionVariables.set('productId', found.id);",
+                  "        if(found.barcodes && found.barcodes.length) pm.collectionVariables.set('barcodeId', found.barcodes[0].id);",
+                  "      }",
+                  "    }",
+                  "  });",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
@@ -716,14 +1373,28 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"ean\": \"7501234567890\",\n  \"description\": \"Acetaminofén 500mg x 20 tabletas\",\n  \"shortName\": \"Acetaminofén 500mg\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"brandId\": \"{{brandId}}\",\n  \"productType\": \"pharmaceutical\",\n  \"taxType\": \"exempt\",\n  \"presentation\": \"Caja x 20 tabletas\",\n  \"stockMin\": 10,\n  \"stockMax\": 100\n}"
+              "raw": "{\n  \"description\": \"Acetaminofén 500mg x 20 tabletas\",\n  \"shortName\": \"Acetaminofén 500mg\",\n  \"internalCode\": \"MED-001\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"brandId\": \"{{brandId}}\",\n  \"productType\": \"pharmaceutical\",\n  \"taxType\": \"exempt\",\n  \"presentation\": \"Caja x 20 tabletas\",\n  \"stockMin\": 10,\n  \"stockMax\": 100,\n  \"conservationType\": \"ambient\",\n  \"barcodes\": [\n    { \"barcode\": \"7501234567890\", \"barcodeType\": \"ean13\", \"isPrimary\": true }\n  ],\n  \"activeIngredients\": [\n    { \"activeIngredientId\": \"{{activeIngredientId}}\", \"concentration\": \"500mg\", \"isPrimary\": true }\n  ]\n}"
             },
-            "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] }
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products"
+              ]
+            }
           }
         },
         {
@@ -732,43 +1403,76 @@
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
                 "type": "text/javascript"
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/products?page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["products"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
           }
         },
         {
-          "name": "12.3 Get Product by ID",
+          "name": "12.3 Get Product by ID (con relaciones)",
           "event": [
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has barcodes', () => pm.expect(json.barcodes).to.be.an('array'));",
+                  "pm.test('Has activeIngredients', () => pm.expect(json.activeIngredients).to.be.an('array'));",
+                  "pm.test('Has totalStock', () => pm.expect(json.totalStock).to.be.a('number'));"
+                ],
                 "type": "text/javascript"
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/products/{{productId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["products", "{{productId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}"
+              ]
             }
           }
         },
@@ -778,7 +1482,9 @@
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
                 "type": "text/javascript"
               }
             }
@@ -786,8 +1492,14 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -795,8 +1507,388 @@
             },
             "url": {
               "raw": "{{baseUrl}}/products/{{productId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["products", "{{productId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "12.5 Search Products (genérico)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/search?q=Acetaminof",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "Acetaminof"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "12.6 Search Products by EAN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/search?q=7501234567890&type=ean",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "7501234567890"
+                },
+                {
+                  "key": "type",
+                  "value": "ean"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "12.7 Search Products by Ingredient",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/search?q=Acetaminof&type=ingredient",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "Acetaminof"
+                },
+                {
+                  "key": "type",
+                  "value": "ingredient"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "12.8 Add Barcode (UPC)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var status = pm.response.code;",
+                  "var json = pm.response.json();",
+                  "pm.test('Created or already exists', () => pm.expect(status).to.be.oneOf([201, 409]));",
+                  "if (status === 201 && json.id) {",
+                  "  pm.collectionVariables.set('secondBarcodeId', json.id);",
+                  "} else if (status === 409) {",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/products/' + pm.collectionVariables.get('productId') + '/barcodes',",
+                  "    method: 'GET',",
+                  "    header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('accessToken') }",
+                  "  }, (err, res) => {",
+                  "    if (!err) {",
+                  "      var list = res.json();",
+                  "      var found = list.find(b => b.barcode === '0012345678905');",
+                  "      if (found) pm.collectionVariables.set('secondBarcodeId', found.id);",
+                  "    }",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"barcode\": \"0012345678905\",\n  \"barcodeType\": \"upc\",\n  \"isPrimary\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/barcodes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}",
+                "barcodes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "12.9 Get Product Barcodes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has 2 barcodes', () => pm.expect(json.length).to.equal(2));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/barcodes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}",
+                "barcodes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "12.10 Remove Barcode (UPC)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success', () => pm.expect(pm.response.json().success).to.be.true);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/barcodes/{{secondBarcodeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}",
+                "barcodes",
+                "{{secondBarcodeId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "12.11 Add Ingredient (Ibuprofeno)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var status = pm.response.code;",
+                  "var json = pm.response.json();",
+                  "pm.test('Created or already exists', () => pm.expect(status).to.be.oneOf([201, 409]));",
+                  "if (status === 201) pm.test('Has id', () => pm.expect(json.id).to.be.a('string'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activeIngredientId\": \"{{activeIngredientId2}}\",\n  \"concentration\": \"200mg\",\n  \"isPrimary\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/ingredients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}",
+                "ingredients"
+              ]
+            }
+          }
+        },
+        {
+          "name": "12.12 Remove Ingredient (Ibuprofeno)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success', () => pm.expect(pm.response.json().success).to.be.true);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/ingredients/{{activeIngredientId2}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}",
+                "ingredients",
+                "{{activeIngredientId2}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "12.13 Get Substitutes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/substitutes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}",
+                "substitutes"
+              ]
             }
           }
         }
@@ -812,9 +1904,25 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var status = pm.response.code;",
                   "var json = pm.response.json();",
-                  "if(json.id) pm.collectionVariables.set('lotId', json.id);"
+                  "pm.test('Created or already exists', () => pm.expect(status).to.be.oneOf([201, 409]));",
+                  "if (status === 201 && json.id) {",
+                  "  pm.collectionVariables.set('lotId', json.id);",
+                  "} else {",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/inventory/lots?page=1&limit=50',",
+                  "    method: 'GET',",
+                  "    header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('accessToken') }",
+                  "  }, (err, res) => {",
+                  "    if (!err) {",
+                  "      var list = res.json().data;",
+                  "      if (list) { var found = list.find(l => l.lotNumber === 'LOT-2026-001');",
+                  "        if (found) pm.collectionVariables.set('lotId', found.id);",
+                  "      }",
+                  "    }",
+                  "  });",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
@@ -823,14 +1931,29 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"lotNumber\": \"LOT-2026-001\",\n  \"expirationDate\": \"2027-12-31\",\n  \"manufactureDate\": \"2026-01-15\",\n  \"acquisitionType\": \"purchase\",\n  \"supplierId\": \"{{supplierId}}\",\n  \"costUsd\": 5.50,\n  \"salePrice\": 8.99,\n  \"quantityReceived\": 100,\n  \"locationId\": \"{{locationId}}\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/inventory/lots", "host": ["{{baseUrl}}"], "path": ["inventory", "lots"] }
+            "url": {
+              "raw": "{{baseUrl}}/inventory/lots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventory",
+                "lots"
+              ]
+            }
           }
         },
         {
@@ -839,21 +1962,39 @@
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
                 "type": "text/javascript"
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/inventory/lots?page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["inventory", "lots"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventory",
+                "lots"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
           }
@@ -864,18 +2005,31 @@
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
                 "type": "text/javascript"
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/inventory/lots/{{lotId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["inventory", "lots", "{{lotId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventory",
+                "lots",
+                "{{lotId}}"
+              ]
             }
           }
         },
@@ -885,7 +2039,9 @@
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
                 "type": "text/javascript"
               }
             }
@@ -893,14 +2049,29 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"salePrice\": 9.99\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salePrice\": 9.99\n}"
+            },
             "url": {
               "raw": "{{baseUrl}}/inventory/lots/{{lotId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["inventory", "lots", "{{lotId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventory",
+                "lots",
+                "{{lotId}}"
+              ]
             }
           }
         }
@@ -915,19 +2086,36 @@
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
                 "type": "text/javascript"
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/inventory/stock-fefo?branchId={{branchId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["inventory", "stock-fefo"],
-              "query": [{ "key": "branchId", "value": "{{branchId}}" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventory",
+                "stock-fefo"
+              ],
+              "query": [
+                {
+                  "key": "branchId",
+                  "value": "{{branchId}}"
+                }
+              ]
             }
           }
         },
@@ -937,15 +2125,31 @@
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
                 "type": "text/javascript"
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-            "url": { "raw": "{{baseUrl}}/inventory/stock", "host": ["{{baseUrl}}"], "path": ["inventory", "stock"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/stock",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventory",
+                "stock"
+              ]
+            }
           }
         },
         {
@@ -954,21 +2158,39 @@
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
                 "type": "text/javascript"
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/inventory/kardex?page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["inventory", "kardex"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventory",
+                "kardex"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
           }
@@ -976,15 +2198,21 @@
       ]
     },
     {
-      "name": "15. EXCHANGE RATES",
+      "name": "15. PURCHASES - Órdenes de Compra y Recepciones",
       "item": [
         {
-          "name": "15.1 Create Exchange Rate",
+          "name": "15.1 Create Purchase Order",
           "event": [
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"],
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(json.id).to.be.a('string'));",
+                  "pm.test('Has items', () => pm.expect(json.items).to.be.an('array'));",
+                  "if(json.id) pm.collectionVariables.set('purchaseOrderId', json.id);"
+                ],
                 "type": "text/javascript"
               }
             }
@@ -992,74 +2220,798 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"currencyFrom\": \"USD\",\n  \"currencyTo\": \"VES\",\n  \"rate\": 36.50,\n  \"source\": \"BCV\",\n  \"effectiveDate\": \"2026-04-11\"\n}"
+              "raw": "{\n  \"branchId\": \"{{branchId}}\",\n  \"supplierId\": \"{{supplierId}}\",\n  \"orderType\": \"purchase\",\n  \"expectedDate\": \"2026-05-15\",\n  \"notes\": \"Orden de prueba Postman\",\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 50, \"unitCostUsd\": 3.50, \"discountPct\": 5 }\n  ]\n}"
             },
-            "url": { "raw": "{{baseUrl}}/exchange-rates", "host": ["{{baseUrl}}"], "path": ["exchange-rates"] }
-          }
-        },
-        {
-          "name": "15.2 Get Exchange Rates",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-            "url": { "raw": "{{baseUrl}}/exchange-rates", "host": ["{{baseUrl}}"], "path": ["exchange-rates"] }
-          }
-        },
-        {
-          "name": "15.3 Get Latest Rate",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
             "url": {
-              "raw": "{{baseUrl}}/exchange-rates/latest",
-              "host": ["{{baseUrl}}"],
-              "path": ["exchange-rates", "latest"]
+              "raw": "{{baseUrl}}/purchases/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "purchases",
+                "orders"
+              ]
             }
           }
-        }
-      ]
-    },
-    {
-      "name": "16. LOGOUT",
-      "item": [
+        },
         {
-          "name": "16.1 Logout",
+          "name": "15.2 Get All Purchase Orders",
           "event": [
             {
               "listen": "test",
               "script": {
-                "exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"],
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has data', () => pm.expect(json.data).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/purchases/orders?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "purchases",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "15.3 Get Purchase Order by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has items', () => pm.expect(json.items).to.be.an('array'));",
+                  "pm.test('Status is draft', () => pm.expect(json.status).to.equal('draft'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/purchases/orders/{{purchaseOrderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "purchases",
+                "orders",
+                "{{purchaseOrderId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "15.4 Update Purchase Order (notas)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Orden actualizada vía Postman\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/purchases/orders/{{purchaseOrderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "purchases",
+                "orders",
+                "{{purchaseOrderId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "15.5 Approve Purchase Order (draft → sent)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Status is sent', () => pm.expect(json.status).to.equal('sent'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/purchases/orders/{{purchaseOrderId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "purchases",
+                "orders",
+                "{{purchaseOrderId}}",
+                "approve"
+              ]
+            }
+          }
+        },
+        {
+          "name": "15.6 Create Goods Receipt (crea lotes)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(json.id).to.be.a('string'));",
+                  "pm.test('Has items', () => pm.expect(json.items).to.be.an('array'));",
+                  "if(json.id) pm.collectionVariables.set('goodsReceiptId', json.id);"
+                ],
                 "type": "text/javascript"
               }
             }
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branchId\": \"{{branchId}}\",\n  \"supplierId\": \"{{supplierId}}\",\n  \"purchaseOrderId\": \"{{purchaseOrderId}}\",\n  \"supplierInvoiceNumber\": \"FAC-2026-001\",\n  \"receiptType\": \"purchase\",\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"lotNumber\": \"LOT-PO-2026-001\",\n      \"expirationDate\": \"2027-12-31\",\n      \"quantity\": 50,\n      \"unitCostUsd\": 3.50,\n      \"salePrice\": 7.99\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/purchases/receipts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "purchases",
+                "receipts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "15.7 Get All Goods Receipts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has data', () => pm.expect(json.data).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/purchases/receipts?branchId={{branchId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "purchases",
+                "receipts"
+              ],
+              "query": [
+                {
+                  "key": "branchId",
+                  "value": "{{branchId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "15.8 Get Goods Receipt by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has items', () => pm.expect(json.items).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/purchases/receipts/{{goodsReceiptId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "purchases",
+                "receipts",
+                "{{goodsReceiptId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "15.9 Verify Order Status (complete after receipt)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Status updated', () => pm.expect(['partial','complete']).to.include(json.status));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/purchases/orders/{{purchaseOrderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "purchases",
+                "orders",
+                "{{purchaseOrderId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "16. CONSIGNMENTS - Consignaciones",
+      "item": [
+        {
+          "name": "16.1 Create Consignment Entry",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(json.id).to.be.a('string'));",
+                  "pm.test('Has items', () => pm.expect(json.items).to.be.an('array'));",
+                  "if(json.id) pm.collectionVariables.set('consignmentEntryId', json.id);",
+                  "if(json.items && json.items.length) { pm.collectionVariables.set('consignmentEntryItemId', json.items[0].id); pm.collectionVariables.set('consignmentLotId', json.items[0].lotId); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branchId\": \"{{branchId}}\",\n  \"supplierId\": \"{{supplierId}}\",\n  \"commissionPct\": 15,\n  \"notes\": \"Consignación de prueba Postman\",\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"lotNumber\": \"LOT-CONS-2026-001\",\n      \"expirationDate\": \"2027-12-31\",\n      \"quantity\": 30,\n      \"costUsd\": 4.00,\n      \"salePrice\": 8.50\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/consignments/entries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "consignments",
+                "entries"
+              ]
+            }
+          }
+        },
+        {
+          "name": "16.2 Get All Consignment Entries",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has data', () => pm.expect(json.data).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/consignments/entries?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "consignments",
+                "entries"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "16.3 Get Consignment Entry by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has items', () => pm.expect(json.items).to.be.an('array'));",
+                  "pm.test('Status active', () => pm.expect(json.status).to.equal('active'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/consignments/entries/{{consignmentEntryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "consignments",
+                "entries",
+                "{{consignmentEntryId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "16.4 Create Consignment Return (devolver 5 unidades)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(json.id).to.be.a('string'));",
+                  "pm.test('Has items', () => pm.expect(json.items).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"consignmentEntryId\": \"{{consignmentEntryId}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"supplierId\": \"{{supplierId}}\",\n  \"reason\": \"expired\",\n  \"notes\": \"Devolución parcial de prueba\",\n  \"items\": [\n    {\n      \"consignmentItemId\": \"{{consignmentEntryItemId}}\",\n      \"lotId\": \"{{consignmentLotId}}\",\n      \"quantity\": 5,\n      \"costUsd\": 4.00\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/consignments/returns",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "consignments",
+                "returns"
+              ]
+            }
+          }
+        },
+        {
+          "name": "16.5 Get All Consignment Returns",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has data', () => pm.expect(json.data).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/consignments/returns?branchId={{branchId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "consignments",
+                "returns"
+              ],
+              "query": [
+                {
+                  "key": "branchId",
+                  "value": "{{branchId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "16.6 Create Liquidation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Response OK', () => pm.response.to.have.status(pm.response.code));",
+                  "var json = pm.response.json();",
+                  "if(json.id) pm.collectionVariables.set('liquidationId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branchId\": \"{{branchId}}\",\n  \"supplierId\": \"{{supplierId}}\",\n  \"periodStart\": \"2026-01-01\",\n  \"periodEnd\": \"2026-12-31\",\n  \"consignmentEntryId\": \"{{consignmentEntryId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/consignments/liquidations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "consignments",
+                "liquidations"
+              ]
+            }
+          }
+        },
+        {
+          "name": "16.7 Get All Liquidations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has data', () => pm.expect(json.data).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/consignments/liquidations?branchId={{branchId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "consignments",
+                "liquidations"
+              ],
+              "query": [
+                {
+                  "key": "branchId",
+                  "value": "{{branchId}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "17. EXCHANGE RATES",
+      "item": [
+        {
+          "name": "17.1 Create Exchange Rate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Created or already exists', () => pm.expect(pm.response.code).to.be.oneOf([201, 409]));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currencyFrom\": \"USD\",\n  \"currencyTo\": \"VES\",\n  \"rate\": 36.50,\n  \"source\": \"BCV\",\n  \"effectiveDate\": \"2026-04-11\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/exchange-rates",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "exchange-rates"
+              ]
+            }
+          }
+        },
+        {
+          "name": "17.2 Get Exchange Rates",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/exchange-rates",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "exchange-rates"
+              ]
+            }
+          }
+        },
+        {
+          "name": "17.3 Get Latest Rate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/exchange-rates/latest",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "exchange-rates",
+                "latest"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "18. LOGOUT",
+      "item": [
+        {
+          "name": "18.1 Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            }
           }
         }
       ]

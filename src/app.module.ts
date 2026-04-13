@@ -24,9 +24,11 @@ import { InventoryModule } from './modules/inventory/inventory.module';
 import { LocationsModule } from './modules/locations/locations.module';
 import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { TerminalsModule } from './modules/terminals/terminals.module';
+import { PurchasesModule } from './modules/purchases/purchases.module';
 import { TypeOrmConfigService } from './database/typeorm-config.service';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
+import { ConsignmentsModule } from './modules/consignments/consignments.module';
 import { ConfigGlobalModule } from './modules/config-global/config-global.module';
 import { ExchangeRatesModule } from './modules/exchange-rates/exchange-rates.module';
 import { ActiveIngredientsModule } from './modules/active-ingredients/active-ingredients.module';
@@ -85,6 +87,8 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     TerminalsModule,
     ExchangeRatesModule,
     ConfigGlobalModule,
+    PurchasesModule,
+    ConsignmentsModule,
     ActiveIngredientsModule,
     PermissionsModule,
     RolesModule,

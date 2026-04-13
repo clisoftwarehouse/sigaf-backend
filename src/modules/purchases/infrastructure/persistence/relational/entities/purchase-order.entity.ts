@@ -1,5 +1,6 @@
-import { Column, Entity, CreateDateColumn, UpdateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, CreateDateColumn, UpdateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
 
+import { PurchaseOrderItemEntity } from './purchase-order-item.entity';
 import { EntityRelationalHelper } from '@/common/utils/relational-entity-helper';
 
 @Entity('purchase_orders')
@@ -54,4 +55,7 @@ export class PurchaseOrderEntity extends EntityRelationalHelper {
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
+
+  @OneToMany(() => PurchaseOrderItemEntity, (item) => item.order, { cascade: true })
+  items: PurchaseOrderItemEntity[];
 }

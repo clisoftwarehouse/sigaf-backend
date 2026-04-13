@@ -48,5 +48,9 @@ export class CreateInventoryLotDto {
 
   @IsOptional()
   @IsUUID()
+  consignmentEntryId?: string;
+
+  @IsOptional()
+  @IsUUID()
   locationId?: string;
 }

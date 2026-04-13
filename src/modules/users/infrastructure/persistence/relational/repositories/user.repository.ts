@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository, FindOptionsWhere } from 'typeorm';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { User } from '../../../../domain/user';
 import { UserMapper } from '../mappers/user.mapper';
@@ -108,7 +108,7 @@ export class UsersRelationalRepository implements UserRepository {
     });
 
     if (!entity) {
-      throw new Error('User not found');
+      throw new NotFoundException('Usuario no encontrado');
     }
 
     const updatedEntity = await this.usersRepository.save(

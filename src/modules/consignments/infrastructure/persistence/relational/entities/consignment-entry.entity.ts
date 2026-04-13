@@ -1,5 +1,6 @@
-import { Column, Entity, CreateDateColumn, UpdateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, CreateDateColumn, UpdateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
 
+import { ConsignmentEntryItemEntity } from './consignment-entry-item.entity';
 import { EntityRelationalHelper } from '@/common/utils/relational-entity-helper';
 
 @Entity('consignment_entries')
@@ -42,4 +43,7 @@ export class ConsignmentEntryEntity extends EntityRelationalHelper {
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
+
+  @OneToMany(() => ConsignmentEntryItemEntity, (item) => item.consignmentEntry, { cascade: true })
+  items: ConsignmentEntryItemEntity[];
 }
