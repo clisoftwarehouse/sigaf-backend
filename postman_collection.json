@@ -104,6 +104,14 @@
     {
       "key": "secondBarcodeId",
       "value": ""
+    },
+    {
+      "key": "therapeuticUseId",
+      "value": ""
+    },
+    {
+      "key": "therapeuticUseId2",
+      "value": ""
     }
   ],
   "item": [
@@ -1240,6 +1248,234 @@
       ]
     },
     {
+      "name": "10b. THERAPEUTIC USES - Usos Terapéuticos",
+      "item": [
+        {
+          "name": "10b.1 Create Therapeutic Use (Analgésico)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var status = pm.response.code;",
+                  "var json = pm.response.json();",
+                  "pm.test('Created or already exists', () => pm.expect(status).to.be.oneOf([201, 409]));",
+                  "if (status === 201 && json.id) {",
+                  "  pm.collectionVariables.set('therapeuticUseId', json.id);",
+                  "} else {",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/therapeutic-uses',",
+                  "    method: 'GET',",
+                  "    header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('accessToken') }",
+                  "  }, (err, res) => {",
+                  "    if (!err) {",
+                  "      var list = res.json();",
+                  "      if (list) { var found = list.find(t => t.name === 'Analg\\u00e9sico');",
+                  "        if (found) pm.collectionVariables.set('therapeuticUseId', found.id);",
+                  "      }",
+                  "    }",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Analgésico\",\n  \"description\": \"Alivio del dolor\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/therapeutic-uses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "therapeutic-uses"
+              ]
+            }
+          }
+        },
+        {
+          "name": "10b.2 Create Therapeutic Use (Antipirético)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var status = pm.response.code;",
+                  "var json = pm.response.json();",
+                  "pm.test('Created or already exists', () => pm.expect(status).to.be.oneOf([201, 409]));",
+                  "if (status === 201 && json.id) {",
+                  "  pm.collectionVariables.set('therapeuticUseId2', json.id);",
+                  "} else {",
+                  "  pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/therapeutic-uses',",
+                  "    method: 'GET',",
+                  "    header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('accessToken') }",
+                  "  }, (err, res) => {",
+                  "    if (!err) {",
+                  "      var list = res.json();",
+                  "      if (list) { var found = list.find(t => t.name === 'Antipir\\u00e9tico');",
+                  "        if (found) pm.collectionVariables.set('therapeuticUseId2', found.id);",
+                  "      }",
+                  "    }",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Antipirético\",\n  \"description\": \"Reducción de fiebre\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/therapeutic-uses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "therapeutic-uses"
+              ]
+            }
+          }
+        },
+        {
+          "name": "10b.3 Get Therapeutic Uses",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/therapeutic-uses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "therapeutic-uses"
+              ]
+            }
+          }
+        },
+        {
+          "name": "10b.4 Get Therapeutic Use by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/therapeutic-uses/{{therapeuticUseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "therapeutic-uses",
+                "{{therapeuticUseId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "10b.5 Update Therapeutic Use",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Alivio del dolor leve a moderado\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/therapeutic-uses/{{therapeuticUseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "therapeutic-uses",
+                "{{therapeuticUseId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "11. SUPPLIERS - Proveedores",
       "item": [
         {
@@ -1335,7 +1571,7 @@
       ]
     },
     {
-      "name": "12. PRODUCTS - Productos (CRUD + Barcodes + Ingredients)",
+      "name": "12. PRODUCTS - Productos (CRUD + Barcodes + Ingredients + Therapeutic Uses + Purchase History)",
       "item": [
         {
           "name": "12.1 Create Product (con barcodes e ingredientes)",
@@ -1384,7 +1620,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"description\": \"Acetaminofén 500mg x 20 tabletas\",\n  \"shortName\": \"Acetaminofén 500mg\",\n  \"internalCode\": \"MED-001\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"brandId\": \"{{brandId}}\",\n  \"productType\": \"pharmaceutical\",\n  \"taxType\": \"exempt\",\n  \"presentation\": \"Caja x 20 tabletas\",\n  \"stockMin\": 10,\n  \"stockMax\": 100,\n  \"conservationType\": \"ambient\",\n  \"barcodes\": [\n    { \"barcode\": \"7501234567890\", \"barcodeType\": \"ean13\", \"isPrimary\": true }\n  ],\n  \"activeIngredients\": [\n    { \"activeIngredientId\": \"{{activeIngredientId}}\", \"concentration\": \"500mg\", \"isPrimary\": true }\n  ]\n}"
+              "raw": "{\n  \"description\": \"Acetaminofén 500mg x 20 tabletas\",\n  \"shortName\": \"Acetaminofén 500mg\",\n  \"internalCode\": \"MED-001\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"brandId\": \"{{brandId}}\",\n  \"productType\": \"pharmaceutical\",\n  \"sencamerRegistration\": \"E.F. 12345\",\n  \"taxType\": \"exempt\",\n  \"presentation\": \"Caja x 20 tabletas\",\n  \"stockMin\": 10,\n  \"stockMax\": 100,\n  \"conservationType\": \"ambient\",\n  \"barcodes\": [\n    { \"barcode\": \"7501234567890\", \"barcodeType\": \"ean13\", \"isPrimary\": true }\n  ],\n  \"activeIngredients\": [\n    { \"activeIngredientId\": \"{{activeIngredientId}}\", \"concentration\": \"500mg\", \"isPrimary\": true }\n  ],\n  \"therapeuticUses\": [\n    { \"therapeuticUseId\": \"{{therapeuticUseId}}\" }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/products",
@@ -1450,6 +1686,8 @@
                   "var json = pm.response.json();",
                   "pm.test('Has barcodes', () => pm.expect(json.barcodes).to.be.an('array'));",
                   "pm.test('Has activeIngredients', () => pm.expect(json.activeIngredients).to.be.an('array'));",
+                  "pm.test('Has therapeuticUses', () => pm.expect(json.therapeuticUses).to.be.an('array'));",
+                  "pm.test('Has sencamerRegistration field', () => pm.expect(json).to.have.property('sencamerRegistration'));",
                   "pm.test('Has totalStock', () => pm.expect(json.totalStock).to.be.a('number'));"
                 ],
                 "type": "text/javascript"
@@ -1503,7 +1741,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"description\": \"Acetaminofén 500mg x 20 tabletas - Actualizado\",\n  \"stockMin\": 15\n}"
+              "raw": "{\n  \"description\": \"Acetaminofén 500mg x 20 tabletas - Actualizado\",\n  \"stockMin\": 15,\n  \"sencamerRegistration\": \"E.F. 12345-A\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/products/{{productId}}",
@@ -1888,6 +2126,162 @@
                 "products",
                 "{{productId}}",
                 "substitutes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "12.14 Add Therapeutic Use (Antipirético)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var status = pm.response.code;",
+                  "pm.test('Created or already exists', () => pm.expect(status).to.be.oneOf([201, 409]));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/therapeutic-uses/{{therapeuticUseId2}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}",
+                "therapeutic-uses",
+                "{{therapeuticUseId2}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "12.15 Remove Therapeutic Use (Antipirético)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success', () => pm.expect(pm.response.json().success).to.be.true);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/therapeutic-uses/{{therapeuticUseId2}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}",
+                "therapeutic-uses",
+                "{{therapeuticUseId2}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "12.16 Get Purchase History (por producto)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/purchase-history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}",
+                "purchase-history"
+              ]
+            }
+          }
+        },
+        {
+          "name": "12.17 Get Purchase History (filtrado por proveedor y fechas)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/purchase-history?supplierId={{supplierId}}&from=2025-01-01&to=2026-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}",
+                "purchase-history"
+              ],
+              "query": [
+                {
+                  "key": "supplierId",
+                  "value": "{{supplierId}}"
+                },
+                {
+                  "key": "from",
+                  "value": "2025-01-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-12-31"
+                }
               ]
             }
           }

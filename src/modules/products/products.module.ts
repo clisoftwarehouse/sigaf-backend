@@ -9,6 +9,9 @@ import { ProductBarcodeEntity } from './infrastructure/persistence/relational/en
 import { ProductSubstituteEntity } from './infrastructure/persistence/relational/entities/product-substitute.entity';
 import { InventoryLotEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/inventory-lot.entity';
 import { ProductActiveIngredientEntity } from './infrastructure/persistence/relational/entities/product-active-ingredient.entity';
+import { ProductTherapeuticUseEntity } from './infrastructure/persistence/relational/entities/product-therapeutic-use.entity';
+import { GoodsReceiptEntity } from '@/modules/purchases/infrastructure/persistence/relational/entities/goods-receipt.entity';
+import { GoodsReceiptItemEntity } from '@/modules/purchases/infrastructure/persistence/relational/entities/goods-receipt-item.entity';
 
 @Module({
   imports: [
@@ -17,7 +20,10 @@ import { ProductActiveIngredientEntity } from './infrastructure/persistence/rela
       ProductBarcodeEntity,
       ProductSubstituteEntity,
       ProductActiveIngredientEntity,
+      ProductTherapeuticUseEntity,
       InventoryLotEntity,
+      GoodsReceiptEntity,
+      GoodsReceiptItemEntity,
     ]),
     AuditModule,
   ],

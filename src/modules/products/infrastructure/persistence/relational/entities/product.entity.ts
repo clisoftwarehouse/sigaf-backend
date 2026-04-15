@@ -12,6 +12,7 @@ import {
 
 import { ProductBarcodeEntity } from './product-barcode.entity';
 import { ProductSubstituteEntity } from './product-substitute.entity';
+import { ProductTherapeuticUseEntity } from './product-therapeutic-use.entity';
 import { EntityRelationalHelper } from '@/common/utils/relational-entity-helper';
 import { ProductActiveIngredientEntity } from './product-active-ingredient.entity';
 import { BrandEntity } from '@/modules/brands/infrastructure/persistence/relational/entities/brand.entity';
@@ -54,6 +55,9 @@ export class ProductEntity extends EntityRelationalHelper {
 
   @Column('varchar', { name: 'product_type', length: 20, default: 'general' })
   productType: string;
+
+  @Column('varchar', { name: 'sencamer_registration', length: 50, nullable: true })
+  sencamerRegistration: string | null;
 
   @Column('boolean', { name: 'is_controlled', default: false })
   isControlled: boolean;
@@ -123,4 +127,7 @@ export class ProductEntity extends EntityRelationalHelper {
 
   @OneToMany(() => ProductBarcodeEntity, (pb) => pb.product, { cascade: true })
   barcodes: ProductBarcodeEntity[];
+
+  @OneToMany(() => ProductTherapeuticUseEntity, (ptu) => ptu.product, { cascade: true })
+  therapeuticUses: ProductTherapeuticUseEntity[];
 }

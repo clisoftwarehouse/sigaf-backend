@@ -52,6 +52,12 @@ export class CreateProductIngredientDto {
   isPrimary?: boolean;
 }
 
+export class CreateProductTherapeuticUseDto {
+  @ApiProperty({ description: 'ID del uso terapéutico' })
+  @IsUUID()
+  therapeuticUseId: string;
+}
+
 export class CreateProductDto {
   @ApiPropertyOptional({ example: 'SKU-001', description: 'Código interno' })
   @IsOptional()
@@ -88,6 +94,12 @@ export class CreateProductDto {
   @IsOptional()
   @IsEnum(['pharmaceutical', 'controlled', 'otc', 'grocery', 'miscellaneous', 'weighable'])
   productType?: string;
+
+  @ApiPropertyOptional({ example: 'E.F. 12345', description: 'Registro SENCAMER (CPE)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  sencamerRegistration?: string;
 
   @ApiPropertyOptional({ example: false, description: 'Producto controlado (psicotrópico/estupefaciente)' })
   @IsOptional()
@@ -207,4 +219,14 @@ export class CreateProductDto {
   @ValidateNested({ each: true })
   @Type(() => CreateProductIngredientDto)
   activeIngredients?: CreateProductIngredientDto[];
+
+  @ApiPropertyOptional({
+    type: [CreateProductTherapeuticUseDto],
+    description: 'Usos terapéuticos del producto',
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateProductTherapeuticUseDto)
+  therapeuticUses?: CreateProductTherapeuticUseDto[];
 }

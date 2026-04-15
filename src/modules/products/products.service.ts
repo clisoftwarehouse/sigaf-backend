@@ -9,6 +9,8 @@ import { ProductBarcodeEntity } from './infrastructure/persistence/relational/en
 import { ProductSubstituteEntity } from './infrastructure/persistence/relational/entities/product-substitute.entity';
 import { InventoryLotEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/inventory-lot.entity';
 import { ProductActiveIngredientEntity } from './infrastructure/persistence/relational/entities/product-active-ingredient.entity';
+import { ProductTherapeuticUseEntity } from './infrastructure/persistence/relational/entities/product-therapeutic-use.entity';
+import { GoodsReceiptItemEntity } from '@/modules/purchases/infrastructure/persistence/relational/entities/goods-receipt-item.entity';
 
 @Injectable()
 export class ProductsService {
@@ -21,8 +23,12 @@ export class ProductsService {
     private readonly ingredientRepo: Repository<ProductActiveIngredientEntity>,
     @InjectRepository(ProductSubstituteEntity)
     private readonly substituteRepo: Repository<ProductSubstituteEntity>,
+    @InjectRepository(ProductTherapeuticUseEntity)
+    private readonly therapeuticUseRepo: Repository<ProductTherapeuticUseEntity>,
     @InjectRepository(InventoryLotEntity)
     private readonly lotRepo: Repository<InventoryLotEntity>,
+    @InjectRepository(GoodsReceiptItemEntity)
+    private readonly goodsReceiptItemRepo: Repository<GoodsReceiptItemEntity>,
     private readonly auditService: AuditService,
   ) {}
 
@@ -111,6 +117,8 @@ export class ProductsService {
         'activeIngredients.activeIngredient',
         'substitutes',
         'substitutes.substitute',
+        'therapeuticUses',
+        'therapeuticUses.therapeuticUse',
       ],
     });
     if (!product) throw new NotFoundException('Producto no encontrado');
@@ -151,7 +159,12 @@ export class ProductsService {
       }
     }
 
-    const { barcodes: barcodesDto, activeIngredients: ingredientsDto, ...productData } = dto;
+    const {
+      barcodes: barcodesDto,
+      activeIngredients: ingredientsDto,
+      therapeuticUses: therapeuticUsesDto,
+      ...productData
+    } = dto;
 
     const product = this.productRepo.create(productData);
     const saved = await this.productRepo.save(product);
@@ -178,6 +191,16 @@ export class ProductsService {
         }),
       );
       await this.ingredientRepo.save(ingredients);
+    }
+
+    if (therapeuticUsesDto?.length) {
+      const uses = therapeuticUsesDto.map((tu) =>
+        this.therapeuticUseRepo.create({
+          productId: saved.id,
+          therapeuticUseId: tu.therapeuticUseId,
+        }),
+      );
+      await this.therapeuticUseRepo.save(uses);
     }
 
     return this.findOne(saved.id);
@@ -374,6 +397,66 @@ export class ProductsService {
       }))
       .filter((p) => p.totalStock > 0)
       .sort((a, b) => b.totalStock - a.totalStock);
+  }
+
+  // ─── THERAPEUTIC USES ──────────────────────────────────────────────────
+  async addTherapeuticUse(productId: string, therapeuticUseId: string): Promise<ProductTherapeuticUseEntity> {
+    await this.ensureProductExists(productId);
+
+    const exists = await this.therapeuticUseRepo.findOne({
+      where: { productId, therapeuticUseId },
+    });
+    if (exists) throw new ConflictException('Uso terapéutico ya asignado a este producto');
+
+    const use = this.therapeuticUseRepo.create({ productId, therapeuticUseId });
+    return this.therapeuticUseRepo.save(use);
+  }
+
+  async removeTherapeuticUse(productId: string, therapeuticUseId: string): Promise<{ success: boolean }> {
+    const use = await this.therapeuticUseRepo.findOne({ where: { productId, therapeuticUseId } });
+    if (!use) throw new NotFoundException('Uso terapéutico no asignado a este producto');
+    await this.therapeuticUseRepo.remove(use);
+    return { success: true };
+  }
+
+  // ─── PURCHASE HISTORY ──────────────────────────────────────────────────
+  async getPurchaseHistory(
+    productId: string,
+    query: { from?: string; to?: string; supplierId?: string },
+  ): Promise<any[]> {
+    await this.ensureProductExists(productId);
+
+    const qb = this.goodsReceiptItemRepo
+      .createQueryBuilder('ri')
+      .innerJoin('goods_receipts', 'r', 'r.id = ri.receipt_id')
+      .leftJoin('suppliers', 's', 's.id = r.supplier_id')
+      .select([
+        'ri.id AS "itemId"',
+        'ri.receipt_id AS "receiptId"',
+        'ri.quantity AS "quantity"',
+        'ri.unit_cost_usd AS "unitCostUsd"',
+        'ri.sale_price AS "salePrice"',
+        'ri.lot_number AS "lotNumber"',
+        'ri.expiration_date AS "expirationDate"',
+        'ri.created_at AS "createdAt"',
+        'r.receipt_number AS "receiptNumber"',
+        'r.receipt_date AS "receiptDate"',
+        'r.receipt_type AS "receiptType"',
+        'r.supplier_invoice_number AS "supplierInvoiceNumber"',
+        'r.branch_id AS "branchId"',
+        'r.purchase_order_id AS "purchaseOrderId"',
+        's.id AS "supplierId"',
+        's.rif AS "supplierRif"',
+        's.business_name AS "supplierBusinessName"',
+        's.trade_name AS "supplierTradeName"',
+      ])
+      .where('ri.product_id = :productId', { productId });
+
+    if (query.supplierId) qb.andWhere('r.supplier_id = :supplierId', { supplierId: query.supplierId });
+    if (query.from) qb.andWhere('r.receipt_date >= :from', { from: query.from });
+    if (query.to) qb.andWhere('r.receipt_date <= :to', { to: query.to });
+
+    return qb.orderBy('r.receipt_date', 'DESC').addOrderBy('ri.created_at', 'DESC').getRawMany();
   }
 
   // ─── HELPERS ───────────────────────────────────────────────────────────

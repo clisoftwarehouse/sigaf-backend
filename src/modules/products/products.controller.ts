@@ -86,6 +86,39 @@ export class ProductsController {
     return this.productsService.getSubstitutes(id);
   }
 
+  // ─── THERAPEUTIC USES ──────────────────────────────────────────────────
+
+  @Post(':id/therapeutic-uses/:therapeuticUseId')
+  @ApiOperation({ summary: 'Asignar uso terapéutico a producto' })
+  addTherapeuticUse(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('therapeuticUseId', ParseUUIDPipe) therapeuticUseId: string,
+  ) {
+    return this.productsService.addTherapeuticUse(id, therapeuticUseId);
+  }
+
+  @Delete(':id/therapeutic-uses/:therapeuticUseId')
+  @ApiOperation({ summary: 'Quitar uso terapéutico de producto' })
+  removeTherapeuticUse(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('therapeuticUseId', ParseUUIDPipe) therapeuticUseId: string,
+  ) {
+    return this.productsService.removeTherapeuticUse(id, therapeuticUseId);
+  }
+
+  // ─── PURCHASE HISTORY ──────────────────────────────────────────────────
+
+  @Get(':id/purchase-history')
+  @ApiOperation({ summary: 'Historial de compras del producto (proveedor, fecha, lote, costo)' })
+  getPurchaseHistory(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('supplierId') supplierId?: string,
+  ) {
+    return this.productsService.getPurchaseHistory(id, { from, to, supplierId });
+  }
+
   // ─── BARCODES ──────────────────────────────────────────────────────────
 
   @Get(':id/barcodes')

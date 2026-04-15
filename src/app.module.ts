@@ -32,6 +32,7 @@ import { ConsignmentsModule } from './modules/consignments/consignments.module';
 import { ConfigGlobalModule } from './modules/config-global/config-global.module';
 import { ExchangeRatesModule } from './modules/exchange-rates/exchange-rates.module';
 import { ActiveIngredientsModule } from './modules/active-ingredients/active-ingredients.module';
+import { TherapeuticUsesModule } from './modules/therapeutic-uses/therapeutic-uses.module';
 
 const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
   useClass: TypeOrmConfigService,
@@ -90,6 +91,7 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     PurchasesModule,
     ConsignmentsModule,
     ActiveIngredientsModule,
+    TherapeuticUsesModule,
     PermissionsModule,
     RolesModule,
   ],
