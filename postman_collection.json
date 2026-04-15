@@ -78,6 +78,14 @@
       "value": ""
     },
     {
+      "key": "inventoryCountId",
+      "value": ""
+    },
+    {
+      "key": "inventoryCountItemId",
+      "value": ""
+    },
+    {
       "key": "purchaseOrderId",
       "value": ""
     },
@@ -2586,6 +2594,317 @@
                   "value": "20"
                 }
               ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "14B. INVENTORY COUNTS - Tomas de Inventario (Full/Partial/Cycle)",
+      "item": [
+        {
+          "name": "14B.1 Create Count - FULL (toma total del almacén)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(json.id).to.be.a('string'));",
+                  "pm.test('Has items', () => pm.expect(json.items).to.be.an('array'));",
+                  "pm.test('countType is full', () => pm.expect(json.countType).to.eql('full'));",
+                  "if(json.id) pm.collectionVariables.set('inventoryCountId', json.id);",
+                  "if(json.items && json.items[0]) pm.collectionVariables.set('inventoryCountItemId', json.items[0].id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branchId\": \"{{branchId}}\",\n  \"countType\": \"full\",\n  \"notes\": \"Toma total de fin de mes\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory/counts",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "counts"]
+            }
+          }
+        },
+        {
+          "name": "14B.2 Create Count - PARTIAL (por categoría/ubicación/productos)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "pm.test('countType is partial', () => pm.expect(json.countType).to.eql('partial'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branchId\": \"{{branchId}}\",\n  \"countType\": \"partial\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"notes\": \"Toma parcial por categoría\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory/counts",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "counts"]
+            }
+          }
+        },
+        {
+          "name": "14B.3 Create Count - CYCLE (rotación por productos)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "pm.test('countType is cycle', () => pm.expect(json.countType).to.eql('cycle'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branchId\": \"{{branchId}}\",\n  \"countType\": \"cycle\",\n  \"productIds\": [\"{{productId}}\"],\n  \"notes\": \"Conteo cíclico semanal clase A\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory/counts",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "counts"]
+            }
+          }
+        },
+        {
+          "name": "14B.4 List Counts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has data array', () => pm.expect(json.data).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/counts?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "counts"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "branchId", "value": "{{branchId}}", "disabled": true },
+                { "key": "countType", "value": "full", "disabled": true },
+                { "key": "status", "value": "draft", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "14B.5 Get Count Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has items', () => pm.expect(json.items).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/counts/{{inventoryCountId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "counts", "{{inventoryCountId}}"]
+            }
+          }
+        },
+        {
+          "name": "14B.6 Update Count Item (registrar cantidad contada)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Difference computed', () => pm.expect(json.difference).to.not.be.null);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"countedQuantity\": 98\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory/counts/{{inventoryCountId}}/items/{{inventoryCountItemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "counts", "{{inventoryCountId}}", "items", "{{inventoryCountItemId}}"]
+            }
+          }
+        },
+        {
+          "name": "14B.7 Bulk Update Count Items",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"itemId\": \"{{inventoryCountItemId}}\", \"countedQuantity\": 98 }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory/counts/{{inventoryCountId}}/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "counts", "{{inventoryCountId}}", "items"]
+            }
+          }
+        },
+        {
+          "name": "14B.8 Complete Count",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Status completed', () => pm.expect(pm.response.json().status).to.eql('completed'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/counts/{{inventoryCountId}}/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "counts", "{{inventoryCountId}}", "complete"]
+            }
+          }
+        },
+        {
+          "name": "14B.9 Approve Count (genera ajustes + kardex)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Status approved', () => pm.expect(pm.response.json().status).to.eql('approved'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"justification\": \"Diferencias verificadas físicamente por supervisor de turno\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory/counts/{{inventoryCountId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "counts", "{{inventoryCountId}}", "approve"]
+            }
+          }
+        },
+        {
+          "name": "14B.10 Cancel Count",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Status cancelled', () => pm.expect(pm.response.json().status).to.eql('cancelled'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Cancelada por inicio erróneo de la toma\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory/counts/{{inventoryCountId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "counts", "{{inventoryCountId}}", "cancel"]
             }
           }
         }

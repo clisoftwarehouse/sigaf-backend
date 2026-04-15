@@ -6,11 +6,17 @@ import { InventoryService } from './inventory.service';
 import {
   QueryStockDto,
   QueryKardexDto,
+  CancelCountDto,
+  ApproveCountDto,
   QuarantineLotDto,
   CreateAdjustmentDto,
+  CountItemUpdateDto,
   QueryInventoryLotDto,
   CreateInventoryLotDto,
   UpdateInventoryLotDto,
+  BulkUpdateCountItemsDto,
+  QueryInventoryCountDto,
+  CreateInventoryCountDto,
 } from './dto';
 
 @ApiTags('Inventory')
@@ -77,5 +83,70 @@ export class InventoryController {
   @ApiOperation({ summary: 'Consultar kardex (movimientos inmutables)' })
   findKardex(@Query() query: QueryKardexDto) {
     return this.inventoryService.findKardex(query);
+  }
+
+  @Post('counts')
+  @ApiOperation({ summary: 'Crear toma de inventario (full / partial / cycle)' })
+  createCount(@Body() dto: CreateInventoryCountDto, @Request() req: { user: { id: string } }) {
+    return this.inventoryService.createCount(dto, req.user?.id || 'system');
+  }
+
+  @Get('counts')
+  @ApiOperation({ summary: 'Listar tomas de inventario con filtros y paginación' })
+  findAllCounts(@Query() query: QueryInventoryCountDto) {
+    return this.inventoryService.findAllCounts(query);
+  }
+
+  @Get('counts/:id')
+  @ApiOperation({ summary: 'Obtener detalle de toma (con items)' })
+  findOneCount(@Param('id', ParseUUIDPipe) id: string) {
+    return this.inventoryService.findOneCount(id);
+  }
+
+  @Put('counts/:id/items/:itemId')
+  @ApiOperation({ summary: 'Registrar cantidad contada para un item' })
+  updateCountItem(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('itemId', ParseUUIDPipe) itemId: string,
+    @Body() dto: CountItemUpdateDto,
+    @Request() req: { user: { id: string } },
+  ) {
+    return this.inventoryService.updateCountItem(id, itemId, dto, req.user?.id || 'system');
+  }
+
+  @Put('counts/:id/items')
+  @ApiOperation({ summary: 'Registrar cantidades contadas en lote' })
+  bulkUpdateCountItems(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: BulkUpdateCountItemsDto,
+    @Request() req: { user: { id: string } },
+  ) {
+    return this.inventoryService.bulkUpdateCountItems(id, dto, req.user?.id || 'system');
+  }
+
+  @Post('counts/:id/complete')
+  @ApiOperation({ summary: 'Marcar toma como completada (todos los items contados)' })
+  completeCount(@Param('id', ParseUUIDPipe) id: string, @Request() req: { user: { id: string } }) {
+    return this.inventoryService.completeCount(id, req.user?.id || 'system');
+  }
+
+  @Post('counts/:id/approve')
+  @ApiOperation({ summary: 'Aprobar toma — genera ajustes y mueve kardex' })
+  approveCount(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ApproveCountDto,
+    @Request() req: { user: { id: string } },
+  ) {
+    return this.inventoryService.approveCount(id, dto, req.user?.id || 'system');
+  }
+
+  @Post('counts/:id/cancel')
+  @ApiOperation({ summary: 'Cancelar toma de inventario' })
+  cancelCount(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CancelCountDto,
+    @Request() req: { user: { id: string } },
+  ) {
+    return this.inventoryService.cancelCount(id, dto, req.user?.id || 'system');
   }
 }
