@@ -1,27 +1,33 @@
-import { IsNull, DataSource, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { IsNull, DataSource, Repository } from 'typeorm';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 
 import { AuditService } from '../audit/audit.service';
-import { ProductEntity } from '../products/infrastructure/persistence/relational/entities/product.entity';
 import { KardexEntity } from './infrastructure/persistence/relational/entities/kardex.entity';
+import { ProductEntity } from '../products/infrastructure/persistence/relational/entities/product.entity';
 import { InventoryLotEntity } from './infrastructure/persistence/relational/entities/inventory-lot.entity';
 import { InventoryCountEntity } from './infrastructure/persistence/relational/entities/inventory-count.entity';
 import { InventoryCountItemEntity } from './infrastructure/persistence/relational/entities/inventory-count-item.entity';
+import { InventoryCyclicScheduleEntity } from './infrastructure/persistence/relational/entities/inventory-cyclic-schedule.entity';
 import {
   QueryStockDto,
   QueryKardexDto,
   CancelCountDto,
+  RecountItemDto,
   ApproveCountDto,
+  QueryAccuracyDto,
   QuarantineLotDto,
-  CreateAdjustmentDto,
   CountItemUpdateDto,
+  CreateAdjustmentDto,
   QueryInventoryLotDto,
   CreateInventoryLotDto,
   UpdateInventoryLotDto,
-  BulkUpdateCountItemsDto,
   QueryInventoryCountDto,
+  QueryCyclicScheduleDto,
+  BulkUpdateCountItemsDto,
   CreateInventoryCountDto,
+  CreateCyclicScheduleDto,
+  UpdateCyclicScheduleDto,
 } from './dto';
 
 export interface ExpirySignalLot {
@@ -63,6 +69,8 @@ export class InventoryService {
     private readonly countRepo: Repository<InventoryCountEntity>,
     @InjectRepository(InventoryCountItemEntity)
     private readonly countItemRepo: Repository<InventoryCountItemEntity>,
+    @InjectRepository(InventoryCyclicScheduleEntity)
+    private readonly cyclicScheduleRepo: Repository<InventoryCyclicScheduleEntity>,
     @InjectRepository(ProductEntity)
     private readonly productRepo: Repository<ProductEntity>,
     private readonly dataSource: DataSource,
@@ -323,10 +331,176 @@ export class InventoryService {
     return { data, total, page, limit };
   }
 
-  async createCount(
-    dto: CreateInventoryCountDto,
+  async startCount(countId: string, userId: string): Promise<InventoryCountEntity> {
+    const count = await this.countRepo.findOne({ where: { id: countId } });
+    if (!count) throw new NotFoundException('Toma no encontrada');
+    if (count.status !== 'draft') {
+      throw new BadRequestException(`No se puede iniciar una toma en estado '${count.status}'`);
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      count.status = 'in_progress';
+      count.startedAt = new Date();
+
+      if (count.blocksSales) {
+        const productIds = await manager
+          .createQueryBuilder(InventoryCountItemEntity, 'item')
+          .select('DISTINCT item.productId', 'productId')
+          .where('item.countId = :countId', { countId })
+          .getRawMany<{ productId: string }>();
+
+        if (productIds.length > 0) {
+          await manager
+            .createQueryBuilder()
+            .update(ProductEntity)
+            .set({ inventoryBlocked: true })
+            .whereInIds(productIds.map((p) => p.productId))
+            .execute();
+        }
+        count.blockedAt = new Date();
+      }
+
+      const saved = await manager.save(count);
+
+      await this.auditService.log({
+        tableName: 'inventory_counts',
+        recordId: count.id,
+        action: 'UPDATE',
+        newValues: { status: 'in_progress', startedAt: count.startedAt, blockedAt: count.blockedAt },
+        userId,
+      });
+
+      return saved;
+    });
+  }
+
+  async recountCountItem(
+    countId: string,
+    itemId: string,
+    dto: RecountItemDto,
     userId: string,
-  ): Promise<InventoryCountWithItems> {
+  ): Promise<InventoryCountItemEntity> {
+    const count = await this.countRepo.findOne({ where: { id: countId } });
+    if (!count) throw new NotFoundException('Toma no encontrada');
+    if (!['in_progress', 'completed'].includes(count.status)) {
+      throw new BadRequestException(`No se puede recontar en estado '${count.status}'`);
+    }
+
+    const item = await this.countItemRepo.findOne({ where: { id: itemId, countId } });
+    if (!item) throw new NotFoundException('Item de toma no encontrado');
+
+    item.countedQuantity = null;
+    item.countedLotNumber = null;
+    item.countedExpirationDate = null;
+    item.difference = null;
+    item.differenceType = null;
+    item.countedBy = null;
+    item.countedAt = null;
+    item.isRecounted = true;
+    item.recountReason = dto.recountReason;
+
+    const saved = await this.countItemRepo.save(item);
+
+    if (count.status === 'completed') {
+      count.status = 'in_progress';
+      await this.countRepo.save(count);
+    }
+
+    await this.auditService.log({
+      tableName: 'inventory_count_items',
+      recordId: itemId,
+      action: 'UPDATE',
+      newValues: { isRecounted: true },
+      justification: dto.recountReason,
+      userId,
+    });
+
+    return saved;
+  }
+
+  async findCyclicSchedules(query: QueryCyclicScheduleDto): Promise<InventoryCyclicScheduleEntity[]> {
+    const qb = this.cyclicScheduleRepo.createQueryBuilder('s');
+    if (query.branchId) qb.andWhere('s.branchId = :branchId', { branchId: query.branchId });
+    if (query.isActive !== undefined) qb.andWhere('s.isActive = :isActive', { isActive: query.isActive });
+    return qb.orderBy('s.createdAt', 'DESC').getMany();
+  }
+
+  async createCyclicSchedule(dto: CreateCyclicScheduleDto, userId: string): Promise<InventoryCyclicScheduleEntity> {
+    const frequencyDays = dto.frequencyDays ?? 7;
+    const schedule = this.cyclicScheduleRepo.create({
+      branchId: dto.branchId,
+      name: dto.name,
+      abcClasses: dto.abcClasses,
+      riskLevels: dto.riskLevels ?? null,
+      frequencyDays,
+      maxSkusPerCount: dto.maxSkusPerCount ?? 50,
+      autoGenerate: dto.autoGenerate ?? true,
+      isActive: dto.isActive ?? true,
+      nextGenerationAt: this.addDays(new Date(), frequencyDays),
+      createdBy: userId,
+    });
+    return this.cyclicScheduleRepo.save(schedule);
+  }
+
+  async updateCyclicSchedule(id: string, dto: UpdateCyclicScheduleDto): Promise<InventoryCyclicScheduleEntity> {
+    const schedule = await this.cyclicScheduleRepo.findOne({ where: { id } });
+    if (!schedule) throw new NotFoundException('Programa cíclico no encontrado');
+
+    if (dto.branchId !== undefined) schedule.branchId = dto.branchId;
+    if (dto.name !== undefined) schedule.name = dto.name;
+    if (dto.abcClasses !== undefined) schedule.abcClasses = dto.abcClasses;
+    if (dto.riskLevels !== undefined) schedule.riskLevels = dto.riskLevels;
+    if (dto.frequencyDays !== undefined) schedule.frequencyDays = dto.frequencyDays;
+    if (dto.maxSkusPerCount !== undefined) schedule.maxSkusPerCount = dto.maxSkusPerCount;
+    if (dto.autoGenerate !== undefined) schedule.autoGenerate = dto.autoGenerate;
+    if (dto.isActive !== undefined) schedule.isActive = dto.isActive;
+
+    return this.cyclicScheduleRepo.save(schedule);
+  }
+
+  async getAccuracy(query: QueryAccuracyDto): Promise<{
+    avgAccuracyPct: number;
+    totalCounts: number;
+    totalAdjustments: number;
+    trend: Array<{ date: string; accuracyPct: number }>;
+  }> {
+    const qb = this.countRepo
+      .createQueryBuilder('c')
+      .where("c.status = 'approved'")
+      .andWhere('c.accuracyPct IS NOT NULL');
+
+    if (query.branchId) qb.andWhere('c.branchId = :branchId', { branchId: query.branchId });
+    if (query.from) qb.andWhere('c.completedAt >= :from', { from: new Date(query.from) });
+    if (query.to) qb.andWhere('c.completedAt <= :to', { to: new Date(query.to) });
+
+    const counts = await qb.orderBy('c.completedAt', 'ASC').getMany();
+
+    const totalCounts = counts.length;
+    const avgAccuracyPct =
+      totalCounts === 0
+        ? 0
+        : Number((counts.reduce((sum, c) => sum + Number(c.accuracyPct ?? 0), 0) / totalCounts).toFixed(2));
+
+    const totalAdjustments = counts.reduce(
+      (sum, c) => sum + Number(c.totalSkusOver ?? 0) + Number(c.totalSkusShort ?? 0),
+      0,
+    );
+
+    const trend = counts.map((c) => ({
+      date: (c.completedAt ?? c.createdAt).toISOString().slice(0, 10),
+      accuracyPct: Number(c.accuracyPct ?? 0),
+    }));
+
+    return { avgAccuracyPct, totalCounts, totalAdjustments, trend };
+  }
+
+  private addDays(date: Date, days: number): Date {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+  }
+
+  async createCount(dto: CreateInventoryCountDto, userId: string): Promise<InventoryCountWithItems> {
     if (dto.countType === 'cycle' && (!dto.productIds || dto.productIds.length === 0)) {
       throw new BadRequestException('Una toma cíclica requiere al menos un productId');
     }
@@ -336,7 +510,9 @@ export class InventoryService {
       !dto.locationId &&
       (!dto.productIds || dto.productIds.length === 0)
     ) {
-      throw new BadRequestException('Una toma parcial requiere al menos un filtro (categoryId, locationId o productIds)');
+      throw new BadRequestException(
+        'Una toma parcial requiere al menos un filtro (categoryId, locationId o productIds)',
+      );
     }
 
     const lotsQb = this.lotRepo
@@ -391,12 +567,19 @@ export class InventoryService {
           countId: savedCount.id,
           productId: lot.productId,
           lotId: lot.id,
+          locationId: lot.locationId ?? null,
+          expectedQuantity: Number(lot.quantityAvailable),
+          expectedLotNumber: lot.lotNumber,
+          expectedExpirationDate: lot.expirationDate,
           systemQuantity: Number(lot.quantityAvailable),
           countedQuantity: null,
           difference: null,
         }),
       );
       const savedItems = await manager.save(items);
+
+      savedCount.totalSkusExpected = savedItems.length;
+      await manager.save(savedCount);
 
       await this.auditService.log({
         tableName: 'inventory_counts',
@@ -453,7 +636,9 @@ export class InventoryService {
     if (!item) throw new NotFoundException('Item de toma no encontrado');
 
     item.countedQuantity = dto.countedQuantity;
-    item.difference = Number((dto.countedQuantity - Number(item.systemQuantity)).toFixed(3));
+    const diff = Number((dto.countedQuantity - Number(item.systemQuantity)).toFixed(3));
+    item.difference = diff;
+    item.differenceType = diff === 0 ? 'match' : diff > 0 ? 'over' : 'short';
     item.countedBy = userId;
     item.countedAt = new Date();
     const saved = await this.countItemRepo.save(item);
@@ -473,7 +658,9 @@ export class InventoryService {
   ): Promise<InventoryCountItemEntity[]> {
     const results: InventoryCountItemEntity[] = [];
     for (const entry of dto.items) {
-      results.push(await this.updateCountItem(countId, entry.itemId, { countedQuantity: entry.countedQuantity }, userId));
+      results.push(
+        await this.updateCountItem(countId, entry.itemId, { countedQuantity: entry.countedQuantity }, userId),
+      );
     }
     return results;
   }
@@ -490,14 +677,32 @@ export class InventoryService {
       throw new BadRequestException(`Aún faltan ${pending} items por contar`);
     }
 
+    const items = await this.countItemRepo.find({ where: { countId } });
+    const matched = items.filter((i) => i.differenceType === 'match').length;
+    const over = items.filter((i) => i.differenceType === 'over').length;
+    const short = items.filter((i) => i.differenceType === 'short').length;
+    const counted = items.length;
+
     count.status = 'completed';
+    count.completedAt = new Date();
+    count.totalSkusCounted = counted;
+    count.totalSkusMatched = matched;
+    count.totalSkusOver = over;
+    count.totalSkusShort = short;
+    count.accuracyPct = counted === 0 ? 0 : Number(((matched / counted) * 100).toFixed(2));
     const saved = await this.countRepo.save(count);
 
     await this.auditService.log({
       tableName: 'inventory_counts',
       recordId: count.id,
       action: 'UPDATE',
-      newValues: { status: 'completed' },
+      newValues: {
+        status: 'completed',
+        totalSkusMatched: matched,
+        totalSkusOver: over,
+        totalSkusShort: short,
+        accuracyPct: count.accuracyPct,
+      },
       userId,
     });
 
@@ -553,6 +758,20 @@ export class InventoryService {
       count.status = 'approved';
       count.approvedBy = userId;
       count.approvedAt = new Date();
+
+      if (count.blocksSales && count.blockedAt && !count.unblockedAt) {
+        const productIds = items.map((i) => i.productId);
+        if (productIds.length > 0) {
+          await manager
+            .createQueryBuilder()
+            .update(ProductEntity)
+            .set({ inventoryBlocked: false })
+            .whereInIds(productIds)
+            .execute();
+        }
+        count.unblockedAt = new Date();
+      }
+
       const saved = await manager.save(count);
 
       await this.auditService.log({
@@ -575,19 +794,36 @@ export class InventoryService {
       throw new BadRequestException(`No se puede cancelar una toma en estado '${count.status}'`);
     }
 
-    count.status = 'cancelled';
-    const saved = await this.countRepo.save(count);
+    return this.dataSource.transaction(async (manager) => {
+      count.status = 'cancelled';
 
-    await this.auditService.log({
-      tableName: 'inventory_counts',
-      recordId: count.id,
-      action: 'UPDATE',
-      newValues: { status: 'cancelled' },
-      justification: dto.reason,
-      userId,
+      if (count.blocksSales && count.blockedAt && !count.unblockedAt) {
+        const items = await manager.find(InventoryCountItemEntity, { where: { countId } });
+        const productIds = items.map((i) => i.productId);
+        if (productIds.length > 0) {
+          await manager
+            .createQueryBuilder()
+            .update(ProductEntity)
+            .set({ inventoryBlocked: false })
+            .whereInIds(productIds)
+            .execute();
+        }
+        count.unblockedAt = new Date();
+      }
+
+      const saved = await manager.save(count);
+
+      await this.auditService.log({
+        tableName: 'inventory_counts',
+        recordId: count.id,
+        action: 'UPDATE',
+        newValues: { status: 'cancelled' },
+        justification: dto.reason,
+        userId,
+      });
+
+      return saved;
     });
-
-    return saved;
   }
 
   private async generateCountNumber(): Promise<string> {

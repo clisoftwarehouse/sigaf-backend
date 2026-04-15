@@ -22,6 +22,54 @@ export class InventoryCountEntity extends EntityRelationalHelper {
   @Column('date', { name: 'count_date', default: () => 'CURRENT_DATE' })
   countDate: Date;
 
+  @Column('text', { name: 'scope_description', nullable: true })
+  scopeDescription: string | null;
+
+  @Column('uuid', { name: 'scope_category_id', nullable: true })
+  scopeCategoryId: string | null;
+
+  @Column('uuid', { name: 'scope_location_ids', array: true, nullable: true })
+  scopeLocationIds: string[] | null;
+
+  @Column('char', { name: 'scope_abc_classes', array: true, length: 1, nullable: true })
+  scopeAbcClasses: string[] | null;
+
+  @Column('varchar', { name: 'scope_risk_levels', array: true, length: 10, nullable: true })
+  scopeRiskLevels: string[] | null;
+
+  @Column('boolean', { name: 'blocks_sales', default: false })
+  blocksSales: boolean;
+
+  @Column('timestamptz', { name: 'blocked_at', nullable: true })
+  blockedAt: Date | null;
+
+  @Column('timestamptz', { name: 'unblocked_at', nullable: true })
+  unblockedAt: Date | null;
+
+  @Column('integer', { name: 'total_skus_expected', nullable: true })
+  totalSkusExpected: number | null;
+
+  @Column('integer', { name: 'total_skus_counted', nullable: true })
+  totalSkusCounted: number | null;
+
+  @Column('integer', { name: 'total_skus_matched', nullable: true })
+  totalSkusMatched: number | null;
+
+  @Column('integer', { name: 'total_skus_over', nullable: true })
+  totalSkusOver: number | null;
+
+  @Column('integer', { name: 'total_skus_short', nullable: true })
+  totalSkusShort: number | null;
+
+  @Column('decimal', { name: 'accuracy_pct', precision: 5, scale: 2, nullable: true })
+  accuracyPct: number | null;
+
+  @Column('timestamptz', { name: 'started_at', nullable: true })
+  startedAt: Date | null;
+
+  @Column('timestamptz', { name: 'completed_at', nullable: true })
+  completedAt: Date | null;
+
   @Column('text', { nullable: true })
   notes: string | null;
 

@@ -120,6 +120,22 @@
     {
       "key": "therapeuticUseId2",
       "value": ""
+    },
+    {
+      "key": "supplierProductId",
+      "value": ""
+    },
+    {
+      "key": "supplierContactId",
+      "value": ""
+    },
+    {
+      "key": "newRoleId",
+      "value": ""
+    },
+    {
+      "key": "cyclicScheduleId",
+      "value": ""
     }
   ],
   "item": [
@@ -280,6 +296,69 @@
               "path": [
                 "roles"
               ]
+            }
+          }
+        },
+        {
+          "name": "2.2 Create Role",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var status = pm.response.code;",
+                  "pm.test('Created or already exists', () => pm.expect(status).to.be.oneOf([201, 409]));",
+                  "if (status === 201) {",
+                  "  var json = pm.response.json();",
+                  "  if (json.id) pm.collectionVariables.set('newRoleId', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"supervisor\",\n  \"description\": \"Supervisor de turno\",\n  \"permissionIds\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles"]
+            }
+          }
+        },
+        {
+          "name": "2.3 Update Role",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Supervisor de turno actualizado\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{newRoleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "{{newRoleId}}"]
             }
           }
         }
@@ -1055,7 +1134,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Bayer\",\n  \"isLaboratory\": true\n}"
+              "raw": "{\n  \"name\": \"Bayer\",\n  \"isLaboratory\": true,\n  \"rif\": \"J-30001234-5\",\n  \"businessName\": \"Bayer Venezuela C.A.\",\n  \"address\": \"Caracas, Venezuela\",\n  \"phone\": \"0212-1234567\",\n  \"email\": \"info@bayer.com.ve\",\n  \"countryOfOrigin\": \"Alemania\",\n  \"brandType\": \"pharma\",\n  \"isImporter\": true,\n  \"isManufacturer\": false,\n  \"taxRegime\": \"contribuyente_especial\",\n  \"website\": \"https://www.bayer.com\",\n  \"regulatoryCode\": \"REG-2023-001\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/brands",
@@ -1097,6 +1176,34 @@
               "path": [
                 "brands"
               ]
+            }
+          }
+        },
+        {
+          "name": "9.3 Update Brand (datos fiscales)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"taxRegime\": \"contribuyente_ordinario\",\n  \"website\": \"https://www.bayer.com.ve\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/brands/{{brandId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["brands", "{{brandId}}"]
             }
           }
         }
@@ -1573,6 +1680,256 @@
               "path": [
                 "suppliers"
               ]
+            }
+          }
+        },
+        {
+          "name": "11.3 Add Supplier Product",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "var pid = pm.collectionVariables.get('productId');",
+                  "if (!pid) {",
+                  "  var baseUrl = pm.collectionVariables.get('baseUrl');",
+                  "  var token = pm.collectionVariables.get('accessToken');",
+                  "  pm.sendRequest({",
+                  "    url: baseUrl + '/products?limit=1',",
+                  "    method: 'GET',",
+                  "    header: { 'Authorization': 'Bearer ' + token }",
+                  "  }, function (err, res) {",
+                  "    if (err) { console.log('prerequest products fetch error', err); return; }",
+                  "    try {",
+                  "      var body = res.json();",
+                  "      var list = Array.isArray(body) ? body : (body.data || body.items || []);",
+                  "      if (list.length && list[0].id) {",
+                  "        pm.collectionVariables.set('productId', list[0].id);",
+                  "        console.log('productId auto-set to', list[0].id);",
+                  "      }",
+                  "    } catch (e) { console.log('prerequest parse error', e); }",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var status = pm.response.code;",
+                  "pm.test('Created or already exists', () => pm.expect(status).to.be.oneOf([201, 409]));",
+                  "if (status === 201) {",
+                  "  var json = pm.response.json();",
+                  "  if (json.id) pm.collectionVariables.set('supplierProductId', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"supplierSku\": \"DFA-001\",\n  \"costUsd\": 12.50,\n  \"discountPct\": 5,\n  \"isAvailable\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/suppliers/{{supplierId}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["suppliers", "{{supplierId}}", "products"]
+            }
+          }
+        },
+        {
+          "name": "11.4 Get Supplier Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/suppliers/{{supplierId}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["suppliers", "{{supplierId}}", "products"]
+            }
+          }
+        },
+        {
+          "name": "11.5 Update Supplier Product (cambia costo, preserva lastCostUsd)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "var spId = pm.collectionVariables.get('supplierProductId');",
+                  "if (!spId) {",
+                  "  var baseUrl = pm.collectionVariables.get('baseUrl');",
+                  "  var token = pm.collectionVariables.get('accessToken');",
+                  "  var supplierId = pm.collectionVariables.get('supplierId');",
+                  "  if (!supplierId) { console.log('supplierId is empty - run 11.1 Create Supplier first'); return; }",
+                  "  pm.sendRequest({",
+                  "    url: baseUrl + '/suppliers/' + supplierId + '/products',",
+                  "    method: 'GET',",
+                  "    header: { 'Authorization': 'Bearer ' + token }",
+                  "  }, function (err, res) {",
+                  "    if (err) { console.log('prerequest supplier products fetch error', err); return; }",
+                  "    try {",
+                  "      var body = res.json();",
+                  "      var list = Array.isArray(body) ? body : (body.data || body.items || []);",
+                  "      if (list.length && list[0].id) {",
+                  "        pm.collectionVariables.set('supplierProductId', list[0].id);",
+                  "        console.log('supplierProductId auto-set to', list[0].id);",
+                  "      }",
+                  "    } catch (e) { console.log('prerequest parse error', e); }",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"costUsd\": 13.75,\n  \"discountPct\": 7\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/suppliers/{{supplierId}}/products/{{supplierProductId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["suppliers", "{{supplierId}}", "products", "{{supplierProductId}}"]
+            }
+          }
+        },
+        {
+          "name": "11.6 Add Supplier Contact",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('supplierContactId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"María Pérez\",\n  \"role\": \"Gerente de Ventas\",\n  \"department\": \"Comercial\",\n  \"email\": \"maria.perez@dfa.com\",\n  \"phone\": \"0212-9876543\",\n  \"mobile\": \"+58412-1234567\",\n  \"isPrimary\": true,\n  \"notes\": \"Atención preferencial para pedidos urgentes\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/suppliers/{{supplierId}}/contacts",
+              "host": ["{{baseUrl}}"],
+              "path": ["suppliers", "{{supplierId}}", "contacts"]
+            }
+          }
+        },
+        {
+          "name": "11.7 Get Supplier Contacts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/suppliers/{{supplierId}}/contacts",
+              "host": ["{{baseUrl}}"],
+              "path": ["suppliers", "{{supplierId}}", "contacts"]
+            }
+          }
+        },
+        {
+          "name": "11.8 Update Supplier Contact",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"Gerente Comercial Senior\",\n  \"mobile\": \"+58412-7654321\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/suppliers/{{supplierId}}/contacts/{{supplierContactId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["suppliers", "{{supplierId}}", "contacts", "{{supplierContactId}}"]
+            }
+          }
+        },
+        {
+          "name": "11.9 Delete Supplier Contact",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/suppliers/{{supplierId}}/contacts/{{supplierContactId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["suppliers", "{{supplierId}}", "contacts", "{{supplierContactId}}"]
             }
           }
         }
@@ -2760,6 +3117,30 @@
           }
         },
         {
+          "name": "14B.5b Start Count (draft → in_progress)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status in_progress', () => pm.expect(pm.response.json().status).to.eql('in_progress'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/counts/{{inventoryCountId}}/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "counts", "{{inventoryCountId}}", "start"]
+            }
+          }
+        },
+        {
           "name": "14B.6 Update Count Item (registrar cantidad contada)",
           "event": [
             {
@@ -2905,6 +3286,148 @@
               "raw": "{{baseUrl}}/inventory/counts/{{inventoryCountId}}/cancel",
               "host": ["{{baseUrl}}"],
               "path": ["inventory", "counts", "{{inventoryCountId}}", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "14B.11 Recount Item (limpia conteo previo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recountReason\": \"Diferencia mayor al 5%, requiere segundo conteo\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory/counts/{{inventoryCountId}}/items/{{inventoryCountItemId}}/recount",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "counts", "{{inventoryCountId}}", "items", "{{inventoryCountItemId}}", "recount"]
+            }
+          }
+        },
+        {
+          "name": "14B.12 Get Counts Accuracy (métricas)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/counts/accuracy",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "counts", "accuracy"],
+              "query": [
+                { "key": "branchId", "value": "{{branchId}}", "disabled": true },
+                { "key": "from", "value": "2026-01-01", "disabled": true },
+                { "key": "to", "value": "2026-12-31", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "14B.13 Create Cyclic Schedule (clase A semanal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('cyclicScheduleId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branchId\": \"{{branchId}}\",\n  \"name\": \"Conteo cíclico clase A semanal\",\n  \"abcClasses\": [\"A\"],\n  \"riskLevels\": [\"critical\"],\n  \"frequencyDays\": 7,\n  \"maxSkusPerCount\": 50,\n  \"autoGenerate\": true,\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory/counts/cyclic-schedules",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "counts", "cyclic-schedules"]
+            }
+          }
+        },
+        {
+          "name": "14B.14 Get Cyclic Schedules",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/counts/cyclic-schedules",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "counts", "cyclic-schedules"],
+              "query": [
+                { "key": "branchId", "value": "{{branchId}}", "disabled": true },
+                { "key": "isActive", "value": "true", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "14B.15 Update Cyclic Schedule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"frequencyDays\": 14,\n  \"maxSkusPerCount\": 80\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory/counts/cyclic-schedules/{{cyclicScheduleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "counts", "cyclic-schedules", "{{cyclicScheduleId}}"]
             }
           }
         }
@@ -3685,6 +4208,46 @@
               "path": [
                 "exchange-rates",
                 "latest"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "17b. AUDIT LOG",
+      "item": [
+        {
+          "name": "17b.1 Get Audit Log",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has data array', () => pm.expect(json.data).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/audit-log?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["audit-log"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "tableName", "value": "products", "disabled": true },
+                { "key": "recordId", "value": "{{productId}}", "disabled": true },
+                { "key": "action", "value": "UPDATE", "disabled": true },
+                { "key": "userId", "value": "{{newUserId}}", "disabled": true },
+                { "key": "from", "value": "2026-01-01", "disabled": true },
+                { "key": "to", "value": "2026-12-31", "disabled": true }
               ]
             }
           }

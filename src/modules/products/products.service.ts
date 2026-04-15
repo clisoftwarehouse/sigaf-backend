@@ -8,8 +8,8 @@ import { AddBarcodeDto, QueryProductDto, AddIngredientDto, CreateProductDto, Upd
 import { ProductBarcodeEntity } from './infrastructure/persistence/relational/entities/product-barcode.entity';
 import { ProductSubstituteEntity } from './infrastructure/persistence/relational/entities/product-substitute.entity';
 import { InventoryLotEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/inventory-lot.entity';
-import { ProductActiveIngredientEntity } from './infrastructure/persistence/relational/entities/product-active-ingredient.entity';
 import { ProductTherapeuticUseEntity } from './infrastructure/persistence/relational/entities/product-therapeutic-use.entity';
+import { ProductActiveIngredientEntity } from './infrastructure/persistence/relational/entities/product-active-ingredient.entity';
 import { GoodsReceiptItemEntity } from '@/modules/purchases/infrastructure/persistence/relational/entities/goods-receipt-item.entity';
 
 @Injectable()

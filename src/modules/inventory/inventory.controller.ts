@@ -7,16 +7,21 @@ import {
   QueryStockDto,
   QueryKardexDto,
   CancelCountDto,
+  RecountItemDto,
   ApproveCountDto,
+  QueryAccuracyDto,
   QuarantineLotDto,
-  CreateAdjustmentDto,
   CountItemUpdateDto,
+  CreateAdjustmentDto,
   QueryInventoryLotDto,
   CreateInventoryLotDto,
   UpdateInventoryLotDto,
-  BulkUpdateCountItemsDto,
   QueryInventoryCountDto,
+  QueryCyclicScheduleDto,
+  BulkUpdateCountItemsDto,
   CreateInventoryCountDto,
+  CreateCyclicScheduleDto,
+  UpdateCyclicScheduleDto,
 } from './dto';
 
 @ApiTags('Inventory')
@@ -85,10 +90,40 @@ export class InventoryController {
     return this.inventoryService.findKardex(query);
   }
 
+  @Get('counts/accuracy')
+  @ApiOperation({ summary: 'Métricas de precisión de tomas aprobadas' })
+  getAccuracy(@Query() query: QueryAccuracyDto) {
+    return this.inventoryService.getAccuracy(query);
+  }
+
+  @Get('counts/cyclic-schedules')
+  @ApiOperation({ summary: 'Listar programas de conteo cíclico' })
+  findCyclicSchedules(@Query() query: QueryCyclicScheduleDto) {
+    return this.inventoryService.findCyclicSchedules(query);
+  }
+
+  @Post('counts/cyclic-schedules')
+  @ApiOperation({ summary: 'Crear programa de conteo cíclico (clases ABC / niveles de riesgo)' })
+  createCyclicSchedule(@Body() dto: CreateCyclicScheduleDto, @Request() req: { user: { id: string } }) {
+    return this.inventoryService.createCyclicSchedule(dto, req.user?.id || 'system');
+  }
+
+  @Put('counts/cyclic-schedules/:id')
+  @ApiOperation({ summary: 'Actualizar programa de conteo cíclico' })
+  updateCyclicSchedule(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateCyclicScheduleDto) {
+    return this.inventoryService.updateCyclicSchedule(id, dto);
+  }
+
   @Post('counts')
   @ApiOperation({ summary: 'Crear toma de inventario (full / partial / cycle)' })
   createCount(@Body() dto: CreateInventoryCountDto, @Request() req: { user: { id: string } }) {
     return this.inventoryService.createCount(dto, req.user?.id || 'system');
+  }
+
+  @Put('counts/:id/start')
+  @ApiOperation({ summary: 'Iniciar toma (draft → in_progress, bloquea SKUs si blocksSales)' })
+  startCount(@Param('id', ParseUUIDPipe) id: string, @Request() req: { user: { id: string } }) {
+    return this.inventoryService.startCount(id, req.user?.id || 'system');
   }
 
   @Get('counts')
@@ -122,6 +157,17 @@ export class InventoryController {
     @Request() req: { user: { id: string } },
   ) {
     return this.inventoryService.bulkUpdateCountItems(id, dto, req.user?.id || 'system');
+  }
+
+  @Put('counts/:id/items/:itemId/recount')
+  @ApiOperation({ summary: 'Marcar item para recuento (limpia conteo previo)' })
+  recountCountItem(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('itemId', ParseUUIDPipe) itemId: string,
+    @Body() dto: RecountItemDto,
+    @Request() req: { user: { id: string } },
+  ) {
+    return this.inventoryService.recountCountItem(id, itemId, dto, req.user?.id || 'system');
   }
 
   @Post('counts/:id/complete')

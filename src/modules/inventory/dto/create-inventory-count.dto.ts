@@ -93,6 +93,13 @@ export class CancelCountDto {
   reason: string;
 }
 
+export class RecountItemDto {
+  @ApiProperty({ example: 'Diferencia inicial > 5%, requiere recuento', description: 'Justificación del recuento' })
+  @IsString()
+  @MinLength(10)
+  recountReason: string;
+}
+
 export class QueryInventoryCountDto {
   @IsOptional()
   @IsUUID()

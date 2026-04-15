@@ -1,6 +1,7 @@
 import path from 'path';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { I18nModule, HeaderResolver } from 'nestjs-i18n';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -31,8 +32,8 @@ import { PermissionsModule } from './modules/permissions/permissions.module';
 import { ConsignmentsModule } from './modules/consignments/consignments.module';
 import { ConfigGlobalModule } from './modules/config-global/config-global.module';
 import { ExchangeRatesModule } from './modules/exchange-rates/exchange-rates.module';
-import { ActiveIngredientsModule } from './modules/active-ingredients/active-ingredients.module';
 import { TherapeuticUsesModule } from './modules/therapeutic-uses/therapeutic-uses.module';
+import { ActiveIngredientsModule } from './modules/active-ingredients/active-ingredients.module';
 
 const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
   useClass: TypeOrmConfigService,
@@ -49,6 +50,7 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
       envFilePath: ['.env'],
     }),
     infrastructureDatabaseModule,
+    ScheduleModule.forRoot(),
     I18nModule.forRootAsync({
       useFactory: (configService: ConfigService<AllConfigType>) => ({
         fallbackLanguage: configService.getOrThrow('app.fallbackLanguage', {
