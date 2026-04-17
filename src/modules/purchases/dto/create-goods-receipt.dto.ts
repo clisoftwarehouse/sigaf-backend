@@ -36,7 +36,7 @@ export class CreateGoodsReceiptItemDto {
   @Min(0)
   unitCostUsd: number;
 
-  @ApiProperty({ example: 5.0, description: 'Precio de venta' })
+  @ApiProperty({ example: 5.0, description: 'Precio de venta en USD (siempre en dólares, nunca en Bs)' })
   @IsNumber()
   @Min(0)
   salePrice: number;

@@ -5,14 +5,18 @@ import { Get, Put, Body, Post, Param, Query, Request, UseGuards, Controller, Par
 import { InventoryService } from './inventory.service';
 import {
   QueryStockDto,
+  ConsumeFefoDto,
   QueryKardexDto,
   CancelCountDto,
   RecountItemDto,
+  ReturnToLotDto,
   ApproveCountDto,
   QueryAccuracyDto,
   QuarantineLotDto,
   CountItemUpdateDto,
   CreateAdjustmentDto,
+  QueryStockDetailDto,
+  QueryAdjustmentsDto,
   QueryInventoryLotDto,
   CreateInventoryLotDto,
   UpdateInventoryLotDto,
@@ -22,6 +26,7 @@ import {
   CreateInventoryCountDto,
   CreateCyclicScheduleDto,
   UpdateCyclicScheduleDto,
+  QueryCostOfSalePreviewDto,
 } from './dto';
 
 @ApiTags('Inventory')
@@ -74,20 +79,67 @@ export class InventoryController {
   }
 
   @Get('stock')
+  @ApiOperation({ summary: 'Stock agregado por producto/sucursal (enriquecido con reservado y último conteo)' })
   getStock(@Query() query: QueryStockDto) {
     return this.inventoryService.getStock(query);
   }
 
+  @Get('stock/:productId')
+  @ApiOperation({
+    summary:
+      'Detalle unificado de stock del producto (Stock ↔ Lotes ↔ Kardex): resumen por sucursal + lotes con movimientos recientes',
+  })
+  getStockDetail(@Param('productId', ParseUUIDPipe) productId: string, @Query() query: QueryStockDetailDto) {
+    return this.inventoryService.getStockDetail(productId, query);
+  }
+
   @Post('adjustments')
-  @ApiOperation({ summary: 'Crear ajuste de inventario (daño, corrección, vencimiento)' })
+  @ApiOperation({
+    summary: 'Crear ajuste de inventario positivo o negativo (daño, corrección, count_difference, expiry_write_off)',
+  })
   createAdjustment(@Body() dto: CreateAdjustmentDto, @Request() req: { user: { id: string } }) {
     return this.inventoryService.createAdjustment(dto, req.user?.id || 'system');
+  }
+
+  @Get('adjustments')
+  @ApiOperation({ summary: 'Listar ajustes de inventario previos (kardex filtrado por reference_type=adjustment)' })
+  getAdjustments(@Query() query: QueryAdjustmentsDto) {
+    return this.inventoryService.getAdjustments(query);
   }
 
   @Get('kardex')
   @ApiOperation({ summary: 'Consultar kardex (movimientos inmutables)' })
   findKardex(@Query() query: QueryKardexDto) {
     return this.inventoryService.findKardex(query);
+  }
+
+  // ─── Costo de venta (FEFO + COGS) ──────────────────────────────────────────
+
+  @Get('cost-of-sale/preview')
+  @ApiOperation({
+    summary: 'Preview FEFO: lotes a consumir + COGS (sin persistir). Si se pasa salePriceUsd calcula margen.',
+  })
+  previewCostOfSale(@Query() query: QueryCostOfSalePreviewDto, @Query('salePriceUsd') salePriceUsd?: string) {
+    const price = salePriceUsd != null ? parseFloat(salePriceUsd) : undefined;
+    return this.inventoryService.previewCostOfSale(query, Number.isFinite(price) ? price : undefined);
+  }
+
+  @Post('cost-of-sale/consume')
+  @ApiOperation({
+    summary:
+      'Consume stock FEFO (transaccional): decrementa lotes, incrementa quantity_sold y genera kardex sale_out por cada lote. Retorna plan + COGS.',
+  })
+  consumeFefo(@Body() dto: ConsumeFefoDto, @Request() req: { user: { id: string } }) {
+    return this.inventoryService.consumeFefo(dto, req.user?.id || 'system');
+  }
+
+  @Post('cost-of-sale/return')
+  @ApiOperation({
+    summary:
+      'Devuelve mercancía a un lote específico (revierte un consumo previo). Genera kardex return_in con el unit_cost del lote.',
+  })
+  returnToLot(@Body() dto: ReturnToLotDto, @Request() req: { user: { id: string } }) {
+    return this.inventoryService.returnToLot(dto, req.user?.id || 'system');
   }
 
   @Get('counts/accuracy')

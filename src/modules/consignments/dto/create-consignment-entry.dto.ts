@@ -26,7 +26,7 @@ export class CreateConsignmentEntryItemDto {
   @Min(0)
   costUsd: number;
 
-  @ApiProperty({ example: 5.0, description: 'Precio de venta sugerido' })
+  @ApiProperty({ example: 5.0, description: 'Precio de venta sugerido en USD (siempre en dólares, nunca en Bs)' })
   @IsNumber()
   @Min(0)
   salePrice: number;

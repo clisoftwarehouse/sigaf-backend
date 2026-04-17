@@ -23,6 +23,9 @@ export class ExchangeRateEntity extends EntityRelationalHelper {
   @Column('date', { name: 'effective_date' })
   effectiveDate: Date;
 
+  @Column('boolean', { name: 'is_overridden', default: false })
+  isOverridden: boolean;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 }

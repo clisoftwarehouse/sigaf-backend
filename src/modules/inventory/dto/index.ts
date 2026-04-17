@@ -1,3 +1,4 @@
+export * from './cost-of-sale.dto';
 export * from './cyclic-schedule.dto';
 export * from './create-adjustment.dto';
 export * from './query-inventory-lot.dto';

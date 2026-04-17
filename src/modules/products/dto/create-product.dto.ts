@@ -59,7 +59,11 @@ export class CreateProductTherapeuticUseDto {
 }
 
 export class CreateProductDto {
-  @ApiPropertyOptional({ example: 'SKU-001', description: 'Código interno' })
+  @ApiPropertyOptional({
+    example: 'PROD-000001',
+    description:
+      'Código interno del producto. Si se omite, se autogenera con el formato `PROD-XXXXXX` usando la secuencia `products_internal_code_seq`.',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(30)

@@ -150,6 +150,8 @@ export class ProductsService {
     if (dto.internalCode) {
       const existsCode = await this.productRepo.findOne({ where: { internalCode: dto.internalCode } });
       if (existsCode) throw new ConflictException('Código interno ya registrado');
+    } else {
+      dto.internalCode = await this.generateInternalCode();
     }
 
     if (dto.barcodes?.length) {
@@ -463,5 +465,27 @@ export class ProductsService {
   private async ensureProductExists(id: string): Promise<void> {
     const exists = await this.productRepo.findOne({ where: { id } });
     if (!exists) throw new NotFoundException('Producto no encontrado');
+  }
+
+  /**
+   * Genera el siguiente código interno autoincremental usando la secuencia
+   * `products_internal_code_seq`. Formato: PROD-000001 (6 dígitos con padding).
+   * Reintenta si el código ya existe (colisión con internal_code manual).
+   */
+  private async generateInternalCode(): Promise<string> {
+    const MAX_ATTEMPTS = 10;
+    for (let i = 0; i < MAX_ATTEMPTS; i++) {
+      const result = await this.productRepo.manager.query<{ nextval: string }[]>(
+        `SELECT nextval('products_internal_code_seq') AS nextval`,
+      );
+      const nextVal = Number(result[0]?.nextval);
+      if (!Number.isFinite(nextVal)) {
+        throw new Error('No se pudo obtener el siguiente valor de products_internal_code_seq');
+      }
+      const code = `PROD-${String(nextVal).padStart(6, '0')}`;
+      const exists = await this.productRepo.findOne({ where: { internalCode: code } });
+      if (!exists) return code;
+    }
+    throw new ConflictException('No se pudo generar un código interno único tras varios intentos');
   }
 }

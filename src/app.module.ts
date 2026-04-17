@@ -17,8 +17,10 @@ import { AuditModule } from './modules/audit/audit.module';
 import { RolesModule } from './modules/roles/roles.module';
 import fileConfig from './modules/files/config/file.config';
 import { BrandsModule } from './modules/brands/brands.module';
+import { PricesModule } from './modules/prices/prices.module';
 import databaseConfig from './database/config/database.config';
 import { SessionModule } from './modules/session/session.module';
+import { ImportsModule } from './modules/imports/imports.module';
 import { BranchesModule } from './modules/branches/branches.module';
 import { ProductsModule } from './modules/products/products.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
@@ -27,6 +29,7 @@ import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { TerminalsModule } from './modules/terminals/terminals.module';
 import { PurchasesModule } from './modules/purchases/purchases.module';
 import { TypeOrmConfigService } from './database/typeorm-config.service';
+import { PromotionsModule } from './modules/promotions/promotions.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { ConsignmentsModule } from './modules/consignments/consignments.module';
@@ -34,6 +37,7 @@ import { ConfigGlobalModule } from './modules/config-global/config-global.module
 import { ExchangeRatesModule } from './modules/exchange-rates/exchange-rates.module';
 import { TherapeuticUsesModule } from './modules/therapeutic-uses/therapeutic-uses.module';
 import { ActiveIngredientsModule } from './modules/active-ingredients/active-ingredients.module';
+import { InventoryTransfersModule } from './modules/inventory-transfers/inventory-transfers.module';
 
 const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
   useClass: TypeOrmConfigService,
@@ -89,6 +93,9 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     ProductsModule,
     TerminalsModule,
     ExchangeRatesModule,
+    PricesModule,
+    PromotionsModule,
+    InventoryTransfersModule,
     ConfigGlobalModule,
     PurchasesModule,
     ConsignmentsModule,
@@ -96,6 +103,7 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     TherapeuticUsesModule,
     PermissionsModule,
     RolesModule,
+    ImportsModule,
   ],
 })
 export class AppModule {}

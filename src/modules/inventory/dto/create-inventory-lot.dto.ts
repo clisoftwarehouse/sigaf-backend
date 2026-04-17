@@ -36,7 +36,7 @@ export class CreateInventoryLotDto {
   @Min(0)
   costUsd: number;
 
-  @ApiProperty({ example: 8.99, description: 'Precio de venta' })
+  @ApiProperty({ example: 8.99, description: 'Precio de venta en USD (siempre en dólares, nunca en Bs)' })
   @IsNumber()
   @Min(0)
   salePrice: number;

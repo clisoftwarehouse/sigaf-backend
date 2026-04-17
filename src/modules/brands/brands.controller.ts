@@ -17,12 +17,10 @@ export class BrandsController {
   findAll(
     @Query('search') search?: string,
     @Query('isLaboratory') isLaboratory?: string,
-    @Query('brandType') brandType?: string,
     @Query('isActive') isActive?: string,
   ) {
     return this.brandsService.findAll({
       search,
-      brandType,
       isLaboratory: isLaboratory === 'true' ? true : isLaboratory === 'false' ? false : undefined,
       isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
     });

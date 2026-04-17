@@ -12,4 +12,16 @@ export class CreateActiveIngredientDto {
   @IsString()
   @MaxLength(100)
   therapeuticGroup?: string;
+
+  @ApiPropertyOptional({ example: 'C09CA01', description: 'Código ATC (WHO) — estándar internacional' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  atcCode?: string;
+
+  @ApiPropertyOptional({ example: 'Losartan', description: 'Denominación Común Internacional (INN/DCI)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  innName?: string;
 }

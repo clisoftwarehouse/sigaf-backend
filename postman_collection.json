@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "SIGAF Backend - Flujo Completo",
-    "description": "Ejecutar en orden: Login → Roles → Users → Config → Catálogos → Productos → Inventario → Compras → Consignaciones",
+    "description": "# SIGAF Backend — Flujo Completo\n\n## Orden obligatorio (primera corrida en BD limpia)\n\n1. `01. AUTH → 1.1 Login` (setea `accessToken`, `refreshToken`)\n2. `05. BRANCHES → 5.1 Create Branch` (setea `branchId`)\n3. `08. CATEGORIES → 8.1 Create Category` (setea `categoryId`)\n4. `09. BRANDS → 9.1 Create Brand` (setea `brandId`)\n5. `10. ACTIVE INGREDIENTS → 10.1, 10.2 Create` (setea `activeIngredientId`, `activeIngredientId2`)\n6. `10b. THERAPEUTIC USES → 10b.1, 10b.2 Create` (setea `therapeuticUseId`, `therapeuticUseId2`)\n7. `11. SUPPLIERS → 11.1 Create Supplier` (setea `supplierId`)\n8. `12. PRODUCTS → 12.1 Create Product` (setea `productId`, requiere catálogos anteriores)\n9. `13. INVENTORY LOTS → 13.1 Create Lot` (setea `lotId`, requiere `productId` + `branchId`)\n10. A partir de aquí ya puedes probar **14. STOCK & KARDEX** (incluye 14.7/14.8/14.9 Cost-of-Sale), **15. PURCHASES**, **16. CONSIGNMENTS**, etc.\n\n## Re-corridas\n\nCada `Get All` de entidad base (5.2, 8.2, 9.2, 10.3, 10b.3, 11.2, 12.2, 13.2, 14.1) re-hidrata su variable con el primer resultado existente. Si tu BD ya tiene datos, basta con correr **Login + los Get All relevantes** y las variables se repoblarán automáticamente sin necesidad de crear nada nuevo.\n\n## Variables críticas\n\n`accessToken`, `branchId`, `categoryId`, `brandId`, `supplierId`, `productId`, `lotId`, `activeIngredientId`, `therapeuticUseId`. Si alguna aparece vacía verifica que hayas corrido el Get All o Create correspondiente.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -55,6 +55,10 @@
     },
     {
       "key": "productId",
+      "value": ""
+    },
+    {
+      "key": "productInternalCode",
       "value": ""
     },
     {
@@ -136,6 +140,54 @@
     {
       "key": "cyclicScheduleId",
       "value": ""
+    },
+    {
+      "key": "priceId",
+      "value": ""
+    },
+    {
+      "key": "priceBranchOverrideId",
+      "value": ""
+    },
+    {
+      "key": "priceIdNew",
+      "value": ""
+    },
+    {
+      "key": "promotionPercentageId",
+      "value": ""
+    },
+    {
+      "key": "promotionFixedId",
+      "value": ""
+    },
+    {
+      "key": "promotionBxgyId",
+      "value": ""
+    },
+    {
+      "key": "promotionScopeId",
+      "value": ""
+    },
+    {
+      "key": "branchId2",
+      "value": ""
+    },
+    {
+      "key": "transferTestLotId",
+      "value": ""
+    },
+    {
+      "key": "transferId",
+      "value": ""
+    },
+    {
+      "key": "transferItemId",
+      "value": ""
+    },
+    {
+      "key": "transferToCancelId",
+      "value": ""
     }
   ],
   "item": [
@@ -174,14 +226,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/email/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "email",
-                "login"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "email", "login"]
             }
           }
         },
@@ -210,13 +256,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/auth/me",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "me"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
             }
           }
         },
@@ -246,13 +287,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/auth/refresh",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "refresh"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
             }
           }
         }
@@ -290,12 +326,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/roles",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "roles"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["roles"]
             }
           }
         },
@@ -392,12 +424,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/users?page=1&limit=20",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["users"],
               "query": [
                 {
                   "key": "page",
@@ -460,12 +488,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/users",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
             }
           }
         },
@@ -494,13 +518,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/users/{{newUserId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "{{newUserId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{newUserId}}"]
             }
           }
         },
@@ -537,13 +556,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/users/{{newUserId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "{{newUserId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{newUserId}}"]
             }
           }
         },
@@ -553,9 +567,7 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
-                ],
+                "exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"],
                 "type": "text/javascript"
               }
             }
@@ -570,13 +582,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/users/{{newUserId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "{{newUserId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{newUserId}}"]
             }
           }
         }
@@ -609,12 +616,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/config",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "config"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["config"]
             }
           }
         },
@@ -642,12 +645,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/permissions",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "permissions"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["permissions"]
             }
           }
         }
@@ -705,12 +704,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/branches",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "branches"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["branches"]
             }
           }
         },
@@ -721,7 +716,10 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "var list = Array.isArray(body) ? body : (body.data || []);",
+                  "if (list.length > 0) { pm.collectionVariables.set('branchId', list[0].id); }"
                 ],
                 "type": "text/javascript"
               }
@@ -737,12 +735,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/branches",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "branches"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["branches"]
             }
           }
         }
@@ -800,12 +794,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/terminals",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "terminals"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["terminals"]
             }
           }
         },
@@ -815,9 +805,7 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ],
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
                 "type": "text/javascript"
               }
             }
@@ -832,12 +820,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/terminals?branchId={{branchId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "terminals"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["terminals"],
               "query": [
                 {
                   "key": "branchId",
@@ -901,12 +885,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/locations",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "locations"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["locations"]
             }
           }
         },
@@ -916,9 +896,7 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ],
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
                 "type": "text/javascript"
               }
             }
@@ -933,12 +911,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/locations?branchId={{branchId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "locations"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["locations"],
               "query": [
                 {
                   "key": "branchId",
@@ -1002,12 +976,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/categories",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "categories"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["categories"]
             }
           }
         },
@@ -1018,7 +988,10 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "var list = Array.isArray(body) ? body : (body.data || []);",
+                  "if (list.length > 0) { pm.collectionVariables.set('categoryId', list[0].id); }"
                 ],
                 "type": "text/javascript"
               }
@@ -1034,12 +1007,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/categories",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "categories"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["categories"]
             }
           }
         },
@@ -1049,9 +1018,7 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ],
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
                 "type": "text/javascript"
               }
             }
@@ -1074,13 +1041,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/categories/{{categoryId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "categories",
-                "{{categoryId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["categories", "{{categoryId}}"]
             }
           }
         }
@@ -1134,16 +1096,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Bayer\",\n  \"isLaboratory\": true,\n  \"rif\": \"J-30001234-5\",\n  \"businessName\": \"Bayer Venezuela C.A.\",\n  \"address\": \"Caracas, Venezuela\",\n  \"phone\": \"0212-1234567\",\n  \"email\": \"info@bayer.com.ve\",\n  \"countryOfOrigin\": \"Alemania\",\n  \"brandType\": \"pharma\",\n  \"isImporter\": true,\n  \"isManufacturer\": false,\n  \"taxRegime\": \"contribuyente_especial\",\n  \"website\": \"https://www.bayer.com\",\n  \"regulatoryCode\": \"REG-2023-001\"\n}"
+              "raw": "{\n  \"name\": \"Bayer\",\n  \"isLaboratory\": true\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/brands",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "brands"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["brands"]
             }
           }
         },
@@ -1154,7 +1112,10 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "var list = Array.isArray(body) ? body : (body.data || []);",
+                  "if (list.length > 0) { pm.collectionVariables.set('brandId', list[0].id); }"
                 ],
                 "type": "text/javascript"
               }
@@ -1170,17 +1131,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/brands",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "brands"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["brands"]
             }
           }
         },
         {
-          "name": "9.3 Update Brand (datos fiscales)",
+          "name": "9.3 Update Brand (simplificada: solo name / isLaboratory / isActive)",
           "event": [
             {
               "listen": "test",
@@ -1198,7 +1155,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"taxRegime\": \"contribuyente_ordinario\",\n  \"website\": \"https://www.bayer.com.ve\"\n}"
+              "raw": "{\n  \"name\": \"Bayer\",\n  \"isLaboratory\": true\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/brands/{{brandId}}",
@@ -1257,16 +1214,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Acetaminofén\",\n  \"therapeuticGroup\": \"Analgésicos\"\n}"
+              "raw": "{\n  \"name\": \"Acetaminofén\",\n  \"therapeuticGroup\": \"Analgésicos\",\n  \"atcCode\": \"N02BE01\",\n  \"innName\": \"Paracetamol\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/active-ingredients",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "active-ingredients"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["active-ingredients"]
             }
           }
         },
@@ -1315,27 +1268,102 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Ibuprofeno\",\n  \"therapeuticGroup\": \"Antiinflamatorios\"\n}"
+              "raw": "{\n  \"name\": \"Ibuprofeno\",\n  \"therapeuticGroup\": \"Antiinflamatorios\",\n  \"atcCode\": \"M01AE01\",\n  \"innName\": \"Ibuprofen\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/active-ingredients",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "active-ingredients"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["active-ingredients"]
             }
           }
         },
         {
-          "name": "10.3 Get Active Ingredients",
+          "name": "10.2.b Vademecum Lookup (obtener ATC/INN desde vademecum.es)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "pm.test('Respuesta es un array de candidatos', () => {",
+                  "  pm.expect(body).to.be.an('array');",
+                  "});",
+                  "if (body.length > 0) {",
+                  "  pm.test('Cada candidato tiene name, atcCode y url', () => {",
+                  "    pm.expect(body[0]).to.have.property('name');",
+                  "    pm.expect(body[0]).to.have.property('atcCode');",
+                  "    pm.expect(body[0]).to.have.property('url');",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/active-ingredients/vademecum-lookup?q=losartan&limit=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["active-ingredients", "vademecum-lookup"],
+              "query": [
+                { "key": "q", "value": "losartan" },
+                { "key": "limit", "value": "5" }
+              ]
+            },
+            "description": "Scrapea vademecum.es para obtener candidatos con su código ATC (ej. losartan → C09CA01). No persiste — devuelve una lista para que el usuario elija y copie los valores en `POST /active-ingredients`. Si vademecum bloquea/cambia, devuelve array vacío (best-effort)."
+          }
+        },
+        {
+          "name": "10.2.c Vademecum Import (upsert desde vademecum.es)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "pm.test('Persistido con atcCode', () => {",
+                  "  pm.expect(json).to.have.property('id');",
+                  "  pm.expect(json).to.have.property('atcCode');",
+                  "  pm.expect(json.atcCode).to.match(/^[A-Z]\\d{2}/);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"q\": \"losartan\",\n  \"index\": 0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/active-ingredients/vademecum-import",
+              "host": ["{{baseUrl}}"],
+              "path": ["active-ingredients", "vademecum-import"]
+            },
+            "description": "Busca en vademecum.es y persiste el candidato en `index` (default 0). Upsert por `atc_code` o `name`: crea si no existe, actualiza nombre/ATC si existía. Retorna el registro guardado."
+          }
+        },
+        {
+          "name": "10.3 Get Active Ingredients (filtro por ATC)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "var list = Array.isArray(body) ? body : (body.data || []);",
+                  "if (list.length > 0) { pm.collectionVariables.set('activeIngredientId', list[0].id); }"
                 ],
                 "type": "text/javascript"
               }
@@ -1351,13 +1379,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/active-ingredients",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "active-ingredients"
+              "host": ["{{baseUrl}}"],
+              "path": ["active-ingredients"],
+              "query": [
+                { "key": "atcCode", "value": "N02", "disabled": true },
+                { "key": "search", "value": "paracetamol", "disabled": true }
               ]
-            }
+            },
+            "description": "Filtros: `search` (ILIKE contra name o inn_name) y `atcCode` (prefijo — `N02` matchea `N02BE01`, `N02BA01`, etc.)."
           }
         }
       ]
@@ -1414,12 +1443,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/therapeutic-uses",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "therapeutic-uses"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["therapeutic-uses"]
             }
           }
         },
@@ -1472,13 +1497,81 @@
             },
             "url": {
               "raw": "{{baseUrl}}/therapeutic-uses",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "therapeutic-uses"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["therapeutic-uses"]
             }
+          }
+        },
+        {
+          "name": "10b.2.b Vademecum Lookup (jerarquía ATC desde vademecum.es)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "pm.test('Respuesta es array de niveles ATC', () => pm.expect(body).to.be.an('array'));",
+                  "if (body.length > 0) {",
+                  "  pm.test('Cada nivel tiene atcCode, name y level', () => {",
+                  "    pm.expect(body[0]).to.have.all.keys('atcCode','name','level','url');",
+                  "    pm.expect(body[0].level).to.be.within(1,4);",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/therapeutic-uses/vademecum-lookup?q=losartan",
+              "host": ["{{baseUrl}}"],
+              "path": ["therapeutic-uses", "vademecum-lookup"],
+              "query": [{ "key": "q", "value": "losartan" }]
+            },
+            "description": "Busca el primer principio activo en vademecum.es, abre su ficha y extrae la jerarquía ATC completa (niveles 1-4). Por ejemplo, `losartan` → [C: Sistema cardiovascular, C09: Agentes renina-angiotensina, C09C: BRA monofármacos, C09CA: BRA monofármacos]. Best-effort: si vademecum bloquea o cambia HTML, devuelve []."
+          }
+        },
+        {
+          "name": "10b.2.c Vademecum Import Hierarchy (upsert jerarquía ATC)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var body = pm.response.json();",
+                  "pm.test('Retorna array de usos persistidos', () => pm.expect(body).to.be.an('array'));",
+                  "if (body.length > 0) {",
+                  "  pm.test('Cada item tiene id + atcCode', () => {",
+                  "    pm.expect(body[0]).to.have.property('id');",
+                  "    pm.expect(body[0]).to.have.property('atcCode');",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"q\": \"losartan\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/therapeutic-uses/vademecum-import",
+              "host": ["{{baseUrl}}"],
+              "path": ["therapeutic-uses", "vademecum-import"]
+            },
+            "description": "Importa los 4 niveles ATC del principio buscado como registros en `therapeutic_uses`. Upsert por `atc_code`: crea nuevos, actualiza existentes. Ej: `losartan` → persiste C, C09, C09C, C09CA."
           }
         },
         {
@@ -1489,7 +1582,9 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                  "var body = pm.response.json();",
+                  "pm.test('Is array', () => pm.expect(body).to.be.an('array'));",
+                  "if (body.length > 0) { pm.collectionVariables.set('therapeuticUseId', body[0].id); }"
                 ],
                 "type": "text/javascript"
               }
@@ -1505,12 +1600,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/therapeutic-uses",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "therapeutic-uses"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["therapeutic-uses"]
             }
           }
         },
@@ -1520,9 +1611,7 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ],
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
                 "type": "text/javascript"
               }
             }
@@ -1537,13 +1626,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/therapeutic-uses/{{therapeuticUseId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "therapeutic-uses",
-                "{{therapeuticUseId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["therapeutic-uses", "{{therapeuticUseId}}"]
             }
           }
         },
@@ -1553,9 +1637,7 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ],
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
                 "type": "text/javascript"
               }
             }
@@ -1578,13 +1660,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/therapeutic-uses/{{therapeuticUseId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "therapeutic-uses",
-                "{{therapeuticUseId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["therapeutic-uses", "{{therapeuticUseId}}"]
             }
           }
         }
@@ -1642,12 +1719,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/suppliers",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "suppliers"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["suppliers"]
             }
           }
         },
@@ -1658,7 +1731,10 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "var list = Array.isArray(body) ? body : (body.data || []);",
+                  "if (list.length > 0) { pm.collectionVariables.set('supplierId', list[0].id); }"
                 ],
                 "type": "text/javascript"
               }
@@ -1674,12 +1750,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/suppliers",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "suppliers"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["suppliers"]
             }
           }
         },
@@ -1939,7 +2011,7 @@
       "name": "12. PRODUCTS - Productos (CRUD + Barcodes + Ingredients + Therapeutic Uses + Purchase History)",
       "item": [
         {
-          "name": "12.1 Create Product (con barcodes e ingredientes)",
+          "name": "12.1 Create Product (autogenera internalCode si se omite)",
           "event": [
             {
               "listen": "test",
@@ -1949,18 +2021,24 @@
                   "var json = pm.response.json();",
                   "pm.test('Created or already exists', () => pm.expect(status).to.be.oneOf([201, 409]));",
                   "if (status === 201 && json.id) {",
+                  "  pm.test('internalCode autogenerado con formato PROD-XXXXXX', () => {",
+                  "    pm.expect(json.internalCode).to.match(/^PROD-\\d{6}$/);",
+                  "  });",
                   "  pm.collectionVariables.set('productId', json.id);",
+                  "  pm.collectionVariables.set('productInternalCode', json.internalCode);",
                   "  if(json.barcodes && json.barcodes.length) pm.collectionVariables.set('barcodeId', json.barcodes[0].id);",
                   "} else {",
                   "  pm.sendRequest({",
-                  "    url: pm.collectionVariables.get('baseUrl') + '/products?page=1&limit=50',",
+                  "    url: pm.collectionVariables.get('baseUrl') + '/products?page=1&limit=50&search=Acetaminof',",
                   "    method: 'GET',",
                   "    header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('accessToken') }",
                   "  }, (err, res) => {",
                   "    if (!err) {",
                   "      var list = res.json().data;",
-                  "      if (list) { var found = list.find(p => p.internalCode === 'MED-001');",
-                  "        if (found) pm.collectionVariables.set('productId', found.id);",
+                  "      if (list && list.length) {",
+                  "        var found = list[0];",
+                  "        pm.collectionVariables.set('productId', found.id);",
+                  "        pm.collectionVariables.set('productInternalCode', found.internalCode);",
                   "        if(found.barcodes && found.barcodes.length) pm.collectionVariables.set('barcodeId', found.barcodes[0].id);",
                   "      }",
                   "    }",
@@ -1985,17 +2063,52 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"description\": \"Acetaminofén 500mg x 20 tabletas\",\n  \"shortName\": \"Acetaminofén 500mg\",\n  \"internalCode\": \"MED-001\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"brandId\": \"{{brandId}}\",\n  \"productType\": \"pharmaceutical\",\n  \"sencamerRegistration\": \"E.F. 12345\",\n  \"taxType\": \"exempt\",\n  \"presentation\": \"Caja x 20 tabletas\",\n  \"stockMin\": 10,\n  \"stockMax\": 100,\n  \"conservationType\": \"ambient\",\n  \"barcodes\": [\n    { \"barcode\": \"7501234567890\", \"barcodeType\": \"ean13\", \"isPrimary\": true }\n  ],\n  \"activeIngredients\": [\n    { \"activeIngredientId\": \"{{activeIngredientId}}\", \"concentration\": \"500mg\", \"isPrimary\": true }\n  ],\n  \"therapeuticUses\": [\n    { \"therapeuticUseId\": \"{{therapeuticUseId}}\" }\n  ]\n}"
+              "raw": "{\n  \"description\": \"Acetaminofén 500mg x 20 tabletas\",\n  \"shortName\": \"Acetaminofén 500mg\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"brandId\": \"{{brandId}}\",\n  \"productType\": \"pharmaceutical\",\n  \"sencamerRegistration\": \"E.F. 12345\",\n  \"taxType\": \"exempt\",\n  \"presentation\": \"Caja x 20 tabletas\",\n  \"stockMin\": 10,\n  \"stockMax\": 100,\n  \"conservationType\": \"ambient\",\n  \"barcodes\": [\n    { \"barcode\": \"7501234567890\", \"barcodeType\": \"ean13\", \"isPrimary\": true }\n  ],\n  \"activeIngredients\": [\n    { \"activeIngredientId\": \"{{activeIngredientId}}\", \"concentration\": \"500mg\", \"isPrimary\": true }\n  ],\n  \"therapeuticUses\": [\n    { \"therapeuticUseId\": \"{{therapeuticUseId}}\" }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/products",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["products"]
+            },
+            "description": "Crea un producto sin especificar `internalCode`. El backend autogenera el código usando la secuencia `products_internal_code_seq` con el formato `PROD-XXXXXX`."
+          }
+        },
+        {
+          "name": "12.1.b Create Product (con internalCode manual override)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var status = pm.response.code;",
+                  "pm.test('Created or conflict', () => pm.expect(status).to.be.oneOf([201, 409]));",
+                  "if (status === 201) {",
+                  "  var json = pm.response.json();",
+                  "  pm.test('internalCode respeta el valor manual', () => {",
+                  "    pm.expect(json.internalCode).to.eql('MED-MANUAL-001');",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
             }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Ibuprofeno 400mg x 20 tabletas\",\n  \"internalCode\": \"MED-MANUAL-001\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"productType\": \"pharmaceutical\",\n  \"taxType\": \"exempt\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"]
+            },
+            "description": "Verifica que un `internalCode` enviado manualmente se respeta y no se sobrescribe con la secuencia."
           }
         },
         {
@@ -2005,7 +2118,13 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "var list = Array.isArray(body) ? body : (body.data || []);",
+                  "if (list.length > 0) {",
+                  "  pm.collectionVariables.set('productId', list[0].id);",
+                  "  if (list[0].internalCode) pm.collectionVariables.set('productInternalCode', list[0].internalCode);",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
@@ -2021,12 +2140,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/products?page=1&limit=20",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
               "query": [
                 {
                   "key": "page",
@@ -2069,13 +2184,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/products/{{productId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products",
-                "{{productId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
             }
           }
         },
@@ -2085,9 +2195,7 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ],
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
                 "type": "text/javascript"
               }
             }
@@ -2110,13 +2218,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/products/{{productId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products",
-                "{{productId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
             }
           }
         },
@@ -2144,13 +2247,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/products/search?q=Acetaminof",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products",
-                "search"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "search"],
               "query": [
                 {
                   "key": "q",
@@ -2184,13 +2282,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/products/search?q=7501234567890&type=ean",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products",
-                "search"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "search"],
               "query": [
                 {
                   "key": "q",
@@ -2228,13 +2321,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/products/search?q=Acetaminof&type=ingredient",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products",
-                "search"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "search"],
               "query": [
                 {
                   "key": "q",
@@ -2296,14 +2384,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/products/{{productId}}/barcodes",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products",
-                "{{productId}}",
-                "barcodes"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}", "barcodes"]
             }
           }
         },
@@ -2332,14 +2414,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/products/{{productId}}/barcodes",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products",
-                "{{productId}}",
-                "barcodes"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}", "barcodes"]
             }
           }
         },
@@ -2367,15 +2443,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/products/{{productId}}/barcodes/{{secondBarcodeId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products",
-                "{{productId}}",
-                "barcodes",
-                "{{secondBarcodeId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}", "barcodes", "{{secondBarcodeId}}"]
             }
           }
         },
@@ -2413,14 +2482,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/products/{{productId}}/ingredients",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products",
-                "{{productId}}",
-                "ingredients"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}", "ingredients"]
             }
           }
         },
@@ -2448,15 +2511,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/products/{{productId}}/ingredients/{{activeIngredientId2}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products",
-                "{{productId}}",
-                "ingredients",
-                "{{activeIngredientId2}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}", "ingredients", "{{activeIngredientId2}}"]
             }
           }
         },
@@ -2484,14 +2540,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/products/{{productId}}/substitutes",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products",
-                "{{productId}}",
-                "substitutes"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}", "substitutes"]
             }
           }
         },
@@ -2519,15 +2569,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/products/{{productId}}/therapeutic-uses/{{therapeuticUseId2}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products",
-                "{{productId}}",
-                "therapeutic-uses",
-                "{{therapeuticUseId2}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}", "therapeutic-uses", "{{therapeuticUseId2}}"]
             }
           }
         },
@@ -2555,15 +2598,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/products/{{productId}}/therapeutic-uses/{{therapeuticUseId2}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products",
-                "{{productId}}",
-                "therapeutic-uses",
-                "{{therapeuticUseId2}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}", "therapeutic-uses", "{{therapeuticUseId2}}"]
             }
           }
         },
@@ -2591,14 +2627,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/products/{{productId}}/purchase-history",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products",
-                "{{productId}}",
-                "purchase-history"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}", "purchase-history"]
             }
           }
         },
@@ -2626,14 +2656,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/products/{{productId}}/purchase-history?supplierId={{supplierId}}&from=2025-01-01&to=2026-12-31",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products",
-                "{{productId}}",
-                "purchase-history"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}", "purchase-history"],
               "query": [
                 {
                   "key": "supplierId",
@@ -2705,13 +2729,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/inventory/lots",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "inventory",
-                "lots"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "lots"]
             }
           }
         },
@@ -2722,7 +2741,14 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "var list = Array.isArray(body) ? body : (body.data || []);",
+                  "if (list.length > 0) {",
+                  "  pm.collectionVariables.set('lotId', list[0].id);",
+                  "  if (list[0].productId) pm.collectionVariables.set('productId', list[0].productId);",
+                  "  if (list[0].branchId) pm.collectionVariables.set('branchId', list[0].branchId);",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
@@ -2738,13 +2764,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/inventory/lots?page=1&limit=20",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "inventory",
-                "lots"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "lots"],
               "query": [
                 {
                   "key": "page",
@@ -2764,9 +2785,7 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ],
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
                 "type": "text/javascript"
               }
             }
@@ -2781,14 +2800,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/inventory/lots/{{lotId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "inventory",
-                "lots",
-                "{{lotId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "lots", "{{lotId}}"]
             }
           }
         },
@@ -2798,9 +2811,7 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ],
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
                 "type": "text/javascript"
               }
             }
@@ -2823,14 +2834,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/inventory/lots/{{lotId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "inventory",
-                "lots",
-                "{{lotId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "lots", "{{lotId}}"]
             }
           }
         }
@@ -2846,7 +2851,17 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var list = pm.response.json();",
+                  "if (Array.isArray(list) && list.length > 0) {",
+                  "  // Este es el set de lotes CON stock disponible — ideal para alimentar",
+                  "  // los requests 14.7/14.8/14.9 de Cost-of-Sale.",
+                  "  var lot = list[0];",
+                  "  pm.collectionVariables.set('lotId', lot.id);",
+                  "  if (lot.productId) pm.collectionVariables.set('productId', lot.productId);",
+                  "  if (lot.branchId) pm.collectionVariables.set('branchId', lot.branchId);",
+                  "  console.log('[14.1] Hidratadas variables con lote disponible:', { lotId: lot.id, productId: lot.productId, branchId: lot.branchId });",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
@@ -2862,13 +2877,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/inventory/stock-fefo?branchId={{branchId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "inventory",
-                "stock-fefo"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "stock-fefo"],
               "query": [
                 {
                   "key": "branchId",
@@ -2879,13 +2889,36 @@
           }
         },
         {
-          "name": "14.2 Get Stock Aggregated",
+          "name": "14.2 Get Stock Aggregated (enriquecido: reservado + última toma + último movimiento)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "pm.test('Respuesta paginada', () => {",
+                  "  pm.expect(body).to.have.property('data');",
+                  "  pm.expect(body).to.have.property('total');",
+                  "  pm.expect(body).to.have.property('page');",
+                  "  pm.expect(body).to.have.property('limit');",
+                  "});",
+                  "if (body.data && body.data.length > 0) {",
+                  "  var row = body.data[0];",
+                  "  pm.test('Stock enriquecido incluye los nuevos campos', () => {",
+                  "    pm.expect(row).to.have.property('productId');",
+                  "    pm.expect(row).to.have.property('branchId');",
+                  "    pm.expect(row).to.have.property('totalQuantity');",
+                  "    pm.expect(row).to.have.property('quantityReserved');",
+                  "    pm.expect(row).to.have.property('quantitySold');",
+                  "    pm.expect(row).to.have.property('quantityDamaged');",
+                  "    pm.expect(row).to.have.property('lotCount');",
+                  "    pm.expect(row).to.have.property('nearestExpiration');",
+                  "    pm.expect(row).to.have.property('lastCountDate');",
+                  "    pm.expect(row).to.have.property('lastCountQuantity');",
+                  "    pm.expect(row).to.have.property('lastMovementDate');",
+                  "  });",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
@@ -2901,14 +2934,58 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/inventory/stock",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "inventory",
-                "stock"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "stock"]
+            },
+            "description": "Stock agregado por producto/sucursal con datos enriquecidos: cantidad disponible, reservada, vendida, dañada, último conteo aprobado (fecha + cantidad) y último movimiento de kardex. Filtros opcionales: `productId`, `branchId`, `categoryId`, `stockStatus` (out/low/normal)."
+          }
+        },
+        {
+          "name": "14.2.b Get Stock Detail (unificado: producto + lotes + movimientos)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "pm.test('Respuesta unificada contiene product + summary + lots', () => {",
+                  "  pm.expect(body).to.have.property('product');",
+                  "  pm.expect(body).to.have.property('summary');",
+                  "  pm.expect(body).to.have.property('lots');",
+                  "  pm.expect(body.product).to.have.property('id');",
+                  "  pm.expect(body.product).to.have.property('description');",
+                  "  pm.expect(body.summary).to.be.an('array');",
+                  "  pm.expect(body.lots).to.be.an('array');",
+                  "});",
+                  "if (body.lots && body.lots.length > 0) {",
+                  "  var lot = body.lots[0];",
+                  "  pm.test('Cada lote incluye expirySignal y movements[]', () => {",
+                  "    pm.expect(lot).to.have.property('lotNumber');",
+                  "    pm.expect(lot).to.have.property('expirySignal');",
+                  "    pm.expect(lot).to.have.property('quantityAvailable');",
+                  "    pm.expect(lot).to.have.property('movements');",
+                  "    pm.expect(lot.movements).to.be.an('array');",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
             }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/stock/{{productId}}?movementsLimit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "stock", "{{productId}}"],
+              "query": [
+                { "key": "movementsLimit", "value": "10" },
+                { "key": "branchId", "value": "{{branchId}}", "disabled": true }
+              ]
+            },
+            "description": "Vista unificada Stock ↔ Lotes ↔ Kardex para un producto específico. Devuelve:\n- `product`: info básica del producto.\n- `summary`: resumen agregado por sucursal (una fila por branch).\n- `lots`: todos los lotes con su semáforo FEFO y los últimos `movementsLimit` movimientos de kardex embebidos.\n\nQuery params: `branchId` (opcional, filtra a una sucursal), `movementsLimit` (default 20)."
           }
         },
         {
@@ -2917,9 +2994,7 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ],
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
                 "type": "text/javascript"
               }
             }
@@ -2934,13 +3009,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/inventory/kardex?page=1&limit=20",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "inventory",
-                "kardex"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "kardex"],
               "query": [
                 {
                   "key": "page",
@@ -2952,6 +3022,254 @@
                 }
               ]
             }
+          }
+        },
+        {
+          "name": "14.4 Create Adjustment (positivo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var status = pm.response.code;",
+                  "pm.test('Created (201) o BadRequest si faltan lot/sucursal válidos', () => pm.expect(status).to.be.oneOf([201, 400, 404]));",
+                  "if (status === 201) {",
+                  "  var json = pm.response.json();",
+                  "  pm.test('Kardex registrado como adjustment_in', () => {",
+                  "    pm.expect(json.movementType).to.eql('adjustment_in');",
+                  "    pm.expect(json.referenceType).to.eql('adjustment');",
+                  "    pm.expect(Number(json.quantity)).to.be.above(0);",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"lotId\": \"{{lotId}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"adjustmentType\": \"correction\",\n  \"quantity\": 5,\n  \"reason\": \"Corrección por conteo físico (sobrante detectado)\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory/adjustments",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "adjustments"]
+            },
+            "description": "Ajuste positivo de mercancía (entrada). `quantity > 0` → movimiento de kardex `adjustment_in`. No incrementa `quantity_damaged`."
+          }
+        },
+        {
+          "name": "14.5 Create Adjustment (negativo - damage)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var status = pm.response.code;",
+                  "pm.test('Created (201) o error de validación (400/404)', () => pm.expect(status).to.be.oneOf([201, 400, 404]));",
+                  "if (status === 201) {",
+                  "  var json = pm.response.json();",
+                  "  pm.test('Kardex registrado como adjustment_out', () => {",
+                  "    pm.expect(json.movementType).to.eql('adjustment_out');",
+                  "    pm.expect(json.referenceType).to.eql('adjustment');",
+                  "    pm.expect(Number(json.quantity)).to.be.below(0);",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"lotId\": \"{{lotId}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"adjustmentType\": \"damage\",\n  \"quantity\": -2,\n  \"reason\": \"2 unidades dañadas durante transporte\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory/adjustments",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "adjustments"]
+            },
+            "description": "Ajuste negativo por daño. `quantity < 0` + `adjustmentType=damage` → suma a `quantity_damaged` del lote y registra `adjustment_out` en kardex."
+          }
+        },
+        {
+          "name": "14.6 Get Adjustments (listar ajustes)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "pm.test('Respuesta paginada con data[]', () => {",
+                  "  pm.expect(body).to.have.property('data');",
+                  "  pm.expect(body).to.have.property('total');",
+                  "  pm.expect(body.data).to.be.an('array');",
+                  "});",
+                  "if (body.data && body.data.length > 0) {",
+                  "  pm.test('Cada entrada es un movimiento de kardex con referenceType=adjustment', () => {",
+                  "    pm.expect(body.data[0].referenceType).to.eql('adjustment');",
+                  "    pm.expect(body.data[0].movementType).to.be.oneOf(['adjustment_in', 'adjustment_out']);",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/adjustments?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "adjustments"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "productId", "value": "{{productId}}", "disabled": true },
+                { "key": "branchId", "value": "{{branchId}}", "disabled": true },
+                { "key": "adjustmentType", "value": "damage", "disabled": true },
+                { "key": "direction", "value": "out", "disabled": true }
+              ]
+            },
+            "description": "Lista paginada de ajustes de inventario. Filtros opcionales:\n- `productId`, `branchId`, `lotId`\n- `adjustmentType`: damage | correction | count_difference | expiry_write_off\n- `direction`: in | out\n- `from`, `to` (ISO date)"
+          }
+        },
+        {
+          "name": "14.7 Cost-of-Sale Preview (FEFO + COGS sin persistir)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var plan = pm.response.json();",
+                  "pm.test('Contiene plan con lines[] y totalCostUsd', () => {",
+                  "  pm.expect(plan).to.have.property('lines');",
+                  "  pm.expect(plan.lines).to.be.an('array');",
+                  "  pm.expect(plan).to.have.property('totalCostUsd');",
+                  "  pm.expect(plan).to.have.property('weightedAverageCostUsd');",
+                  "  pm.expect(plan).to.have.property('shortfallQuantity');",
+                  "});",
+                  "if (plan.lines && plan.lines.length > 0) {",
+                  "  pm.test('Lines FEFO ordenadas por expirationDate ASC', () => {",
+                  "    for (var i = 1; i < plan.lines.length; i++) {",
+                  "      pm.expect(new Date(plan.lines[i-1].expirationDate).getTime())",
+                  "        .to.be.at.most(new Date(plan.lines[i].expirationDate).getTime());",
+                  "    }",
+                  "  });",
+                  "}",
+                  "if (plan.marginUsd != null) {",
+                  "  pm.test('Margen calculado', () => pm.expect(plan).to.have.property('marginPct'));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/cost-of-sale/preview?productId={{productId}}&branchId={{branchId}}&quantity=3&salePriceUsd=12.5",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "cost-of-sale", "preview"],
+              "query": [
+                { "key": "productId", "value": "{{productId}}" },
+                { "key": "branchId", "value": "{{branchId}}" },
+                { "key": "quantity", "value": "3" },
+                { "key": "salePriceUsd", "value": "12.5", "description": "opcional — habilita marginUsd/marginPct" }
+              ]
+            },
+            "description": "Previsualiza qué lotes se consumirían FEFO para vender `quantity` unidades y cuál sería el COGS.\n\nRespuesta:\n- `lines[]`: lotes (ordenados por vencimiento ASC) con `lotId`, `unitCostUsd`, `quantityToConsume`, `lineCostUsd`\n- `totalCostUsd`: **COGS** de la operación\n- `weightedAverageCostUsd`: costo promedio ponderado\n- `shortfallQuantity`: >0 si no hay stock suficiente (el `consume` lo rechazaría)\n- Si `salePriceUsd` se envía: `grossRevenueUsd`, `marginUsd`, `marginPct`"
+          }
+        },
+        {
+          "name": "14.8 Cost-of-Sale Consume (FEFO transaccional — decrementa stock y escribe kardex)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var plan = pm.response.json();",
+                  "pm.test('shortfall = 0 (consumo exitoso)', () => pm.expect(plan.shortfallQuantity).to.eql(0));",
+                  "pm.test('fulfilledQuantity = requestedQuantity', () => {",
+                  "  pm.expect(plan.fulfilledQuantity).to.eql(plan.requestedQuantity);",
+                  "});",
+                  "pm.test('Al menos 1 lote consumido', () => pm.expect(plan.lines.length).to.be.at.least(1));",
+                  "pm.test('totalCostUsd > 0', () => pm.expect(plan.totalCostUsd).to.be.above(0));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"quantity\": 2,\n  \"referenceType\": \"manual_sale\",\n  \"salePriceUsd\": 12.5,\n  \"notes\": \"Prueba consumo FEFO\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory/cost-of-sale/consume",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "cost-of-sale", "consume"]
+            },
+            "description": "Ejecuta el consumo FEFO de forma transaccional:\n- Decrementa `quantity_available` en los lotes elegidos\n- Incrementa `quantity_sold` en cada lote\n- Crea un asiento de kardex `movementType='sale_out'` por cada lote (con `unit_cost_usd` real, `balance_after` correcto y `reference_type/id` si se envían)\n\nSi no hay stock suficiente devuelve **400** con `shortfallQuantity`.\n\nRace-safe: usa pessimistic lock por lote dentro de la transacción."
+          }
+        },
+        {
+          "name": "14.9 Cost-of-Sale Return (devolver mercancía a lote — revierte consumo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var k = pm.response.json();",
+                  "pm.test('Kardex return_in generado', () => {",
+                  "  pm.expect(k.movementType).to.eql('return_in');",
+                  "  pm.expect(Number(k.quantity)).to.be.above(0);",
+                  "  pm.expect(k.lotId).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lotId\": \"{{lotId}}\",\n  \"quantity\": 1,\n  \"referenceType\": \"sale_return\",\n  \"notes\": \"Cliente devolvió 1 unidad sin abrir\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory/cost-of-sale/return",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "cost-of-sale", "return"]
+            },
+            "description": "Devuelve mercancía a un lote específico (revierte un consumo previo).\n\nReglas:\n- Solo lotes con `status='available'` y no vencidos\n- `quantity` no puede exceder `quantity_sold` del lote\n\nEfectos:\n- Decrementa `quantity_sold`\n- Incrementa `quantity_available` y `quantity_returned`\n- Crea kardex `movementType='return_in'` con el `unit_cost_usd` del lote (mismo costo con que salió)"
           }
         }
       ]
@@ -3471,13 +3789,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/purchases/orders",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "purchases",
-                "orders"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["purchases", "orders"]
             }
           }
         },
@@ -3506,13 +3819,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/purchases/orders?page=1&limit=20",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "purchases",
-                "orders"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["purchases", "orders"],
               "query": [
                 {
                   "key": "page",
@@ -3552,14 +3860,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/purchases/orders/{{purchaseOrderId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "purchases",
-                "orders",
-                "{{purchaseOrderId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["purchases", "orders", "{{purchaseOrderId}}"]
             }
           }
         },
@@ -3569,9 +3871,7 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ],
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
                 "type": "text/javascript"
               }
             }
@@ -3594,14 +3894,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/purchases/orders/{{purchaseOrderId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "purchases",
-                "orders",
-                "{{purchaseOrderId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["purchases", "orders", "{{purchaseOrderId}}"]
             }
           }
         },
@@ -3630,15 +3924,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/purchases/orders/{{purchaseOrderId}}/approve",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "purchases",
-                "orders",
-                "{{purchaseOrderId}}",
-                "approve"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["purchases", "orders", "{{purchaseOrderId}}", "approve"]
             }
           }
         },
@@ -3677,13 +3964,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/purchases/receipts",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "purchases",
-                "receipts"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["purchases", "receipts"]
             }
           }
         },
@@ -3712,13 +3994,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/purchases/receipts?branchId={{branchId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "purchases",
-                "receipts"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["purchases", "receipts"],
               "query": [
                 {
                   "key": "branchId",
@@ -3753,14 +4030,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/purchases/receipts/{{goodsReceiptId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "purchases",
-                "receipts",
-                "{{goodsReceiptId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["purchases", "receipts", "{{goodsReceiptId}}"]
             }
           }
         },
@@ -3789,14 +4060,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/purchases/orders/{{purchaseOrderId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "purchases",
-                "orders",
-                "{{purchaseOrderId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["purchases", "orders", "{{purchaseOrderId}}"]
             }
           }
         }
@@ -3841,13 +4106,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/consignments/entries",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "consignments",
-                "entries"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["consignments", "entries"]
             }
           }
         },
@@ -3876,13 +4136,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/consignments/entries?page=1&limit=20",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "consignments",
-                "entries"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["consignments", "entries"],
               "query": [
                 {
                   "key": "page",
@@ -3922,14 +4177,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/consignments/entries/{{consignmentEntryId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "consignments",
-                "entries",
-                "{{consignmentEntryId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["consignments", "entries", "{{consignmentEntryId}}"]
             }
           }
         },
@@ -3967,13 +4216,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/consignments/returns",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "consignments",
-                "returns"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["consignments", "returns"]
             }
           }
         },
@@ -4002,13 +4246,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/consignments/returns?branchId={{branchId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "consignments",
-                "returns"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["consignments", "returns"],
               "query": [
                 {
                   "key": "branchId",
@@ -4051,13 +4290,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/consignments/liquidations",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "consignments",
-                "liquidations"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["consignments", "liquidations"]
             }
           }
         },
@@ -4086,13 +4320,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/consignments/liquidations?branchId={{branchId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "consignments",
-                "liquidations"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["consignments", "liquidations"],
               "query": [
                 {
                   "key": "branchId",
@@ -4138,12 +4367,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/exchange-rates",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "exchange-rates"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["exchange-rates"]
             }
           }
         },
@@ -4153,9 +4378,7 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ],
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
                 "type": "text/javascript"
               }
             }
@@ -4170,12 +4393,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/exchange-rates",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "exchange-rates"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["exchange-rates"]
             }
           }
         },
@@ -4185,9 +4404,7 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ],
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
                 "type": "text/javascript"
               }
             }
@@ -4202,14 +4419,78 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/exchange-rates/latest",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "exchange-rates",
-                "latest"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["exchange-rates", "latest"]
             }
+          }
+        },
+        {
+          "name": "17.4 Fetch BCV Rate (scraper manual)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var status = pm.response.code;",
+                  "pm.test('201 (OK) o 503 si el BCV no responde', () => pm.expect(status).to.be.oneOf([201, 503]));",
+                  "if (status === 201) {",
+                  "  var json = pm.response.json();",
+                  "  pm.test('Tasa persistida con source=BCV e is_overridden=false', () => {",
+                  "    pm.expect(json.source).to.eql('BCV');",
+                  "    pm.expect(json.isOverridden).to.eql(false);",
+                  "    pm.expect(Number(json.rate)).to.be.above(0);",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/exchange-rates/fetch-bcv",
+              "host": ["{{baseUrl}}"],
+              "path": ["exchange-rates", "fetch-bcv"]
+            },
+            "description": "Dispara el scraping inmediato del BCV (https://www.bcv.org.ve/). Idempotente: si ya existe una tasa para la misma fecha efectiva, retorna la existente. El CRON automático corre diariamente a las 08:00."
+          }
+        },
+        {
+          "name": "17.5 Override Rate (manual)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "pm.test('Tasa marcada con source=manual e is_overridden=true', () => {",
+                  "  pm.expect(json.source).to.eql('manual');",
+                  "  pm.expect(json.isOverridden).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rate\": 36.75,\n  \"effectiveDate\": \"2026-04-16\",\n  \"notes\": \"Tasa sobreescrita manualmente por falta de publicación BCV\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/exchange-rates/override",
+              "host": ["{{baseUrl}}"],
+              "path": ["exchange-rates", "override"]
+            },
+            "description": "Sobreescribe manualmente la tasa del día (se guarda con `source='manual'` e `is_overridden=true`). Útil cuando el BCV no ha publicado o hay eventos cambiarios extraordinarios."
           }
         }
       ]
@@ -4255,17 +4536,1522 @@
       ]
     },
     {
-      "name": "18. LOGOUT",
+      "name": "18. PRICES - Módulo Independiente (siempre USD)",
+      "description": "Precios desacoplados del lote.\n- Siempre en USD (nunca en Bs). La conversión a Bs la hace el POS al imprimir usando el tipo de cambio.\n- Scope: producto + sucursal (opcional → global).\n- Cascada de resolución: `branch_override` → `global` → `lot_fallback` (legacy desde `inventory_lots.sale_price`).",
       "item": [
         {
-          "name": "18.1 Logout",
+          "name": "18.1 Create Global Price (sin branchId → aplica a todas las sucursales)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var p = pm.response.json();",
+                  "pm.test('priceUsd coincide', () => pm.expect(Number(p.priceUsd)).to.eql(12.5));",
+                  "pm.test('branchId es null (global)', () => pm.expect(p.branchId).to.be.null);",
+                  "pm.test('effectiveTo es null (vigente)', () => pm.expect(p.effectiveTo).to.be.null);",
+                  "if (p.id) pm.collectionVariables.set('priceId', p.id);"
                 ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"priceUsd\": 12.5,\n  \"notes\": \"Lista de precios Q2 2026\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/prices", "host": ["{{baseUrl}}"], "path": ["prices"] },
+            "description": "Crea precio global (sin branchId). Si ya existía un precio global vigente para este producto, se cierra automáticamente (effective_to = now) antes de insertar el nuevo."
+          }
+        },
+        {
+          "name": "18.2 Create Branch Override (mismo producto, distinto precio por sucursal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var p = pm.response.json();",
+                  "pm.test('branchId seteado', () => pm.expect(p.branchId).to.be.a('string'));",
+                  "pm.test('priceUsd override', () => pm.expect(Number(p.priceUsd)).to.eql(14.0));",
+                  "if (p.id) pm.collectionVariables.set('priceBranchOverrideId', p.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"priceUsd\": 14.0,\n  \"notes\": \"Sucursal céntrica — sobreprecio por ubicación premium\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/prices", "host": ["{{baseUrl}}"], "path": ["prices"] },
+            "description": "Crea un override para una sucursal específica. Convive con el precio global: en `/prices/current` el override gana si pasas `branchId`."
+          }
+        },
+        {
+          "name": "18.3 List Prices (vigentes por defecto)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "pm.test('Respuesta paginada', () => {",
+                  "  pm.expect(body).to.have.property('data');",
+                  "  pm.expect(body).to.have.property('total');",
+                  "});",
+                  "if (body.data.length > 0) {",
+                  "  pm.test('Solo vigentes (effectiveTo es null o futura)', () => {",
+                  "    for (var p of body.data) {",
+                  "      if (p.effectiveTo) pm.expect(new Date(p.effectiveTo).getTime()).to.be.above(Date.now());",
+                  "    }",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/prices?productId={{productId}}&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["prices"],
+              "query": [
+                { "key": "productId", "value": "{{productId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "branchId", "value": "{{branchId}}", "disabled": true },
+                { "key": "includeHistory", "value": "false", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "18.4 Get Current Price (con branchId → usa override)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var r = pm.response.json();",
+                  "pm.test('source=branch_override', () => pm.expect(r.source).to.eql('branch_override'));",
+                  "pm.test('priceUsd=14', () => pm.expect(Number(r.priceUsd)).to.eql(14.0));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/prices/current?productId={{productId}}&branchId={{branchId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["prices", "current"],
+              "query": [
+                { "key": "productId", "value": "{{productId}}" },
+                { "key": "branchId", "value": "{{branchId}}" },
+                { "key": "at", "value": "2026-04-17T00:00:00Z", "disabled": true }
+              ]
+            },
+            "description": "Con branchId, la resolución prioriza el override de sucursal. Si no existe, cae a global. Si tampoco, al sale_price del lote más reciente."
+          }
+        },
+        {
+          "name": "18.5 Get Current Price (sin branchId → precio global)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var r = pm.response.json();",
+                  "pm.test('source=global', () => pm.expect(r.source).to.eql('global'));",
+                  "pm.test('priceUsd=12.5', () => pm.expect(Number(r.priceUsd)).to.eql(12.5));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/prices/current?productId={{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["prices", "current"],
+              "query": [{ "key": "productId", "value": "{{productId}}" }]
+            }
+          }
+        },
+        {
+          "name": "18.6 Update Price (corrección — no cambia vigencia)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var p = pm.response.json();",
+                  "pm.test('priceUsd actualizado', () => pm.expect(Number(p.priceUsd)).to.eql(12.75));",
+                  "pm.test('effectiveFrom no cambió', () => pm.expect(p.effectiveFrom).to.be.a('string'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"priceUsd\": 12.75,\n  \"notes\": \"Corrección: typo en el decimal (era 12.5, debía ser 12.75)\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/prices/{{priceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["prices", "{{priceId}}"]
+            },
+            "description": "Corrección sobre un precio ya creado (typo, nota). No mueve vigencia ni scope."
+          }
+        },
+        {
+          "name": "18.7 Create New Global Price (cierra el anterior automáticamente)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var p = pm.response.json();",
+                  "pm.test('Nuevo precio vigente', () => pm.expect(p.effectiveTo).to.be.null);",
+                  "if (p.id) pm.collectionVariables.set('priceIdNew', p.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"priceUsd\": 13.25,\n  \"notes\": \"Ajuste de precio por aumento de costo\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/prices", "host": ["{{baseUrl}}"], "path": ["prices"] },
+            "description": "Al crear un nuevo precio global para el mismo producto, el anterior queda con `effective_to` seteado. El unique index parcial impide dos vigentes simultáneos."
+          }
+        },
+        {
+          "name": "18.8 List Prices includeHistory=true (ve el histórico completo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "pm.test('Hay precios expirados y vigentes', () => {",
+                  "  var expired = body.data.filter(p => p.effectiveTo !== null);",
+                  "  pm.expect(expired.length).to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/prices?productId={{productId}}&includeHistory=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["prices"],
+              "query": [
+                { "key": "productId", "value": "{{productId}}" },
+                { "key": "includeHistory", "value": "true" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "18.9 Expire Price Manually (cierra vigencia vigente)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var p = pm.response.json();",
+                  "pm.test('effectiveTo seteado', () => pm.expect(p.effectiveTo).to.be.a('string'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/prices/{{priceBranchOverrideId}}/expire",
+              "host": ["{{baseUrl}}"],
+              "path": ["prices", "{{priceBranchOverrideId}}", "expire"]
+            },
+            "description": "Al expirar el branch_override, la resolución de precio para esa sucursal cae al precio global."
+          }
+        }
+      ]
+    },
+    {
+      "name": "19. PROMOTIONS - Descuentos y Promos (USD)",
+      "description": "Promociones aplicables a productos. Tipos: `percentage` (%), `fixed_amount` (USD off por unidad), `buy_x_get_y`.\n\nScopes:\n- Sin scopes → aplica a todos los productos y sucursales.\n- Con scopes `product`/`category` → filtra productos (OR entre product y category).\n- Con scopes `branch` → filtra sucursales.\n\nTodos los montos en USD, nunca en Bs.",
+      "item": [
+        {
+          "name": "19.1 Create Percentage Promotion (global, 10% off todo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var p = pm.response.json();",
+                  "pm.test('type=percentage', () => pm.expect(p.type).to.eql('percentage'));",
+                  "pm.test('value=10', () => pm.expect(Number(p.value)).to.eql(10));",
+                  "pm.test('Sin scopes (global)', () => pm.expect(p.scopes).to.be.an('array').that.is.empty);",
+                  "if (p.id) pm.collectionVariables.set('promotionPercentageId', p.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"10% off general\",\n  \"description\": \"Promoción general de lanzamiento\",\n  \"type\": \"percentage\",\n  \"value\": 10,\n  \"minQuantity\": 1,\n  \"priority\": 5,\n  \"effectiveFrom\": \"2026-04-17T00:00:00Z\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/promotions", "host": ["{{baseUrl}}"], "path": ["promotions"] }
+          }
+        },
+        {
+          "name": "19.2 Create Fixed Amount Promotion (con scope categoría)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var p = pm.response.json();",
+                  "pm.test('type=fixed_amount', () => pm.expect(p.type).to.eql('fixed_amount'));",
+                  "pm.test('value=1.5 USD off', () => pm.expect(Number(p.value)).to.eql(1.5));",
+                  "pm.test('Tiene 1 scope (categoría)', () => pm.expect(p.scopes).to.have.lengthOf(1));",
+                  "if (p.id) pm.collectionVariables.set('promotionFixedId', p.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"$1.50 off analgésicos\",\n  \"type\": \"fixed_amount\",\n  \"value\": 1.5,\n  \"minQuantity\": 1,\n  \"priority\": 10,\n  \"effectiveFrom\": \"2026-04-17T00:00:00Z\",\n  \"scopes\": [\n    { \"scopeType\": \"category\", \"scopeId\": \"{{categoryId}}\" }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/promotions", "host": ["{{baseUrl}}"], "path": ["promotions"] }
+          }
+        },
+        {
+          "name": "19.3 Create Buy-X-Get-Y Promotion (2x1, scope producto específico)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var p = pm.response.json();",
+                  "pm.test('type=buy_x_get_y', () => pm.expect(p.type).to.eql('buy_x_get_y'));",
+                  "pm.test('buyQuantity=2, getQuantity=1', () => {",
+                  "  pm.expect(p.buyQuantity).to.eql(2);",
+                  "  pm.expect(p.getQuantity).to.eql(1);",
+                  "});",
+                  "if (p.id) pm.collectionVariables.set('promotionBxgyId', p.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Compra 2 Lleva 3\",\n  \"description\": \"2x1 en producto estrella\",\n  \"type\": \"buy_x_get_y\",\n  \"value\": 0,\n  \"buyQuantity\": 2,\n  \"getQuantity\": 1,\n  \"minQuantity\": 3,\n  \"priority\": 20,\n  \"effectiveFrom\": \"2026-04-17T00:00:00Z\",\n  \"scopes\": [\n    { \"scopeType\": \"product\", \"scopeId\": \"{{productId}}\" }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/promotions", "host": ["{{baseUrl}}"], "path": ["promotions"] }
+          }
+        },
+        {
+          "name": "19.4 List Promotions (vigentes, ordenadas por prioridad)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "pm.test('Paginada', () => { pm.expect(body).to.have.property('data'); pm.expect(body).to.have.property('total'); });",
+                  "if (body.data.length >= 2) {",
+                  "  pm.test('Ordenadas por prioridad DESC', () => {",
+                  "    for (var i = 0; i < body.data.length - 1; i++) {",
+                  "      pm.expect(body.data[i].priority).to.be.at.least(body.data[i+1].priority);",
+                  "    }",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/promotions?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "type", "value": "percentage", "disabled": true },
+                { "key": "includeExpired", "value": "true", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "19.5 Get Applicable Promotions (producto + sucursal, sin precio)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var list = pm.response.json();",
+                  "pm.test('Es array', () => pm.expect(list).to.be.an('array'));",
+                  "pm.test('Al menos 1 aplicable (global percentage)', () => pm.expect(list.length).to.be.at.least(1));",
+                  "pm.test('Cada promo tiene promotionId, type, applicable', () => {",
+                  "  for (var p of list) {",
+                  "    pm.expect(p).to.have.property('promotionId');",
+                  "    pm.expect(p).to.have.property('type');",
+                  "    pm.expect(p).to.have.property('applicable');",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/promotions/applicable?productId={{productId}}&branchId={{branchId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions", "applicable"],
+              "query": [
+                { "key": "productId", "value": "{{productId}}" },
+                { "key": "branchId", "value": "{{branchId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "19.6 Get Applicable + Calc Discount (priceUsd=10 USD, quantity=5)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var list = pm.response.json();",
+                  "pm.test('Al menos la promo percentage 10% devuelve discountUsd=5 (10*5*0.10)', () => {",
+                  "  var pct = list.find(p => p.type === 'percentage');",
+                  "  if (pct && pct.applicable) {",
+                  "    pm.expect(pct.grossTotalUsd).to.eql(50);",
+                  "    pm.expect(pct.discountUsd).to.eql(5);",
+                  "    pm.expect(pct.finalTotalUsd).to.eql(45);",
+                  "  }",
+                  "});",
+                  "pm.test('buy_x_get_y con qty=5 y bundle=3 → 1 bundle completo → 1 gratis → descuento=10', () => {",
+                  "  var bxgy = list.find(p => p.type === 'buy_x_get_y');",
+                  "  if (bxgy && bxgy.applicable) {",
+                  "    pm.expect(bxgy.freeUnits).to.eql(1);",
+                  "    pm.expect(bxgy.discountUsd).to.eql(10);",
+                  "    pm.expect(bxgy.finalTotalUsd).to.eql(40);",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/promotions/applicable?productId={{productId}}&branchId={{branchId}}&priceUsd=10&quantity=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions", "applicable"],
+              "query": [
+                { "key": "productId", "value": "{{productId}}" },
+                { "key": "branchId", "value": "{{branchId}}" },
+                { "key": "priceUsd", "value": "10" },
+                { "key": "quantity", "value": "5" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "19.7 Get Promotion by ID (incluye scopes)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var p = pm.response.json();",
+                  "pm.test('Trae scopes array', () => pm.expect(p.scopes).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/promotions/{{promotionBxgyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions", "{{promotionBxgyId}}"]
+            }
+          }
+        },
+        {
+          "name": "19.8 Update Promotion (subir prioridad y maxUses)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var p = pm.response.json();",
+                  "pm.test('priority=50', () => pm.expect(p.priority).to.eql(50));",
+                  "pm.test('maxUses=100', () => pm.expect(p.maxUses).to.eql(100));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"priority\": 50,\n  \"maxUses\": 100\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/promotions/{{promotionPercentageId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions", "{{promotionPercentageId}}"]
+            }
+          }
+        },
+        {
+          "name": "19.9 Add Scope (restringir percentage a una sucursal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var s = pm.response.json();",
+                  "pm.test('scopeType=branch', () => pm.expect(s.scopeType).to.eql('branch'));",
+                  "if (s.id) pm.collectionVariables.set('promotionScopeId', s.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scopeType\": \"branch\",\n  \"scopeId\": \"{{branchId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/promotions/{{promotionPercentageId}}/scopes",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions", "{{promotionPercentageId}}", "scopes"]
+            }
+          }
+        },
+        {
+          "name": "19.10 Remove Scope (quita restricción de sucursal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/promotions/{{promotionPercentageId}}/scopes/{{promotionScopeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions", "{{promotionPercentageId}}", "scopes", "{{promotionScopeId}}"]
+            }
+          }
+        },
+        {
+          "name": "19.11 Deactivate Promotion (queda en BD pero no aplica)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var p = pm.response.json();",
+                  "pm.test('isActive=false', () => pm.expect(p.isActive).to.be.false);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/promotions/{{promotionFixedId}}/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions", "{{promotionFixedId}}", "deactivate"]
+            }
+          }
+        },
+        {
+          "name": "19.12 Activate Promotion (reactivar la que acabamos de desactivar)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var p = pm.response.json();",
+                  "pm.test('isActive=true', () => pm.expect(p.isActive).to.be.true);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/promotions/{{promotionFixedId}}/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions", "{{promotionFixedId}}", "activate"]
+            }
+          }
+        },
+        {
+          "name": "19.13 Record Use (POS incrementa usesCount al cerrar venta)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var p = pm.response.json();",
+                  "pm.test('usesCount incrementado', () => pm.expect(p.usesCount).to.be.at.least(1));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/promotions/{{promotionPercentageId}}/record-use",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions", "{{promotionPercentageId}}", "record-use"]
+            },
+            "description": "Se puede llamar repetidamente hasta alcanzar maxUses (si fue seteado). Falla con 400 al exceder."
+          }
+        },
+        {
+          "name": "19.14 Delete Promotion (cascade elimina scopes)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/promotions/{{promotionBxgyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions", "{{promotionBxgyId}}"]
+            },
+            "description": "FK ON DELETE CASCADE elimina también los promotion_scopes asociados."
+          }
+        }
+      ]
+    },
+    {
+      "name": "20. INVENTORY TRANSFERS - Traslados entre Sucursales",
+      "description": "Traslados de stock entre sucursales. Ciclo de vida:\n\n  draft ──(dispatch)──▶ in_transit ──(receive)──▶ completed\n    │                           │\n    └──(cancel)──▶ cancelled ◀──┘  (revierte stock al origen si estaba in_transit)\n\nCada movimiento genera kardex inmutable (`transfer_out`, `transfer_in`, `transfer_cancelled`) con `referenceType='transfer'`.\n\nTrazabilidad FEFO: el lote en destino se crea/reutiliza con el MISMO `lot_number` que el origen, preservando la fecha de vencimiento original.",
+      "item": [
+        {
+          "name": "20.1 Setup: Create Destination Branch (hidrata branchId2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 o 409 (ya existe)', () => pm.expect(pm.response.code).to.be.oneOf([201, 409]));",
+                  "if (pm.response.code === 201) {",
+                  "  var b = pm.response.json();",
+                  "  if (b.id) pm.collectionVariables.set('branchId2', b.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"TRF-DEST\",\n  \"name\": \"Sucursal Destino Traslados\",\n  \"address\": \"Av. Principal 100\",\n  \"city\": \"Caracas\",\n  \"phone\": \"+58-0000000\",\n  \"isActive\": true\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/branches", "host": ["{{baseUrl}}"], "path": ["branches"] },
+            "description": "Crea la sucursal destino si no existe. Si ya existe (por ejemplo de una corrida anterior), hidrata manualmente `branchId2` en la colección con un ID de sucursal distinta a `branchId`."
+          }
+        },
+        {
+          "name": "20.2 Setup: Ensure branchId2 hydrated (fallback via GET branches)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "var list = body.data || body;",
+                  "var origin = pm.collectionVariables.get('branchId');",
+                  "var current2 = pm.collectionVariables.get('branchId2');",
+                  "if (!current2 || current2 === origin) {",
+                  "  var other = list.find(b => b.id !== origin);",
+                  "  if (other) {",
+                  "    pm.collectionVariables.set('branchId2', other.id);",
+                  "    console.log('Hidratado branchId2=', other.id);",
+                  "  }",
+                  "}",
+                  "pm.test('branchId2 distinto de branchId', () => {",
+                  "  var b2 = pm.collectionVariables.get('branchId2');",
+                  "  pm.expect(b2).to.not.eql(origin);",
+                  "  pm.expect(b2).to.be.a('string').and.not.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/branches", "host": ["{{baseUrl}}"], "path": ["branches"] },
+            "description": "Si 20.1 no pudo crear la sucursal destino (409), este request lista todas y escoge una distinta a branchId como branchId2."
+          }
+        },
+        {
+          "name": "20.3 Setup: Create Lot in Origin (stock 50 para pruebas)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var lot = pm.response.json();",
+                  "if (lot.id) pm.collectionVariables.set('transferTestLotId', lot.id);",
+                  "pm.test('quantityAvailable=50', () => pm.expect(Number(lot.quantityAvailable)).to.eql(50));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"lotNumber\": \"TRF-TEST-{{$randomInt}}\",\n  \"expirationDate\": \"2027-12-31\",\n  \"manufactureDate\": \"2026-01-01\",\n  \"acquisitionType\": \"purchase\",\n  \"costUsd\": 5.0,\n  \"salePrice\": 10.0,\n  \"quantityReceived\": 50\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/inventory/lots", "host": ["{{baseUrl}}"], "path": ["inventory", "lots"] },
+            "description": "Crea un lote fresco en la sucursal origen con 50 unidades para probar el traslado sin tocar otros lotes de producción."
+          }
+        },
+        {
+          "name": "20.4 Create Transfer Draft (10 unidades del lote de origen)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var t = pm.response.json();",
+                  "pm.test('status=draft', () => pm.expect(t.status).to.eql('draft'));",
+                  "pm.test('transferNumber TRF-*', () => pm.expect(t.transferNumber).to.match(/^TRF-\\d{8}-\\d{4}$/));",
+                  "pm.test('1 item creado', () => pm.expect(t.items).to.have.lengthOf(1));",
+                  "if (t.id) pm.collectionVariables.set('transferId', t.id);",
+                  "if (t.items && t.items[0] && t.items[0].id) pm.collectionVariables.set('transferItemId', t.items[0].id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromBranchId\": \"{{branchId}}\",\n  \"toBranchId\": \"{{branchId2}}\",\n  \"notes\": \"Traslado de prueba — módulo 10\",\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"lotId\": \"{{transferTestLotId}}\",\n      \"quantitySent\": 10\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory-transfers",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory-transfers"]
+            },
+            "description": "Crea draft. NO mueve stock todavía. Valida que el lote pertenezca al origen y tenga stock suficiente."
+          }
+        },
+        {
+          "name": "20.5 List Transfers (filtro por status=draft)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "pm.test('Paginada', () => { pm.expect(body).to.have.property('data'); pm.expect(body).to.have.property('total'); });",
+                  "pm.test('Hay al menos 1 draft', () => pm.expect(body.data.length).to.be.at.least(1));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory-transfers?status=draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory-transfers"],
+              "query": [
+                { "key": "status", "value": "draft" },
+                { "key": "fromBranchId", "value": "{{branchId}}", "disabled": true },
+                { "key": "toBranchId", "value": "{{branchId2}}", "disabled": true },
+                { "key": "from", "value": "2026-01-01", "disabled": true },
+                { "key": "to", "value": "2026-12-31", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "20.6 Get Transfer by ID (incluye items)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var t = pm.response.json();",
+                  "pm.test('Tiene items array', () => pm.expect(t.items).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory-transfers/{{transferId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory-transfers", "{{transferId}}"]
+            }
+          }
+        },
+        {
+          "name": "20.7 Dispatch Transfer (draft → in_transit, descuenta origen)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var t = pm.response.json();",
+                  "pm.test('status=in_transit', () => pm.expect(t.status).to.eql('in_transit'));",
+                  "pm.test('sentAt seteado', () => pm.expect(t.sentAt).to.be.a('string'));",
+                  "pm.test('sentBy seteado', () => pm.expect(t.sentBy).to.be.a('string'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory-transfers/{{transferId}}/dispatch",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory-transfers", "{{transferId}}", "dispatch"]
+            },
+            "description": "Descuenta quantityAvailable del lote origen (10 unidades) y genera kardex transfer_out. El lote origen queda con 40 unidades disponibles."
+          }
+        },
+        {
+          "name": "20.8 Verify Kardex transfer_out was created",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "pm.test('Hay al menos 1 transfer_out con refId=transferId', () => {",
+                  "  var tid = pm.collectionVariables.get('transferId');",
+                  "  var match = body.data.find(k => k.movementType === 'transfer_out' && k.referenceId === tid);",
+                  "  pm.expect(match, 'No se encontró kardex transfer_out').to.exist;",
+                  "  pm.expect(Number(match.quantity)).to.eql(-10);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/kardex?movementType=transfer_out&lotId={{transferTestLotId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "kardex"],
+              "query": [
+                { "key": "movementType", "value": "transfer_out" },
+                { "key": "lotId", "value": "{{transferTestLotId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "20.9 Receive Transfer (in_transit → completed, con merma de 1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var t = pm.response.json();",
+                  "pm.test('status=completed', () => pm.expect(t.status).to.eql('completed'));",
+                  "pm.test('receivedAt seteado', () => pm.expect(t.receivedAt).to.be.a('string'));",
+                  "pm.test('item.quantityReceived=9 (1 unidad de merma)', () => {",
+                  "  pm.expect(Number(t.items[0].quantityReceived)).to.eql(9);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"itemId\": \"{{transferItemId}}\", \"quantityReceived\": 9 }\n  ],\n  \"notes\": \"Llegó 1 unidad menos — merma en tránsito\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory-transfers/{{transferId}}/receive",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory-transfers", "{{transferId}}", "receive"]
+            },
+            "description": "Crea o incrementa lote en destino con MISMO lot_number que el origen. Genera kardex transfer_in. La diferencia (1 unidad) es merma en tránsito — ya fue descontada del origen en dispatch."
+          }
+        },
+        {
+          "name": "20.10 Verify Destination Lot exists with same lot_number",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "pm.test('Hay lote en branchId2 con 9 unidades', () => {",
+                  "  var destLot = body.data.find(l => l.branchId === pm.collectionVariables.get('branchId2'));",
+                  "  pm.expect(destLot, 'No se creó lote en destino').to.exist;",
+                  "  pm.expect(Number(destLot.quantityAvailable)).to.eql(9);",
+                  "  pm.expect(destLot.acquisitionType).to.eql('transfer');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/lots?productId={{productId}}&branchId={{branchId2}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "lots"],
+              "query": [
+                { "key": "productId", "value": "{{productId}}" },
+                { "key": "branchId", "value": "{{branchId2}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "20.11 Create Second Draft (para probar cancel desde in_transit)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var t = pm.response.json();",
+                  "if (t.id) pm.collectionVariables.set('transferToCancelId', t.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromBranchId\": \"{{branchId}}\",\n  \"toBranchId\": \"{{branchId2}}\",\n  \"notes\": \"Traslado para probar cancel desde in_transit\",\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"lotId\": \"{{transferTestLotId}}\",\n      \"quantitySent\": 5\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory-transfers",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory-transfers"]
+            }
+          }
+        },
+        {
+          "name": "20.12 Dispatch Second Transfer (para dejarlo in_transit)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var t = pm.response.json();",
+                  "pm.test('status=in_transit', () => pm.expect(t.status).to.eql('in_transit'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory-transfers/{{transferToCancelId}}/dispatch",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory-transfers", "{{transferToCancelId}}", "dispatch"]
+            }
+          }
+        },
+        {
+          "name": "20.13 Cancel In-Transit Transfer (revierte stock al origen)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var t = pm.response.json();",
+                  "pm.test('status=cancelled', () => pm.expect(t.status).to.eql('cancelled'));",
+                  "pm.test('notes incluye [CANCEL]', () => pm.expect(t.notes).to.include('[CANCEL]'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Prueba de cancelación — devuelve 5 unidades al origen\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory-transfers/{{transferToCancelId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory-transfers", "{{transferToCancelId}}", "cancel"]
+            },
+            "description": "Como estaba in_transit, debe generar kardex `transfer_cancelled` con +5 en el lote origen y restaurar el quantityAvailable."
+          }
+        },
+        {
+          "name": "20.14 Verify Cancel Kardex and Stock Restoration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.json();",
+                  "pm.test('Hay kardex transfer_cancelled con refId=transferToCancelId', () => {",
+                  "  var tid = pm.collectionVariables.get('transferToCancelId');",
+                  "  var match = body.data.find(k => k.movementType === 'transfer_cancelled' && k.referenceId === tid);",
+                  "  pm.expect(match, 'No se encontró kardex transfer_cancelled').to.exist;",
+                  "  pm.expect(Number(match.quantity)).to.eql(5);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/kardex?lotId={{transferTestLotId}}&movementType=transfer_cancelled",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "kardex"],
+              "query": [
+                { "key": "lotId", "value": "{{transferTestLotId}}" },
+                { "key": "movementType", "value": "transfer_cancelled" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "21. IMPORTS - Importación Masiva CSV/XLSX",
+      "description": "Importación masiva de productos, stock inicial y precios desde archivos CSV o XLSX.\n\n**Flujo recomendado**:\n1. Descarga el template (`GET /imports/templates/:type`) → ábrelo en Excel/LibreOffice, llena datos.\n2. Corre `?dryRun=true` para validar sin persistir → revisa el array `errors`.\n3. Si success == total, quita `dryRun` y corre el commit real.\n\n**Identificadores naturales**: los templates usan `ean`, `branch_name`, `category_code_or_name` en vez de UUIDs para que sean editables sin conocer el schema.\n\n**Transaccionalidad**: cada fila se procesa en su propia transacción. Una fila con error NO afecta a las demás.\n\n**IMPORTANTE para Postman**: después de descargar un template (requests .1, .4, .7), súbelo en el request de import seleccionando el archivo en el campo `file` (form-data). Los requests tienen `src: []` por defecto — el usuario debe escoger el archivo localmente.",
+      "item": [
+        {
+          "name": "21.1 Download Products Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Content-Type XLSX', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('spreadsheetml'));",
+                  "pm.test('Content-Disposition attachment', () => pm.expect(pm.response.headers.get('Content-Disposition')).to.include('template-products.xlsx'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/imports/templates/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["imports", "templates", "products"]
+            },
+            "description": "Descarga el XLSX con headers y 2 filas de ejemplo. Desde el desktop de Postman: `Send and Download` y luego edítalo."
+          }
+        },
+        {
+          "name": "21.2 Import Products (dry-run)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var r = pm.response.json();",
+                  "pm.test('dryRun=true', () => pm.expect(r.dryRun).to.eql(true));",
+                  "pm.test('type=products', () => pm.expect(r.type).to.eql('products'));",
+                  "pm.test('total > 0', () => pm.expect(r.total).to.be.greaterThan(0));",
+                  "pm.test('errors es array', () => pm.expect(r.errors).to.be.an('array'));",
+                  "if (r.failed > 0) console.log('Errores encontrados (dry-run):', JSON.stringify(r.errors, null, 2));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/imports/products?dryRun=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["imports", "products"],
+              "query": [{ "key": "dryRun", "value": "true" }]
+            },
+            "description": "Valida el archivo SIN persistir. Revisa `result.errors` para ver problemas fila por fila antes del commit real."
+          }
+        },
+        {
+          "name": "21.3 Import Products (commit)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var r = pm.response.json();",
+                  "pm.test('dryRun=false', () => pm.expect(r.dryRun).to.eql(false));",
+                  "pm.test('created+updated == success', () => pm.expect(r.created + r.updated).to.eql(r.success));",
+                  "console.log('Productos creados:', r.created, '| actualizados:', r.updated, '| fallidos:', r.failed);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/imports/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["imports", "products"]
+            },
+            "description": "Commit real. Upsert por `ean` (preferente) o `internal_code`."
+          }
+        },
+        {
+          "name": "21.4 Download Stock-Initial Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Content-Disposition stock-initial.xlsx', () => pm.expect(pm.response.headers.get('Content-Disposition')).to.include('template-stock-initial.xlsx'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/imports/templates/stock-initial",
+              "host": ["{{baseUrl}}"],
+              "path": ["imports", "templates", "stock-initial"]
+            }
+          }
+        },
+        {
+          "name": "21.5 Import Stock Initial (dry-run)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var r = pm.response.json();",
+                  "pm.test('type=stock-initial', () => pm.expect(r.type).to.eql('stock-initial'));",
+                  "pm.test('dryRun=true', () => pm.expect(r.dryRun).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/imports/stock-initial?dryRun=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["imports", "stock-initial"],
+              "query": [{ "key": "dryRun", "value": "true" }]
+            },
+            "description": "Valida stock inicial. Cada fila debe resolver `product_ean` y `branch_name` existentes. NO es upsert: si `lot_number` ya existe para ese producto+sucursal, falla esa fila."
+          }
+        },
+        {
+          "name": "21.6 Import Stock Initial (commit)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var r = pm.response.json();",
+                  "pm.test('dryRun=false', () => pm.expect(r.dryRun).to.eql(false));",
+                  "console.log('Lotes creados:', r.created, '| fallidos:', r.failed);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/imports/stock-initial",
+              "host": ["{{baseUrl}}"],
+              "path": ["imports", "stock-initial"]
+            }
+          }
+        },
+        {
+          "name": "21.7 Download Prices Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('template-prices.xlsx', () => pm.expect(pm.response.headers.get('Content-Disposition')).to.include('template-prices.xlsx'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/imports/templates/prices",
+              "host": ["{{baseUrl}}"],
+              "path": ["imports", "templates", "prices"]
+            }
+          }
+        },
+        {
+          "name": "21.8 Import Prices (dry-run)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var r = pm.response.json();",
+                  "pm.test('type=prices', () => pm.expect(r.type).to.eql('prices'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/imports/prices?dryRun=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["imports", "prices"],
+              "query": [{ "key": "dryRun", "value": "true" }]
+            },
+            "description": "Precios SIEMPRE en USD. `branch_name` vacío = precio global. Cerrar vigencia anterior del mismo scope se hace automáticamente."
+          }
+        },
+        {
+          "name": "21.9 Import Prices (commit)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var r = pm.response.json();",
+                  "pm.test('dryRun=false', () => pm.expect(r.dryRun).to.eql(false));",
+                  "console.log('Precios creados:', r.created, '| fallidos:', r.failed);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/imports/prices",
+              "host": ["{{baseUrl}}"],
+              "path": ["imports", "prices"]
+            }
+          }
+        },
+        {
+          "name": "21.10 Bad Request: tipo inválido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Mensaje lista tipos permitidos', () => pm.expect(pm.response.json().message).to.include('Tipo inválido'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/imports/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["imports", "customers"]
+            },
+            "description": "Edge case: tipo inexistente devuelve 400 con lista de tipos permitidos."
+          }
+        },
+        {
+          "name": "21.11 Bad Request: sin archivo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Mensaje exige file', () => pm.expect(pm.response.json().message).to.include('Archivo requerido'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{baseUrl}}/imports/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["imports", "products"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "22. LOGOUT",
+      "item": [
+        {
+          "name": "22.1 Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"],
                 "type": "text/javascript"
               }
             }
@@ -4280,13 +6066,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/auth/logout",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "logout"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
             }
           }
         }

@@ -12,4 +12,10 @@ export class CreateTherapeuticUseDto {
   @IsString()
   @MaxLength(500)
   description?: string;
+
+  @ApiPropertyOptional({ example: 'N02', description: 'Código ATC (WHO) nivel 1-3 — estándar internacional' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  atcCode?: string;
 }
