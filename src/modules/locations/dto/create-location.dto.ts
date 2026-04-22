@@ -1,4 +1,5 @@
-import { Min, IsUUID, IsNumber, IsString, IsBoolean, MaxLength, IsOptional } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { Min, IsUUID, Matches, IsNumber, IsString, IsBoolean, MaxLength, IsOptional } from 'class-validator';
 
 export class CreateLocationDto {
   @IsUUID()
@@ -25,6 +26,8 @@ export class CreateLocationDto {
   capacity?: number;
 
   @IsString()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Matches(/\S/, { message: 'locationCode no puede estar vacío ni contener solo espacios' })
   @MaxLength(30)
   locationCode: string;
 

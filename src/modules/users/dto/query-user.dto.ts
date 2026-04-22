@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type, Transform, plainToInstance } from 'class-transformer';
-import { IsNumber, IsString, IsOptional, ValidateNested } from 'class-validator';
+import { IsNumber, IsString, IsBoolean, IsOptional, ValidateNested } from 'class-validator';
 
 import { User } from '../domain/user';
 import { RoleDto } from '../../roles/dto/role.dto';
@@ -11,6 +11,11 @@ export class FilterUserDto {
   @ValidateNested({ each: true })
   @Type(() => RoleDto)
   roles?: RoleDto[] | null;
+
+  @ApiPropertyOptional({ type: Boolean })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }
 
 export class SortUserDto {

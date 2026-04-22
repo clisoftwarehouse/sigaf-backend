@@ -36,6 +36,9 @@ export class UsersRelationalRepository implements UserRepository {
     if (filterOptions?.roles?.length) {
       where.roleId = filterOptions.roles[0].id as string;
     }
+    if (filterOptions?.isActive !== undefined && filterOptions?.isActive !== null) {
+      where.isActive = filterOptions.isActive;
+    }
 
     const entities = await this.usersRepository.find({
       relations: ['role'],
@@ -125,5 +128,15 @@ export class UsersRelationalRepository implements UserRepository {
 
   async remove(id: User['id']): Promise<void> {
     await this.usersRepository.update(id, { isActive: false });
+  }
+
+  async restore(id: User['id']): Promise<User> {
+    const entity = await this.usersRepository.findOne({ where: { id }, relations: ['role'] });
+    if (!entity) throw new NotFoundException('Usuario no encontrado');
+    if (!entity.isActive) {
+      await this.usersRepository.update(id, { isActive: true });
+      entity.isActive = true;
+    }
+    return UserMapper.toDomain(entity);
   }
 }

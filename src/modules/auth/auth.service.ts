@@ -27,33 +27,26 @@ export class AuthService {
   async validateLogin(loginDto: AuthEmailLoginDto): Promise<LoginResponseDto> {
     const user = await this.usersService.findByEmailOrUsername(loginDto.email);
 
-    if (!user) {
-      throw new UnprocessableEntityException({
-        status: HttpStatus.UNPROCESSABLE_ENTITY,
-        errors: { email: 'notFound' },
+    if (!user || !user.password) {
+      throw new UnauthorizedException({
+        status: HttpStatus.UNAUTHORIZED,
+        errors: { credentials: 'invalidCredentials' },
       });
     }
 
     if (!user.isActive) {
-      throw new UnprocessableEntityException({
-        status: HttpStatus.UNPROCESSABLE_ENTITY,
-        errors: { email: 'userInactive' },
-      });
-    }
-
-    if (!user.password) {
-      throw new UnprocessableEntityException({
-        status: HttpStatus.UNPROCESSABLE_ENTITY,
-        errors: { password: 'incorrectPassword' },
+      throw new UnauthorizedException({
+        status: HttpStatus.UNAUTHORIZED,
+        errors: { credentials: 'userInactive' },
       });
     }
 
     const isValidPassword = await bcrypt.compare(loginDto.password, user.password);
 
     if (!isValidPassword) {
-      throw new UnprocessableEntityException({
-        status: HttpStatus.UNPROCESSABLE_ENTITY,
-        errors: { password: 'incorrectPassword' },
+      throw new UnauthorizedException({
+        status: HttpStatus.UNAUTHORIZED,
+        errors: { credentials: 'invalidCredentials' },
       });
     }
 

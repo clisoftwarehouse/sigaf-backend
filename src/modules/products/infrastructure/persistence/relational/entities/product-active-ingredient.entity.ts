@@ -15,7 +15,7 @@ export class ProductActiveIngredientEntity extends EntityRelationalHelper {
   @Column('varchar', { length: 50, nullable: true })
   concentration: string | null;
 
-  @Column('boolean', { name: 'is_primary', default: true })
+  @Column('boolean', { name: 'is_primary', default: false })
   isPrimary: boolean;
 
   @ManyToOne(() => ProductEntity)

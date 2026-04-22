@@ -1,9 +1,17 @@
 import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsString, IsBoolean, MinLength, IsOptional } from 'class-validator';
+import { IsEmail, Matches, IsString, IsBoolean, MinLength, IsOptional } from 'class-validator';
 
 import { RoleDto } from '../../roles/dto/role.dto';
 import { lowerCaseTransformer } from '@/common/utils/transformers/lower-case.transformer';
+import {
+  PHONE_HINT,
+  CEDULA_HINT,
+  PHONE_REGEX,
+  CEDULA_REGEX,
+  normalizePhone,
+  normalizeCedula,
+} from '@/common/utils/venezuelan-id';
 
 export class UpdateUserDto {
   @ApiPropertyOptional({ example: 'secret123', type: String })
@@ -18,7 +26,9 @@ export class UpdateUserDto {
 
   @ApiPropertyOptional({ example: 'V-12345678', type: String })
   @IsOptional()
+  @Transform(({ value }) => (value === null || value === '' ? null : normalizeCedula(value)))
   @IsString()
+  @Matches(CEDULA_REGEX, { message: CEDULA_HINT })
   cedula?: string | null;
 
   @ApiPropertyOptional({ example: 'admin@example.com', type: String })
@@ -27,9 +37,11 @@ export class UpdateUserDto {
   @IsEmail()
   email?: string | null;
 
-  @ApiPropertyOptional({ example: '+58412123456', type: String })
+  @ApiPropertyOptional({ example: '+584121234567', type: String })
   @IsOptional()
+  @Transform(({ value }) => (value === null || value === '' ? null : normalizePhone(value)))
   @IsString()
+  @Matches(PHONE_REGEX, { message: PHONE_HINT })
   phone?: string | null;
 
   @ApiPropertyOptional({ type: () => RoleDto })

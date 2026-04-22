@@ -26,4 +26,5 @@ export abstract class UserRepository {
   abstract update(id: User['id'], payload: DeepPartial<User>): Promise<User | null>;
 
   abstract remove(id: User['id']): Promise<void>;
+  abstract restore(id: User['id']): Promise<User>;
 }

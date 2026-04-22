@@ -5,6 +5,7 @@ import {
   Put,
   Body,
   Post,
+  Patch,
   Param,
   Query,
   Delete,
@@ -15,7 +16,14 @@ import {
 } from '@nestjs/common';
 
 import { ProductsService } from './products.service';
-import { AddBarcodeDto, QueryProductDto, AddIngredientDto, CreateProductDto, UpdateProductDto } from './dto';
+import {
+  AddBarcodeDto,
+  QueryProductDto,
+  AddIngredientDto,
+  CreateProductDto,
+  UpdateBarcodeDto,
+  UpdateProductDto,
+} from './dto';
 
 @ApiTags('Products')
 @ApiBearerAuth()
@@ -62,6 +70,12 @@ export class ProductsController {
   @ApiOperation({ summary: 'Soft-delete producto (solo si stock=0)' })
   remove(@Param('id', ParseUUIDPipe) id: string, @Request() req: { user?: { id: string } }) {
     return this.productsService.remove(id, req.user?.id);
+  }
+
+  @Patch(':id/restore')
+  @ApiOperation({ summary: 'Reactivar producto inactivo' })
+  restore(@Param('id', ParseUUIDPipe) id: string, @Request() req: { user?: { id: string } }) {
+    return this.productsService.restore(id, req.user?.id);
   }
 
   // ─── INGREDIENTS ───────────────────────────────────────────────────────
@@ -137,5 +151,15 @@ export class ProductsController {
   @ApiOperation({ summary: 'Eliminar código de barras de producto' })
   removeBarcode(@Param('id', ParseUUIDPipe) id: string, @Param('barcodeId', ParseUUIDPipe) barcodeId: string) {
     return this.productsService.removeBarcode(id, barcodeId);
+  }
+
+  @Put(':id/barcodes/:barcodeId')
+  @ApiOperation({ summary: 'Actualizar código de barras existente (valor, tipo, isPrimary)' })
+  updateBarcode(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('barcodeId', ParseUUIDPipe) barcodeId: string,
+    @Body() dto: UpdateBarcodeDto,
+  ) {
+    return this.productsService.updateBarcode(id, barcodeId, dto);
   }
 }

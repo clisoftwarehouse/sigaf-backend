@@ -4,13 +4,20 @@ import { Injectable, NotFoundException, ConflictException, BadRequestException }
 
 import { AuditService } from '../audit/audit.service';
 import { ProductEntity } from './infrastructure/persistence/relational/entities/product.entity';
-import { AddBarcodeDto, QueryProductDto, AddIngredientDto, CreateProductDto, UpdateProductDto } from './dto';
 import { ProductBarcodeEntity } from './infrastructure/persistence/relational/entities/product-barcode.entity';
 import { ProductSubstituteEntity } from './infrastructure/persistence/relational/entities/product-substitute.entity';
 import { InventoryLotEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/inventory-lot.entity';
 import { ProductTherapeuticUseEntity } from './infrastructure/persistence/relational/entities/product-therapeutic-use.entity';
 import { ProductActiveIngredientEntity } from './infrastructure/persistence/relational/entities/product-active-ingredient.entity';
 import { GoodsReceiptItemEntity } from '@/modules/purchases/infrastructure/persistence/relational/entities/goods-receipt-item.entity';
+import {
+  AddBarcodeDto,
+  QueryProductDto,
+  AddIngredientDto,
+  CreateProductDto,
+  UpdateBarcodeDto,
+  UpdateProductDto,
+} from './dto';
 
 @Injectable()
 export class ProductsService {
@@ -41,7 +48,9 @@ export class ProductsService {
       .createQueryBuilder('p')
       .leftJoinAndSelect('p.category', 'c')
       .leftJoinAndSelect('p.brand', 'b')
-      .leftJoinAndSelect('p.barcodes', 'bc');
+      .leftJoinAndSelect('p.barcodes', 'bc')
+      .leftJoinAndSelect('p.activeIngredients', 'pai')
+      .leftJoinAndSelect('pai.activeIngredient', 'ai');
 
     if (query.search) {
       qb.andWhere(
@@ -172,26 +181,34 @@ export class ProductsService {
     const saved = await this.productRepo.save(product);
 
     if (barcodesDto?.length) {
-      const barcodes = barcodesDto.map((bc) =>
-        this.barcodeRepo.create({
+      let primaryAssigned = false;
+      const barcodes = barcodesDto.map((bc) => {
+        const isPrimary = !primaryAssigned && !!bc.isPrimary;
+        if (isPrimary) primaryAssigned = true;
+        return this.barcodeRepo.create({
           productId: saved.id,
           barcode: bc.barcode,
           barcodeType: bc.barcodeType || 'ean13',
-          isPrimary: bc.isPrimary || false,
-        }),
-      );
+          isPrimary,
+        });
+      });
+      if (!primaryAssigned && barcodes.length) barcodes[0].isPrimary = true;
       await this.barcodeRepo.save(barcodes);
     }
 
     if (ingredientsDto?.length) {
-      const ingredients = ingredientsDto.map((ing) =>
-        this.ingredientRepo.create({
+      let primaryAssigned = false;
+      const ingredients = ingredientsDto.map((ing) => {
+        const isPrimary = !primaryAssigned && ing.isPrimary === true;
+        if (isPrimary) primaryAssigned = true;
+        return this.ingredientRepo.create({
           productId: saved.id,
           activeIngredientId: ing.activeIngredientId,
           concentration: ing.concentration || null,
-          isPrimary: ing.isPrimary ?? true,
-        }),
-      );
+          isPrimary,
+        });
+      });
+      if (!primaryAssigned && ingredients.length) ingredients[0].isPrimary = true;
       await this.ingredientRepo.save(ingredients);
     }
 
@@ -262,6 +279,23 @@ export class ProductsService {
     return { success: true };
   }
 
+  async restore(id: string, userId?: string): Promise<any> {
+    const product = await this.productRepo.findOne({ where: { id } });
+    if (!product) throw new NotFoundException('Producto no encontrado');
+    if (product.isActive) return this.findOne(id);
+    await this.productRepo.update(id, { isActive: true });
+    if (userId) {
+      await this.auditService.log({
+        tableName: 'products',
+        recordId: id,
+        action: 'UPDATE',
+        userId,
+        justification: 'Restore',
+      });
+    }
+    return this.findOne(id);
+  }
+
   // ─── SEARCH ────────────────────────────────────────────────────────────
   async search(q: string, type?: string): Promise<ProductEntity[]> {
     if (!q || q.trim().length === 0) throw new BadRequestException('Parámetro de búsqueda requerido');
@@ -305,11 +339,19 @@ export class ProductsService {
     });
     if (exists) throw new ConflictException('Principio activo ya asignado a este producto');
 
+    const existingCount = await this.ingredientRepo.count({ where: { productId } });
+    const wantsPrimary = dto.isPrimary === true;
+    const isPrimary = wantsPrimary || existingCount === 0;
+
+    if (isPrimary) {
+      await this.ingredientRepo.update({ productId, isPrimary: true }, { isPrimary: false });
+    }
+
     const ingredient = this.ingredientRepo.create({
       productId,
       activeIngredientId: dto.activeIngredientId,
       concentration: dto.concentration || null,
-      isPrimary: dto.isPrimary ?? true,
+      isPrimary,
     });
     return this.ingredientRepo.save(ingredient);
   }
@@ -330,11 +372,19 @@ export class ProductsService {
     const exists = await this.barcodeRepo.findOne({ where: { barcode: dto.barcode } });
     if (exists) throw new ConflictException(`Código de barras '${dto.barcode}' ya registrado`);
 
+    const existingCount = await this.barcodeRepo.count({ where: { productId } });
+    const wantsPrimary = dto.isPrimary === true;
+    const isPrimary = wantsPrimary || existingCount === 0;
+
+    if (isPrimary) {
+      await this.barcodeRepo.update({ productId, isPrimary: true }, { isPrimary: false });
+    }
+
     const barcode = this.barcodeRepo.create({
       productId,
       barcode: dto.barcode,
       barcodeType: dto.barcodeType || 'ean13',
-      isPrimary: dto.isPrimary || false,
+      isPrimary,
     });
     return this.barcodeRepo.save(barcode);
   }
@@ -344,6 +394,43 @@ export class ProductsService {
     if (!barcode) throw new NotFoundException('Código de barras no encontrado para este producto');
     await this.barcodeRepo.remove(barcode);
     return { success: true };
+  }
+
+  async updateBarcode(productId: string, barcodeId: string, dto: UpdateBarcodeDto): Promise<ProductBarcodeEntity> {
+    const barcode = await this.barcodeRepo.findOne({ where: { id: barcodeId, productId } });
+    if (!barcode) throw new NotFoundException('Código de barras no encontrado para este producto');
+
+    if (dto.barcode !== undefined && dto.barcode !== barcode.barcode) {
+      const dup = await this.barcodeRepo.findOne({ where: { barcode: dto.barcode } });
+      if (dup) throw new ConflictException(`Código de barras '${dto.barcode}' ya registrado`);
+      barcode.barcode = dto.barcode;
+    }
+
+    if (dto.barcodeType !== undefined) barcode.barcodeType = dto.barcodeType;
+
+    if (dto.isPrimary !== undefined) {
+      if (dto.isPrimary && !barcode.isPrimary) {
+        await this.barcodeRepo.update({ productId, isPrimary: true }, { isPrimary: false });
+        barcode.isPrimary = true;
+      } else if (!dto.isPrimary && barcode.isPrimary) {
+        // Solo permitimos desmarcar primary si hay otro candidato; sino reasignamos al más antiguo.
+        const others = await this.barcodeRepo.find({
+          where: { productId },
+          order: { createdAt: 'ASC' },
+        });
+        const candidate = others.find((b) => b.id !== barcodeId);
+        if (!candidate) {
+          throw new ConflictException('No se puede desmarcar el único código principal');
+        }
+        barcode.isPrimary = false;
+        await this.barcodeRepo.save(barcode);
+        candidate.isPrimary = true;
+        await this.barcodeRepo.save(candidate);
+        return barcode;
+      }
+    }
+
+    return this.barcodeRepo.save(barcode);
   }
 
   async getProductBarcodes(productId: string): Promise<ProductBarcodeEntity[]> {

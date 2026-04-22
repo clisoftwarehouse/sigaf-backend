@@ -4,12 +4,15 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 
 import { CreateBrandDto, UpdateBrandDto } from './dto';
 import { BrandEntity } from './infrastructure/persistence/relational/entities/brand.entity';
+import { ProductEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product.entity';
 
 @Injectable()
 export class BrandsService {
   constructor(
     @InjectRepository(BrandEntity)
     private readonly brandRepo: Repository<BrandEntity>,
+    @InjectRepository(ProductEntity)
+    private readonly productRepo: Repository<ProductEntity>,
   ) {}
 
   async findAll(query: { search?: string; isLaboratory?: boolean; isActive?: boolean }): Promise<BrandEntity[]> {
@@ -37,6 +40,14 @@ export class BrandsService {
   }
 
   async create(dto: CreateBrandDto): Promise<BrandEntity> {
+    const existing = await this.brandRepo.findOne({ where: { name: dto.name } });
+    if (existing) {
+      if (existing.isActive) {
+        throw new ConflictException('El nombre de la marca ya existe');
+      }
+      Object.assign(existing, dto, { isActive: true });
+      return this.brandRepo.save(existing);
+    }
     const brand = this.brandRepo.create(dto);
     try {
       return await this.brandRepo.save(brand);
@@ -57,8 +68,21 @@ export class BrandsService {
 
   async remove(id: string): Promise<{ success: boolean }> {
     await this.findOne(id);
+    const linkedCount = await this.productRepo.count({ where: { brandId: id, isActive: true } });
+    if (linkedCount > 0) {
+      throw new ConflictException(
+        `No se puede inactivar la marca: ${linkedCount} producto(s) activo(s) la referencian`,
+      );
+    }
     await this.brandRepo.update(id, { isActive: false });
     return { success: true };
+  }
+
+  async restore(id: string): Promise<BrandEntity> {
+    const brand = await this.findOne(id);
+    if (brand.isActive) return brand;
+    brand.isActive = true;
+    return this.brandRepo.save(brand);
   }
 
   private translateUniqueViolation(err: unknown): Error {

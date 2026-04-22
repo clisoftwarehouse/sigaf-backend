@@ -131,4 +131,8 @@ export class UsersService {
   async remove(id: User['id']): Promise<void> {
     await this.usersRepository.remove(id);
   }
+
+  async restore(id: User['id']): Promise<User> {
+    return this.usersRepository.restore(id);
+  }
 }

@@ -1,14 +1,28 @@
+import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Min, IsEmail, IsNumber, IsString, IsBoolean, MaxLength, IsOptional } from 'class-validator';
+import { Min, IsEmail, Matches, IsNumber, IsString, IsBoolean, MaxLength, IsOptional } from 'class-validator';
+
+import {
+  RIF_HINT,
+  PHONE_HINT,
+  RIF_REGEX,
+  PHONE_REGEX,
+  normalizeRif,
+  normalizePhone,
+} from '@/common/utils/venezuelan-id';
 
 export class CreateSupplierDto {
   @ApiProperty({ example: 'J-12345678-0', description: 'RIF del proveedor' })
   @IsString()
+  @Transform(({ value }) => normalizeRif(value))
+  @Matches(RIF_REGEX, { message: RIF_HINT })
   @MaxLength(20)
   rif: string;
 
   @ApiProperty({ example: 'Distribuidora Farmacéutica ABC', description: 'Razón social' })
   @IsString()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Matches(/\S/, { message: 'businessName no puede estar vacío ni contener solo espacios' })
   @MaxLength(200)
   businessName: string;
 
@@ -24,7 +38,9 @@ export class CreateSupplierDto {
   contactName?: string;
 
   @IsOptional()
+  @Transform(({ value }) => (value === null || value === '' ? null : normalizePhone(value)))
   @IsString()
+  @Matches(PHONE_REGEX, { message: PHONE_HINT })
   @MaxLength(20)
   phone?: string;
 

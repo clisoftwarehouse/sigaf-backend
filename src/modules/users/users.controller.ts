@@ -123,4 +123,13 @@ export class UsersController {
   remove(@Param('id') id: User['id']): Promise<void> {
     return this.usersService.remove(id);
   }
+
+  @ApiOkResponse({ type: User })
+  @SerializeOptions({ groups: ['admin'] })
+  @Patch(':id/restore')
+  @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'id', type: String, required: true })
+  restore(@Param('id') id: User['id']): Promise<User> {
+    return this.usersService.restore(id);
+  }
 }

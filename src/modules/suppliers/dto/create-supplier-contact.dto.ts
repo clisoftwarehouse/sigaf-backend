@@ -1,9 +1,14 @@
+import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsString, IsBoolean, MaxLength, IsOptional } from 'class-validator';
+import { IsEmail, Matches, IsString, IsBoolean, MaxLength, IsOptional } from 'class-validator';
+
+import { PHONE_HINT, PHONE_REGEX, normalizePhone } from '@/common/utils/venezuelan-id';
 
 export class CreateSupplierContactDto {
   @ApiProperty({ example: 'María Pérez' })
   @IsString()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Matches(/\S/, { message: 'fullName no puede estar vacío ni contener solo espacios' })
   @MaxLength(150)
   fullName: string;
 
@@ -27,13 +32,17 @@ export class CreateSupplierContactDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Transform(({ value }) => (value === null || value === '' ? null : normalizePhone(value)))
   @IsString()
+  @Matches(PHONE_REGEX, { message: PHONE_HINT })
   @MaxLength(20)
   phone?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Transform(({ value }) => (value === null || value === '' ? null : normalizePhone(value)))
   @IsString()
+  @Matches(PHONE_REGEX, { message: PHONE_HINT })
   @MaxLength(20)
   mobile?: string;
 

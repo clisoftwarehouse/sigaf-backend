@@ -1,6 +1,18 @@
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { Get, Put, Body, Post, Param, Query, Delete, UseGuards, Controller, ParseUUIDPipe } from '@nestjs/common';
+import {
+  Get,
+  Put,
+  Body,
+  Post,
+  Patch,
+  Param,
+  Query,
+  Delete,
+  UseGuards,
+  Controller,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 
 import { BrandsService } from './brands.service';
 import { CreateBrandDto, UpdateBrandDto } from './dto';
@@ -45,5 +57,11 @@ export class BrandsController {
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.brandsService.remove(id);
+  }
+
+  @Patch(':id/restore')
+  @ApiOperation({ summary: 'Reactivar marca inactiva' })
+  restore(@Param('id', ParseUUIDPipe) id: string) {
+    return this.brandsService.restore(id);
   }
 }

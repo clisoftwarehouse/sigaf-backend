@@ -1,10 +1,11 @@
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   Min,
   IsEnum,
   IsUUID,
   IsArray,
+  Matches,
   IsNumber,
   IsString,
   IsBoolean,
@@ -13,6 +14,8 @@ import {
   IsOptional,
   ValidateNested,
 } from 'class-validator';
+
+import { CONCENTRATION_HINT, CONCENTRATION_REGEX, normalizeConcentration } from '@/common/utils/concentration';
 
 export class CreateBarcodeDto {
   @ApiProperty({ example: '7501234567890', description: 'Código de barras' })
@@ -40,9 +43,11 @@ export class CreateProductIngredientDto {
   @IsUUID()
   activeIngredientId: string;
 
-  @ApiPropertyOptional({ example: '50mg', description: 'Concentración del principio activo' })
+  @ApiPropertyOptional({ example: '500 mg', description: 'Concentración (número + unidad)' })
   @IsOptional()
+  @Transform(({ value }) => (value === null || value === '' ? null : normalizeConcentration(value)))
   @IsString()
+  @Matches(CONCENTRATION_REGEX, { message: CONCENTRATION_HINT })
   @MaxLength(50)
   concentration?: string;
 
