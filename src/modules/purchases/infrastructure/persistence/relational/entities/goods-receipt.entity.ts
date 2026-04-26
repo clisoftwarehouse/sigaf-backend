@@ -11,9 +11,6 @@ export class GoodsReceiptEntity extends EntityRelationalHelper {
   @Column('uuid', { name: 'branch_id' })
   branchId: string;
 
-  @Column('uuid', { name: 'purchase_order_id', nullable: true })
-  purchaseOrderId: string | null;
-
   @Column('uuid', { name: 'supplier_id' })
   supplierId: string;
 
@@ -31,6 +28,24 @@ export class GoodsReceiptEntity extends EntityRelationalHelper {
 
   @Column('varchar', { name: 'import_source', length: 20, nullable: true })
   importSource: string | null;
+
+  @Column('decimal', { name: 'subtotal_usd', precision: 18, scale: 4, default: 0 })
+  subtotalUsd: number;
+
+  @Column('decimal', { name: 'total_discount_usd', precision: 18, scale: 4, default: 0 })
+  totalDiscountUsd: number;
+
+  @Column('decimal', { name: 'tax_pct', precision: 5, scale: 2, default: 0 })
+  taxPct: number;
+
+  @Column('decimal', { name: 'tax_usd', precision: 18, scale: 4, default: 0 })
+  taxUsd: number;
+
+  @Column('decimal', { name: 'igtf_pct', precision: 5, scale: 2, default: 0 })
+  igtfPct: number;
+
+  @Column('decimal', { name: 'igtf_usd', precision: 18, scale: 4, default: 0 })
+  igtfUsd: number;
 
   @Column('decimal', { name: 'total_usd', precision: 18, scale: 4, default: 0 })
   totalUsd: number;

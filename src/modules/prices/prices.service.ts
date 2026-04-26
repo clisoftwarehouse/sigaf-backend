@@ -4,20 +4,21 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 
 import { PriceEntity } from './infrastructure/persistence/relational/entities/price.entity';
 import { CreatePriceDto, UpdatePriceDto, QueryPricesDto, QueryCurrentPriceDto } from './dto';
-import { InventoryLotEntity } from '../inventory/infrastructure/persistence/relational/entities/inventory-lot.entity';
 
 /**
  * Resolución de precio vigente.
  * - `source='branch_override'`: precio específico para una sucursal.
  * - `source='global'`         : precio sin `branchId` (aplica a todas).
- * - `source='lot_fallback'`   : no hay precio en `prices`, se usa el
- *                               `sale_price` del lote disponible más reciente.
+ *
+ * El módulo de precios es la única fuente de verdad. Las recepciones publican
+ * el precio de venta aquí automáticamente, y la migración 1777300000000 sembró
+ * los precios históricos desde los lotes existentes.
  */
 export interface ResolvedPrice {
   priceUsd: number;
-  source: 'branch_override' | 'global' | 'lot_fallback';
-  priceId: string | null;
-  effectiveFrom: Date | null;
+  source: 'branch_override' | 'global';
+  priceId: string;
+  effectiveFrom: Date;
   notes: string | null;
   productId: string;
   branchId: string | null;
@@ -29,8 +30,6 @@ export class PricesService {
   constructor(
     @InjectRepository(PriceEntity)
     private readonly repo: Repository<PriceEntity>,
-    @InjectRepository(InventoryLotEntity)
-    private readonly lotRepo: Repository<InventoryLotEntity>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -124,9 +123,8 @@ export class PricesService {
    * Resuelve el precio vigente aplicando la prelación:
    *   1. Override por sucursal (si se pasó `branchId`)
    *   2. Precio global
-   *   3. Fallback al `sale_price` del lote disponible más reciente
    *
-   * Lanza NotFoundException si no hay ninguna fuente.
+   * Lanza NotFoundException si no hay precio publicado para el producto.
    */
   async getCurrentPrice(query: QueryCurrentPriceDto): Promise<ResolvedPrice> {
     const at = query.at ? new Date(query.at) : new Date();
@@ -197,37 +195,10 @@ export class PricesService {
       };
     }
 
-    // 3. Fallback al sale_price del lote más reciente (legacy — permite que
-    //    el sistema siga funcionando mientras se migra al nuevo módulo).
-    const lotQb = this.lotRepo
-      .createQueryBuilder('lot')
-      .where('lot.productId = :productId', { productId: query.productId })
-      .andWhere("lot.status = 'available'")
-      .andWhere('lot.salePrice > 0');
-
-    if (query.branchId) {
-      lotQb.andWhere('lot.branchId = :branchId', { branchId: query.branchId });
-    }
-
-    const fallbackLot = await lotQb.orderBy('lot.createdAt', 'DESC').getOne();
-
-    if (fallbackLot) {
-      return {
-        priceUsd: Number(fallbackLot.salePrice),
-        source: 'lot_fallback',
-        priceId: null,
-        effectiveFrom: null,
-        notes: `Fallback desde lote ${fallbackLot.lotNumber} — considera crear un precio en el módulo de precios`,
-        productId: query.productId,
-        branchId: query.branchId ?? null,
-        resolvedAt: at,
-      };
-    }
-
     throw new NotFoundException(
-      `No hay precio vigente para el producto ${query.productId}` +
+      `No hay precio publicado para el producto ${query.productId}` +
         (query.branchId ? ` (sucursal ${query.branchId})` : '') +
-        ' y tampoco hay lotes disponibles con precio fallback.',
+        '. Publica un precio desde el módulo de precios o al registrar una recepción.',
     );
   }
 }

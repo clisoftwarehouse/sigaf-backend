@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AuditModule } from '../audit/audit.module';
+import { PricesModule } from '../prices/prices.module';
 import { PurchasesService } from './purchases.service';
 import { PurchasesController } from './purchases.controller';
 import { InventoryModule } from '../inventory/inventory.module';
@@ -20,6 +21,7 @@ import { PurchaseOrderItemEntity } from './infrastructure/persistence/relational
     ]),
     AuditModule,
     InventoryModule,
+    PricesModule,
   ],
   controllers: [PurchasesController],
   providers: [PurchasesService],

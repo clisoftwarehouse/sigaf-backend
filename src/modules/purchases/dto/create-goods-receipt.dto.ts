@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  Max,
   Min,
   IsEnum,
   IsUUID,
@@ -13,6 +14,14 @@ import {
 } from 'class-validator';
 
 export class CreateGoodsReceiptItemDto {
+  @ApiPropertyOptional({
+    description:
+      'ID de la orden de compra asociada a este ítem (permite consolidar varias OCs en una factura)',
+  })
+  @IsOptional()
+  @IsUUID()
+  purchaseOrderId?: string;
+
   @ApiProperty({ description: 'ID del producto' })
   @IsUUID()
   productId: string;
@@ -41,6 +50,13 @@ export class CreateGoodsReceiptItemDto {
   @Min(0)
   salePrice: number;
 
+  @ApiPropertyOptional({ example: 5, description: 'Descuento por línea en %' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  discountPct?: number;
+
   @ApiPropertyOptional({ description: 'ID de ubicación en almacén' })
   @IsOptional()
   @IsUUID()
@@ -56,11 +72,6 @@ export class CreateGoodsReceiptDto {
   @IsUUID()
   supplierId: string;
 
-  @ApiPropertyOptional({ description: 'ID de la orden de compra (si aplica)' })
-  @IsOptional()
-  @IsUUID()
-  purchaseOrderId?: string;
-
   @ApiPropertyOptional({ example: 'FAC-001', description: 'Número de factura del proveedor' })
   @IsOptional()
   @IsString()
@@ -75,6 +86,20 @@ export class CreateGoodsReceiptDto {
   @IsOptional()
   @IsEnum(['purchase', 'consignment'])
   receiptType?: string;
+
+  @ApiPropertyOptional({ example: 16, description: 'IVA en % aplicado sobre subtotal' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  taxPct?: number;
+
+  @ApiPropertyOptional({ example: 3, description: 'IGTF en % aplicado sobre (subtotal + IVA)' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  igtfPct?: number;
 
   @ApiPropertyOptional({ description: 'Notas' })
   @IsOptional()

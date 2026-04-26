@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 
 import { AuditService } from '../audit/audit.service';
+import { PricesService } from '../prices/prices.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { GoodsReceiptEntity } from './infrastructure/persistence/relational/entities/goods-receipt.entity';
 import { PurchaseOrderEntity } from './infrastructure/persistence/relational/entities/purchase-order.entity';
@@ -23,6 +24,7 @@ export class PurchasesService {
     private readonly receiptItemRepo: Repository<GoodsReceiptItemEntity>,
     private readonly inventoryService: InventoryService,
     private readonly auditService: AuditService,
+    private readonly pricesService: PricesService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -175,7 +177,14 @@ export class PurchasesService {
     if (query.branchId) qb.andWhere('r.branchId = :branchId', { branchId: query.branchId });
     if (query.supplierId) qb.andWhere('r.supplierId = :supplierId', { supplierId: query.supplierId });
     if (query.purchaseOrderId) {
-      qb.andWhere('r.purchaseOrderId = :purchaseOrderId', { purchaseOrderId: query.purchaseOrderId });
+      qb.andWhere(
+        `EXISTS (
+          SELECT 1 FROM goods_receipt_items ri
+           WHERE ri.receipt_id = r.id
+             AND ri.purchase_order_id = :purchaseOrderId
+        )`,
+        { purchaseOrderId: query.purchaseOrderId },
+      );
     }
     if (query.from) qb.andWhere('r.receiptDate >= :from', { from: query.from });
     if (query.to) qb.andWhere('r.receiptDate <= :to', { to: query.to });
@@ -186,6 +195,22 @@ export class PurchasesService {
       .orderBy('r.createdAt', 'DESC')
       .getManyAndCount();
 
+    if (data.length > 0) {
+      const receiptIds = data.map((r) => r.id);
+      const orderIdsByReceipt = await this.receiptItemRepo
+        .createQueryBuilder('ri')
+        .select('ri.receipt_id', 'receiptId')
+        .addSelect('ARRAY_AGG(DISTINCT ri.purchase_order_id)', 'orderIds')
+        .where('ri.receipt_id IN (:...receiptIds)', { receiptIds })
+        .andWhere('ri.purchase_order_id IS NOT NULL')
+        .groupBy('ri.receipt_id')
+        .getRawMany<{ receiptId: string; orderIds: string[] }>();
+      const byReceipt = new Map(orderIdsByReceipt.map((r) => [r.receiptId, r.orderIds ?? []]));
+      for (const r of data as Array<GoodsReceiptEntity & { purchaseOrderIds?: string[] }>) {
+        r.purchaseOrderIds = byReceipt.get(r.id) ?? [];
+      }
+    }
+
     return { data, total, page, limit };
   }
 
@@ -194,12 +219,40 @@ export class PurchasesService {
     if (!receipt) throw new NotFoundException('Recepción no encontrada');
 
     const items = await this.receiptItemRepo.find({ where: { receiptId: id }, order: { createdAt: 'ASC' } });
+    const purchaseOrderIds = [...new Set(items.map((it) => it.purchaseOrderId).filter((v): v is string => !!v))];
 
-    return { ...receipt, items };
+    return { ...receipt, items, purchaseOrderIds };
   }
 
   async createReceipt(dto: CreateGoodsReceiptDto, userId: string): Promise<GoodsReceiptEntity> {
     if (!dto.items.length) throw new BadRequestException('La recepción debe tener al menos un ítem');
+
+    // Validación de todas las OCs referenciadas por los ítems (una factura puede
+    // consolidar productos de múltiples órdenes).
+    const orderIds = Array.from(new Set(dto.items.map((i) => i.purchaseOrderId).filter((v): v is string => !!v)));
+    if (orderIds.length > 0) {
+      const orders = await this.orderRepo.findByIds(orderIds);
+      if (orders.length !== orderIds.length) {
+        throw new NotFoundException('Una o más órdenes de compra referenciadas no existen');
+      }
+      for (const order of orders) {
+        if (order.supplierId !== dto.supplierId) {
+          throw new BadRequestException(
+            `La orden "${order.orderNumber}" es de otro proveedor y no puede consolidarse en esta factura.`,
+          );
+        }
+        if (order.status === 'draft') {
+          throw new BadRequestException(
+            `La orden "${order.orderNumber}" está en borrador. Apruébala antes de recibir contra ella.`,
+          );
+        }
+        if (order.status === 'cancelled' || order.status === 'complete') {
+          throw new BadRequestException(
+            `La orden "${order.orderNumber}" está en estado "${order.status}" y no admite más recepciones.`,
+          );
+        }
+      }
+    }
 
     const receiptNumber = await this.generateReceiptNumber();
 
@@ -208,26 +261,46 @@ export class PurchasesService {
     await queryRunner.startTransaction();
 
     try {
-      let totalUsd = 0;
-      for (const item of dto.items) {
-        totalUsd += item.quantity * item.unitCostUsd;
-      }
+      const round = (n: number) => Math.round(n * 10000) / 10000;
+
+      let subtotalUsd = 0;
+      let totalDiscountUsd = 0;
+      const itemsComputed = dto.items.map((item) => {
+        const discountPct = item.discountPct || 0;
+        const gross = item.quantity * item.unitCostUsd;
+        const discountAmount = gross * (discountPct / 100);
+        const itemSubtotal = gross - discountAmount;
+        subtotalUsd += itemSubtotal;
+        totalDiscountUsd += discountAmount;
+        return { item, discountPct, itemSubtotal: round(itemSubtotal) };
+      });
+
+      const taxPct = dto.taxPct || 0;
+      const igtfPct = dto.igtfPct || 0;
+      const taxUsd = subtotalUsd * (taxPct / 100);
+      const igtfUsd = (subtotalUsd + taxUsd) * (igtfPct / 100);
+      const totalUsd = subtotalUsd + taxUsd + igtfUsd;
 
       const receipt = this.receiptRepo.create({
         branchId: dto.branchId,
         supplierId: dto.supplierId,
-        purchaseOrderId: dto.purchaseOrderId || null,
         receiptNumber,
         receiptType: dto.receiptType || 'purchase',
         supplierInvoiceNumber: dto.supplierInvoiceNumber || null,
         notes: dto.notes || null,
-        totalUsd,
+        subtotalUsd: round(subtotalUsd),
+        totalDiscountUsd: round(totalDiscountUsd),
+        taxPct,
+        taxUsd: round(taxUsd),
+        igtfPct,
+        igtfUsd: round(igtfUsd),
+        totalUsd: round(totalUsd),
         receivedBy: userId,
       });
 
       const savedReceipt = await queryRunner.manager.save(receipt);
 
-      for (const item of dto.items) {
+      for (const { item, discountPct, itemSubtotal } of itemsComputed) {
         const lot = await this.inventoryService.createLot(
           {
             productId: item.productId,
@@ -245,10 +318,13 @@ export class PurchasesService {
 
         const receiptItem = this.receiptItemRepo.create({
           receiptId: savedReceipt.id,
+          purchaseOrderId: item.purchaseOrderId || null,
           productId: item.productId,
           lotId: lot.id,
           quantity: item.quantity,
           unitCostUsd: item.unitCostUsd,
+          discountPct,
+          subtotalUsd: itemSubtotal,
           salePrice: item.salePrice,
           lotNumber: item.lotNumber,
           expirationDate: new Date(item.expirationDate),
@@ -256,11 +332,38 @@ export class PurchasesService {
         await queryRunner.manager.save(receiptItem);
       }
 
-      if (dto.purchaseOrderId) {
-        await this.updateOrderStatusAfterReceipt(dto.purchaseOrderId);
+      for (const orderId of orderIds) {
+        await this.updateOrderStatusAfterReceipt(orderId);
       }
 
       await queryRunner.commitTransaction();
+
+      // Fuera de la tx: publicar el precio de cada ítem al módulo de precios.
+      // Usamos el último salePrice por (productId, branchId); el PricesService
+      // se encarga de cerrar la vigencia anterior automáticamente.
+      const latestPriceByProduct = new Map<string, number>();
+      for (const item of dto.items) {
+        if (item.salePrice > 0) {
+          latestPriceByProduct.set(item.productId, item.salePrice);
+        }
+      }
+      for (const [productId, priceUsd] of latestPriceByProduct) {
+        try {
+          await this.pricesService.create(
+            {
+              productId,
+              branchId: dto.branchId,
+              priceUsd,
+              notes: `Publicado desde recepción ${receiptNumber}`,
+            },
+            userId,
+          );
+        } catch {
+          // No abortamos la recepción por fallos al publicar precios; queda
+          // el fallback de lote y el usuario puede reingresar el precio
+          // manualmente desde el módulo de precios.
+        }
+      }
 
       return this.findOneReceipt(savedReceipt.id);
     } catch (error) {
@@ -295,11 +398,9 @@ export class PurchasesService {
     const items = await this.orderItemRepo.find({ where: { orderId } });
     if (!items.length) return;
 
-    const receiptItems = await this.receiptItemRepo
-      .createQueryBuilder('ri')
-      .innerJoin('goods_receipts', 'r', 'r.id = ri.receipt_id')
-      .where('r.purchase_order_id = :orderId', { orderId })
-      .getMany();
+    const receiptItems = await this.receiptItemRepo.find({
+      where: { purchaseOrderId: orderId },
+    });
 
     const receivedByProduct: Record<string, number> = {};
     for (const ri of receiptItems) {
@@ -311,6 +412,9 @@ export class PurchasesService {
 
     for (const item of items) {
       const received = receivedByProduct[item.productId] || 0;
+      if (received !== Number(item.quantityReceived)) {
+        await this.orderItemRepo.update(item.id, { quantityReceived: received });
+      }
       if (received > 0) anyReceived = true;
       if (received < Number(item.quantity)) allComplete = false;
     }

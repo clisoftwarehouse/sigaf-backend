@@ -11,6 +11,9 @@ export class GoodsReceiptItemEntity extends EntityRelationalHelper {
   @Column('uuid', { name: 'receipt_id' })
   receiptId: string;
 
+  @Column('uuid', { name: 'purchase_order_id', nullable: true })
+  purchaseOrderId: string | null;
+
   @Column('uuid', { name: 'product_id' })
   productId: string;
 
@@ -22,6 +25,12 @@ export class GoodsReceiptItemEntity extends EntityRelationalHelper {
 
   @Column('decimal', { name: 'unit_cost_usd', precision: 18, scale: 4 })
   unitCostUsd: number;
+
+  @Column('decimal', { name: 'discount_pct', precision: 5, scale: 2, default: 0 })
+  discountPct: number;
+
+  @Column('decimal', { name: 'subtotal_usd', precision: 18, scale: 4, default: 0 })
+  subtotalUsd: number;
 
   @Column('decimal', { name: 'sale_price', precision: 18, scale: 4 })
   salePrice: number;

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Propuesta de Política de Órdenes de Compra · SIGAF</title>
+  <style>
+    @page { size: A4; margin: 20mm 18mm; }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      color: #1a1a1a;
+      line-height: 1.5;
+      font-size: 11pt;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    h1 {
+      font-size: 20pt;
+      margin: 0 0 4px;
+      color: #0a0a0a;
+      letter-spacing: -0.3px;
+    }
+
+    h2 {
+      font-size: 13pt;
+      margin-top: 28px;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 2px solid #1976d2;
+      color: #0a0a0a;
+      page-break-after: avoid;
+    }
+
+    h3 {
+      font-size: 11pt;
+      margin-top: 16px;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 10pt;
+      margin-top: 0;
+    }
+
+    .meta {
+      margin: 16px 0 24px;
+      font-size: 10pt;
+      color: #444;
+    }
+
+    .meta div { margin-bottom: 6px; }
+
+    .fill { border-bottom: 1px solid #888; display: inline-block; min-width: 280px; height: 14pt; vertical-align: bottom; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 10.5pt;
+    }
+
+    th, td {
+      border: 1px solid #cfcfcf;
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f3f6fb;
+      font-weight: 600;
+    }
+
+    td.fillable { height: 36px; background: #fafafa; }
+
+    ul { padding-left: 20px; }
+    li { margin-bottom: 6px; }
+
+    .checkbox { display: inline-block; width: 11pt; height: 11pt; border: 1.5px solid #333; margin-right: 6px; vertical-align: -2px; border-radius: 2px; }
+    .checkbox.checked::before { content: '✓'; display: block; line-height: 10pt; font-size: 11pt; font-weight: 700; text-align: center; color: #1976d2; }
+
+    .note {
+      margin-top: 6px;
+      padding: 10px 12px;
+      background: #fff8e1;
+      border-left: 3px solid #f59e0b;
+      font-size: 10pt;
+    }
+
+    .default-callout {
+      background: #eaf3ff;
+      border-left: 3px solid #1976d2;
+      padding: 10px 12px;
+      margin: 8px 0 12px;
+      font-size: 10pt;
+    }
+
+    .section {
+      page-break-inside: avoid;
+      margin-bottom: 6px;
+    }
+
+    .lines {
+      margin-top: 10px;
+    }
+    .lines .line {
+      border-bottom: 1px solid #bbb;
+      height: 18pt;
+      margin-bottom: 10px;
+    }
+
+    .priority-list {
+      background: #f5f9f5;
+      border-left: 3px solid #2e7d32;
+      padding: 10px 14px;
+      margin: 14px 0;
+      font-size: 10.5pt;
+    }
+
+    .sign-box {
+      margin-top: 36px;
+      page-break-inside: avoid;
+    }
+    .sign-line {
+      border-bottom: 1px solid #333;
+      width: 60%;
+      height: 40px;
+      margin-bottom: 4px;
+    }
+    .sign-caption { color: #666; font-size: 9.5pt; }
+
+    .footer {
+      margin-top: 40px;
+      font-size: 9pt;
+      color: #888;
+      text-align: center;
+      border-top: 1px dashed #bbb;
+      padding-top: 10px;
+    }
+
+    @media print {
+      body { padding: 0; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="position: fixed; top: 12px; right: 12px;">
+    <button onclick="window.print()" style="padding: 8px 14px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11pt;">
+      Imprimir / Guardar como PDF
+    </button>
+  </div>
+
+  <header>
+    <h1>Propuesta de Política de Órdenes de Compra</h1>
+    <p class="subtitle">Documento para revisión del responsable de compras · SIGAF</p>
+
+    <div class="meta">
+      <div><strong>Para revisión de:</strong> <span class="fill"></span></div>
+      <div><strong>Revisada por:</strong> <span class="fill"></span></div>
+      <div><strong>Fecha:</strong> <span class="fill" style="min-width: 180px;"></span></div>
+    </div>
+  </header>
+
+  <section class="section">
+    <h2>Contexto</h2>
+    <p>
+      Hoy el sistema permite que cualquier usuario con permiso de compras apruebe una orden de
+      compra sin validaciones de monto, categoría o presupuesto. Cuando una OC está en estado
+      <em>borrador</em> (<code>draft</code>), basta con un clic para pasarla a <em>enviada</em>
+      (<code>sent</code>) y habilitar recepciones contra ella.
+    </p>
+    <p>Queremos definir reglas claras para:</p>
+    <ol>
+      <li>Controlar riesgo financiero (que nadie apruebe compras grandes sin la revisión adecuada).</li>
+      <li>Cumplir con regulaciones de productos controlados.</li>
+      <li>Evitar errores comunes en la recepción (cantidades o precios que no cuadran con lo ordenado).</li>
+      <li>Mantener limpio el sistema (OCs abandonadas no deben quedar abiertas eternamente).</li>
+    </ol>
+    <p>
+      Este documento propone las reglas. <strong>Marca en cada sección si aceptas el default,
+      modifícalo, o indica que no aplica.</strong>
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>1. Aprobación por monto (escala de autoridad)</h2>
+    <p><strong>Regla:</strong> según el total de la OC (en USD), distintos roles pueden aprobarla.</p>
+
+    <h3>Default propuesto</h3>
+    <table>
+      <thead>
+        <tr><th style="width: 40%;">Monto total (USD)</th><th>Quién puede aprobar</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>≤ 500</td><td>Comprador / encargado de sucursal</td></tr>
+        <tr><td>501 – 5.000</td><td>Supervisor</td></tr>
+        <tr><td>&gt; 5.000</td><td>Gerencia</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Revisión del experto</h3>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 28%;">Monto propuesto</th>
+          <th style="width: 28%;">Monto ajustado</th>
+          <th>Rol aprobador (cargo)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>≤ 500</td><td class="fillable"></td><td class="fillable"></td></tr>
+        <tr><td>501 – 5.000</td><td class="fillable"></td><td class="fillable"></td></tr>
+        <tr><td>&gt; 5.000</td><td class="fillable"></td><td class="fillable"></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Notas adicionales</h3>
+    <div class="lines">
+      <div class="line"></div>
+      <div class="line"></div>
+      <div class="line"></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>2. Aprobación por tipo de producto</h2>
+    <p>
+      <strong>Regla:</strong> algunas categorías pueden requerir aprobación especial
+      independiente del monto.
+    </p>
+
+    <h3>Candidatos comunes en farmacia</h3>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 40%;">Categoría</th>
+          <th style="width: 12%;">Aplica</th>
+          <th>Rol aprobador</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Psicotrópicos / estupefacientes</td>
+          <td><span class="checkbox"></span></td>
+          <td class="fillable"></td>
+        </tr>
+        <tr>
+          <td>Antibióticos</td>
+          <td><span class="checkbox"></span></td>
+          <td class="fillable"></td>
+        </tr>
+        <tr>
+          <td>Cadena de frío (vacunas, biológicos)</td>
+          <td><span class="checkbox"></span></td>
+          <td class="fillable"></td>
+        </tr>
+        <tr>
+          <td>Importados (mayoristas extranjeros)</td>
+          <td><span class="checkbox"></span></td>
+          <td class="fillable"></td>
+        </tr>
+        <tr>
+          <td class="fillable"></td>
+          <td><span class="checkbox"></span></td>
+          <td class="fillable"></td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">Marca la casilla si aplica y escribe el cargo que debe aprobar.</p>
+  </section>
+
+  <section class="section">
+    <h2>3. Consignaciones vs compras regulares</h2>
+    <p>
+      <strong>Regla:</strong> las órdenes tipo <code>consignment</code> (consignación)
+      pueden seguir un flujo distinto al de compras.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Aspecto</th>
+          <th>Compras regulares</th>
+          <th>Consignaciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Umbrales de monto (sección 1)</td>
+          <td>✓ aplica</td>
+          <td>
+            <span class="checkbox"></span> aplica&nbsp;&nbsp;
+            <span class="checkbox"></span> no aplica
+          </td>
+        </tr>
+        <tr>
+          <td>Requiere aprobación especial</td>
+          <td>No</td>
+          <td>
+            <span class="checkbox"></span> sí&nbsp;&nbsp;
+            <span class="checkbox"></span> no
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p><strong>¿Quién aprueba una consignación?</strong> <span class="fill" style="min-width: 380px;"></span></p>
+  </section>
+
+  <section class="section">
+    <h2>4. Validaciones sobre proveedores</h2>
+    <p>
+      Hoy el frontend filtra proveedores inactivos pero el backend no tiene esa regla
+      como restricción "dura".
+    </p>
+
+    <h3>Default propuesto</h3>
+    <div class="default-callout">
+      <p><span class="checkbox checked"></span> Bloquear OCs a proveedores con <code>isActive = false</code>.</p>
+      <p><span class="checkbox"></span> Bloquear OCs si el proveedor no tiene RIF registrado.</p>
+      <p><span class="checkbox"></span> Bloquear OCs si el proveedor no tiene contrato vigente firmado.</p>
+    </div>
+
+    <h3>Revisión del experto</h3>
+    <div class="lines">
+      <div class="line"></div>
+      <div class="line"></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>5. Tolerancias al recibir mercancía</h2>
+    <p>
+      Hoy se puede recibir cualquier cantidad contra una OC y a cualquier costo.
+      Queremos poner un guardrail.
+    </p>
+
+    <h3>Default propuesto</h3>
+    <ul>
+      <li><strong>Cantidad recibida:</strong> hasta <strong>+5%</strong> sobre lo ordenado sin alerta; más allá, pide justificación.</li>
+      <li><strong>Costo unitario:</strong> si difiere <strong>±10%</strong> del costo de la OC, alerta y requiere confirmación.</li>
+    </ul>
+
+    <h3>Revisión del experto</h3>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 50%;">Regla</th>
+          <th style="width: 20%;">Default</th>
+          <th>Ajuste</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Tolerancia de cantidad (+ %)</td><td>5%</td><td class="fillable"></td></tr>
+        <tr><td>Desviación máxima de costo unitario</td><td>10%</td><td class="fillable"></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>¿Preferirías bloquear en lugar de solo alertar?</strong></p>
+    <p>
+      <span class="checkbox"></span> Solo alertar (default) &nbsp;&nbsp;
+      <span class="checkbox"></span> Bloquear y requerir re-aprobación
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>6. Expiración automática de borradores</h2>
+    <p>
+      <strong>Regla:</strong> si una OC queda en <code>draft</code> por mucho tiempo,
+      probablemente fue abandonada o ya no es relevante.
+    </p>
+
+    <h3>Default propuesto</h3>
+    <div class="default-callout">
+      OCs en <code>draft</code> por más de <strong>30 días</strong> pasan automáticamente
+      a <code>cancelled</code>. El usuario puede crear una nueva si aún aplica.
+    </div>
+
+    <h3>Revisión del experto</h3>
+    <p>
+      <span class="checkbox"></span> Aceptar 30 días<br />
+      <span class="checkbox"></span> Cambiar a: <span class="fill" style="min-width: 80px;"></span> días<br />
+      <span class="checkbox"></span> No auto-cancelar; dejar manual
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>7. Presupuesto por sucursal (opcional · más complejo)</h2>
+    <p>
+      <strong>Regla:</strong> cada sucursal tiene un presupuesto mensual de compras. Al
+      aprobar una OC, se descuenta del presupuesto disponible.
+    </p>
+    <p class="note">
+      Esta regla requiere un módulo nuevo ("Presupuestos"). No se implementa en esta fase,
+      pero lo dejamos listado para planificación futura.
+    </p>
+
+    <h3>¿Es prioritario?</h3>
+    <p>
+      <span class="checkbox"></span> Sí, incluir en la siguiente fase<br />
+      <span class="checkbox"></span> Sí, pero más adelante<br />
+      <span class="checkbox"></span> No, no es necesario
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>Resumen para implementación</h2>
+    <p>
+      Después de esta revisión, implementaremos solo las reglas aceptadas. Las que queden
+      marcadas como "ajustar" o "no aplica" las excluimos.
+    </p>
+    <div class="priority-list">
+      <strong>Prioridad sugerida si hay que elegir pocas:</strong>
+      <ol>
+        <li><strong>Aprobación por monto</strong> (sección 1) — más crítica, mitiga el mayor riesgo financiero.</li>
+        <li><strong>Validación de proveedor inactivo</strong> (sección 4) — barata de implementar, evita errores comunes.</li>
+        <li><strong>Expiración de borradores</strong> (sección 6) — higiene del sistema.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section sign-box">
+    <h2>Firmas</h2>
+    <p><strong>Revisado y aprobado por:</strong></p>
+
+    <div style="margin-top: 30px;">
+      <div class="sign-line"></div>
+      <div class="sign-caption">Nombre, cargo</div>
+    </div>
+
+    <div style="margin-top: 30px;">
+      <div class="sign-line" style="width: 35%;"></div>
+      <div class="sign-caption">Fecha</div>
+    </div>
+  </section>
+
+  <div class="footer">SIGAF · Propuesta de política de órdenes de compra</div>
+</body>
+</html>

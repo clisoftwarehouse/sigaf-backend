@@ -533,7 +533,7 @@ export class ProductsService {
         'r.receipt_type AS "receiptType"',
         'r.supplier_invoice_number AS "supplierInvoiceNumber"',
         'r.branch_id AS "branchId"',
-        'r.purchase_order_id AS "purchaseOrderId"',
+        'ri.purchase_order_id AS "purchaseOrderId"',
         's.id AS "supplierId"',
         's.rif AS "supplierRif"',
         's.business_name AS "supplierBusinessName"',

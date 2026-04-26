@@ -17,6 +17,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { RolesModule } from './modules/roles/roles.module';
 import fileConfig from './modules/files/config/file.config';
 import { BrandsModule } from './modules/brands/brands.module';
+import { ClaimsModule } from './modules/claims/claims.module';
 import { PricesModule } from './modules/prices/prices.module';
 import databaseConfig from './database/config/database.config';
 import { SessionModule } from './modules/session/session.module';
@@ -98,6 +99,7 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     InventoryTransfersModule,
     ConfigGlobalModule,
     PurchasesModule,
+    ClaimsModule,
     ConsignmentsModule,
     ActiveIngredientsModule,
     TherapeuticUsesModule,
