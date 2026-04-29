@@ -1,4 +1,4 @@
-import { IsString, MaxLength, IsOptional } from 'class-validator';
+import { IsUUID, IsString, MaxLength, IsOptional } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateActiveIngredientDto {
@@ -7,11 +7,13 @@ export class CreateActiveIngredientDto {
   @MaxLength(200)
   name: string;
 
-  @ApiPropertyOptional({ example: 'Antihipertensivos', description: 'Grupo terapéutico' })
+  @ApiPropertyOptional({
+    description: 'ID de la acción terapéutica (FK a therapeutic_uses)',
+    format: 'uuid',
+  })
   @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  therapeuticGroup?: string;
+  @IsUUID()
+  therapeuticUseId?: string;
 
   @ApiPropertyOptional({ example: 'C09CA01', description: 'Código ATC (WHO) — estándar internacional' })
   @IsOptional()

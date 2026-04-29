@@ -7,13 +7,15 @@ export class BackfillPricesFromLots1777300000000 implements MigrationInterface {
     // Para cada (producto, sucursal) con stock actual y `sale_price > 0`,
     // sembramos un registro en `prices` si aún no hay uno vigente. Esto permite
     // eliminar el fallback a `inventory_lots.sale_price` en `getCurrentPrice`.
+    // `inventory_lots` no tiene columna `created_by` — el backfill deja NULL en
+    // `prices.created_by` (la columna es nullable). El ownership de los precios
+    // generados por backfill no es atribuible a un usuario específico.
     await queryRunner.query(`
       WITH latest_lot AS (
         SELECT DISTINCT ON (product_id, branch_id)
                product_id,
                branch_id,
                sale_price,
-               created_by,
                created_at
           FROM inventory_lots
          WHERE sale_price > 0
@@ -32,7 +34,7 @@ export class BackfillPricesFromLots1777300000000 implements MigrationInterface {
         l.created_at,
         NULL,
         'Backfill desde lote existente — migración 1777300000000',
-        l.created_by,
+        NULL,
         NOW(),
         NOW()
       FROM latest_lot l

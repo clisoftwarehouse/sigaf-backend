@@ -24,7 +24,6 @@ import { ActiveIngredientEntity } from '@/modules/active-ingredients/infrastruct
 import { ProductEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product.entity';
 import { ProductBarcodeEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product-barcode.entity';
 import { ProductSubstituteEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product-substitute.entity';
-import { ProductTherapeuticUseEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product-therapeutic-use.entity';
 import { ProductActiveIngredientEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product-active-ingredient.entity';
 import { TherapeuticUseEntity } from '@/modules/therapeutic-uses/infrastructure/persistence/relational/entities/therapeutic-use.entity';
 import { TerminalEntity } from '@/modules/terminals/infrastructure/persistence/relational/entities/terminal.entity';
@@ -71,7 +70,6 @@ import { KardexEntity } from '@/modules/inventory/infrastructure/persistence/rel
             ProductBarcodeEntity,
             ProductActiveIngredientEntity,
             ProductSubstituteEntity,
-            ProductTherapeuticUseEntity,
             TherapeuticUseEntity,
             TerminalEntity,
             WarehouseLocationEntity,

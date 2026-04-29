@@ -7,7 +7,6 @@ import { ProductEntity } from './infrastructure/persistence/relational/entities/
 import { ProductBarcodeEntity } from './infrastructure/persistence/relational/entities/product-barcode.entity';
 import { ProductSubstituteEntity } from './infrastructure/persistence/relational/entities/product-substitute.entity';
 import { InventoryLotEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/inventory-lot.entity';
-import { ProductTherapeuticUseEntity } from './infrastructure/persistence/relational/entities/product-therapeutic-use.entity';
 import { ProductActiveIngredientEntity } from './infrastructure/persistence/relational/entities/product-active-ingredient.entity';
 import { GoodsReceiptItemEntity } from '@/modules/purchases/infrastructure/persistence/relational/entities/goods-receipt-item.entity';
 import {
@@ -30,8 +29,6 @@ export class ProductsService {
     private readonly ingredientRepo: Repository<ProductActiveIngredientEntity>,
     @InjectRepository(ProductSubstituteEntity)
     private readonly substituteRepo: Repository<ProductSubstituteEntity>,
-    @InjectRepository(ProductTherapeuticUseEntity)
-    private readonly therapeuticUseRepo: Repository<ProductTherapeuticUseEntity>,
     @InjectRepository(InventoryLotEntity)
     private readonly lotRepo: Repository<InventoryLotEntity>,
     @InjectRepository(GoodsReceiptItemEntity)
@@ -63,6 +60,14 @@ export class ProductsService {
     if (query.brandId) qb.andWhere('p.brand_id = :brandId', { brandId: query.brandId });
     if (query.productType) qb.andWhere('p.product_type = :productType', { productType: query.productType });
     if (query.taxType) qb.andWhere('p.tax_type = :taxType', { taxType: query.taxType });
+    if (query.therapeuticUseId) {
+      qb.andWhere(
+        `EXISTS (SELECT 1 FROM product_active_ingredients pai_f
+          JOIN active_ingredients ai_f ON ai_f.id = pai_f.active_ingredient_id
+          WHERE pai_f.product_id = p.id AND ai_f.therapeutic_use_id = :therapeuticUseId)`,
+        { therapeuticUseId: query.therapeuticUseId },
+      );
+    }
 
     if (query.isActive !== undefined) {
       qb.andWhere('p.is_active = :isActive', { isActive: query.isActive });
@@ -124,10 +129,9 @@ export class ProductsService {
         'barcodes',
         'activeIngredients',
         'activeIngredients.activeIngredient',
+        'activeIngredients.activeIngredient.therapeuticUse',
         'substitutes',
         'substitutes.substitute',
-        'therapeuticUses',
-        'therapeuticUses.therapeuticUse',
       ],
     });
     if (!product) throw new NotFoundException('Producto no encontrado');
@@ -170,12 +174,7 @@ export class ProductsService {
       }
     }
 
-    const {
-      barcodes: barcodesDto,
-      activeIngredients: ingredientsDto,
-      therapeuticUses: therapeuticUsesDto,
-      ...productData
-    } = dto;
+    const { barcodes: barcodesDto, activeIngredients: ingredientsDto, ...productData } = dto;
 
     const product = this.productRepo.create(productData);
     const saved = await this.productRepo.save(product);
@@ -210,16 +209,6 @@ export class ProductsService {
       });
       if (!primaryAssigned && ingredients.length) ingredients[0].isPrimary = true;
       await this.ingredientRepo.save(ingredients);
-    }
-
-    if (therapeuticUsesDto?.length) {
-      const uses = therapeuticUsesDto.map((tu) =>
-        this.therapeuticUseRepo.create({
-          productId: saved.id,
-          therapeuticUseId: tu.therapeuticUseId,
-        }),
-      );
-      await this.therapeuticUseRepo.save(uses);
     }
 
     return this.findOne(saved.id);
@@ -486,26 +475,6 @@ export class ProductsService {
       }))
       .filter((p) => p.totalStock > 0)
       .sort((a, b) => b.totalStock - a.totalStock);
-  }
-
-  // ─── THERAPEUTIC USES ──────────────────────────────────────────────────
-  async addTherapeuticUse(productId: string, therapeuticUseId: string): Promise<ProductTherapeuticUseEntity> {
-    await this.ensureProductExists(productId);
-
-    const exists = await this.therapeuticUseRepo.findOne({
-      where: { productId, therapeuticUseId },
-    });
-    if (exists) throw new ConflictException('Uso terapéutico ya asignado a este producto');
-
-    const use = this.therapeuticUseRepo.create({ productId, therapeuticUseId });
-    return this.therapeuticUseRepo.save(use);
-  }
-
-  async removeTherapeuticUse(productId: string, therapeuticUseId: string): Promise<{ success: boolean }> {
-    const use = await this.therapeuticUseRepo.findOne({ where: { productId, therapeuticUseId } });
-    if (!use) throw new NotFoundException('Uso terapéutico no asignado a este producto');
-    await this.therapeuticUseRepo.remove(use);
-    return { success: true };
   }
 
   // ─── PURCHASE HISTORY ──────────────────────────────────────────────────

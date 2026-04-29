@@ -57,12 +57,6 @@ export class CreateProductIngredientDto {
   isPrimary?: boolean;
 }
 
-export class CreateProductTherapeuticUseDto {
-  @ApiProperty({ description: 'ID del uso terapéutico' })
-  @IsUUID()
-  therapeuticUseId: string;
-}
-
 export class CreateProductDto {
   @ApiPropertyOptional({
     example: 'PROD-000001',
@@ -228,14 +222,4 @@ export class CreateProductDto {
   @ValidateNested({ each: true })
   @Type(() => CreateProductIngredientDto)
   activeIngredients?: CreateProductIngredientDto[];
-
-  @ApiPropertyOptional({
-    type: [CreateProductTherapeuticUseDto],
-    description: 'Usos terapéuticos del producto',
-  })
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateProductTherapeuticUseDto)
-  therapeuticUses?: CreateProductTherapeuticUseDto[];
 }

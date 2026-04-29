@@ -15,6 +15,8 @@ import { ExchangeRateEntity } from '@/modules/exchange-rates/infrastructure/pers
 import { WarehouseLocationEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/warehouse-location.entity';
 import { ActiveIngredientEntity } from '@/modules/active-ingredients/infrastructure/persistence/relational/entities/active-ingredient.entity';
 import { ProductActiveIngredientEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product-active-ingredient.entity';
+import { TherapeuticUseEntity } from '@/modules/therapeutic-uses/infrastructure/persistence/relational/entities/therapeutic-use.entity';
+import { UserEntity } from '@/modules/users/infrastructure/persistence/relational/entities/user.entity';
 
 @Module({
   imports: [
@@ -27,11 +29,13 @@ import { ProductActiveIngredientEntity } from '@/modules/products/infrastructure
       ProductEntity,
       ProductBarcodeEntity,
       ProductActiveIngredientEntity,
+      TherapeuticUseEntity,
       TerminalEntity,
       WarehouseLocationEntity,
       ExchangeRateEntity,
       InventoryLotEntity,
       KardexEntity,
+      UserEntity,
     ]),
   ],
   providers: [DemoSeedService],

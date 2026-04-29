@@ -15,8 +15,7 @@ import {
 
 export class CreateGoodsReceiptItemDto {
   @ApiPropertyOptional({
-    description:
-      'ID de la orden de compra asociada a este ítem (permite consolidar varias OCs en una factura)',
+    description: 'ID de la orden de compra asociada a este ítem (permite consolidar varias OCs en una factura)',
   })
   @IsOptional()
   @IsUUID()

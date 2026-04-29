@@ -31,6 +31,11 @@ export class QueryProductDto {
   @IsEnum(['exempt', 'general', 'reduced'])
   taxType?: string;
 
+  @ApiPropertyOptional({ description: 'Filtrar por acción terapéutica (heredada del principio activo)' })
+  @IsOptional()
+  @IsUUID()
+  therapeuticUseId?: string;
+
   @ApiPropertyOptional({ description: 'Filtrar por activo/inactivo' })
   @IsOptional()
   @Type(() => Boolean)

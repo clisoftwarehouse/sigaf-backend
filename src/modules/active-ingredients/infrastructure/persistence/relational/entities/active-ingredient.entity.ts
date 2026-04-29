@@ -1,6 +1,7 @@
-import { Column, Entity, CreateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, ManyToOne, JoinColumn, CreateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
 
 import { EntityRelationalHelper } from '@/common/utils/relational-entity-helper';
+import { TherapeuticUseEntity } from '@/modules/therapeutic-uses/infrastructure/persistence/relational/entities/therapeutic-use.entity';
 
 @Entity('active_ingredients')
 export class ActiveIngredientEntity extends EntityRelationalHelper {
@@ -10,8 +11,13 @@ export class ActiveIngredientEntity extends EntityRelationalHelper {
   @Column('varchar', { length: 200, unique: true })
   name: string;
 
-  @Column('varchar', { name: 'therapeutic_group', length: 100, nullable: true })
-  therapeuticGroup: string | null;
+  /** FK a `therapeutic_uses` (acción terapéutica). 1:N: cada principio activo tiene UNA acción primaria. */
+  @Column('uuid', { name: 'therapeutic_use_id', nullable: true })
+  therapeuticUseId: string | null;
+
+  @ManyToOne(() => TherapeuticUseEntity, { eager: false, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'therapeutic_use_id' })
+  therapeuticUse: TherapeuticUseEntity | null;
 
   /** Código ATC (WHO Anatomical Therapeutic Chemical). Ej: "C09CA01" (losartán). */
   @Column('varchar', { name: 'atc_code', length: 20, nullable: true })

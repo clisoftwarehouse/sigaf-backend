@@ -1,17 +1,6 @@
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import {
-  Get,
-  Put,
-  Body,
-  Post,
-  Param,
-  Query,
-  Request,
-  UseGuards,
-  Controller,
-  ParseUUIDPipe,
-} from '@nestjs/common';
+import { Get, Put, Body, Post, Param, Query, Request, UseGuards, Controller, ParseUUIDPipe } from '@nestjs/common';
 
 import { ClaimsService } from './claims.service';
 import { CreateClaimDto, UpdateClaimDto, QueryClaimsDto } from './dto';

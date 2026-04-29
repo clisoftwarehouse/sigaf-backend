@@ -3,23 +3,78 @@ import { QueryFailedError, EntityNotFoundError } from 'typeorm';
 import { Catch, Logger, HttpStatus, ArgumentsHost, HttpException, ExceptionFilter } from '@nestjs/common';
 
 /**
- * Extracts a human-readable detail from a PostgreSQL constraint error.
- * e.g. 'Key (rif)=(J-12345678-9) already exists.' → 'rif: J-12345678-9 ya existe'
+ * Mapeo de nombres de tablas técnicas → nombres de recurso amigables al usuario.
+ * Solo agregar entradas cuando un FK pueda chocar y burbujee al filtro.
  */
-function parseConstraintDetail(detail: string): string {
-  const match = detail.match(/Key \((.+?)\)=\((.+?)\)/);
-  if (match) {
-    return `${match[1]}: "${match[2]}" ya existe`;
-  }
-  return detail;
+const TABLE_FRIENDLY_NAMES: Record<string, string> = {
+  products: 'productos',
+  product_active_ingredients: 'productos',
+  product_barcodes: 'productos',
+  product_substitutes: 'productos',
+  active_ingredients: 'principios activos',
+  therapeutic_uses: 'acciones terapéuticas',
+  brands: 'marcas',
+  categories: 'categorías',
+  suppliers: 'proveedores',
+  branches: 'sucursales',
+  inventory_lots: 'lotes de inventario',
+  goods_receipts: 'entradas de mercancía',
+  goods_receipt_items: 'partidas de mercancía',
+  purchase_orders: 'órdenes de compra',
+  promotions: 'promociones',
+  promotion_scopes: 'alcances de promoción',
+  users: 'usuarios',
+  roles: 'roles',
+  permissions: 'permisos',
+};
+
+function friendlyTable(table: string): string {
+  return TABLE_FRIENDLY_NAMES[table] ?? table.replace(/_/g, ' ');
 }
 
-function parseForeignKeyDetail(detail: string): string {
-  const match = detail.match(/Key \((.+?)\)=\((.+?)\) is not present in table "(.+?)"/);
+/**
+ * Extrae detalle legible de un error de constraint UNIQUE de PostgreSQL.
+ * Ej: 'Key (rif)=(J-12345678-9) already exists.' → 'rif "J-12345678-9" ya existe'
+ */
+function parseUniqueDetail(detail: string): string {
+  const match = detail.match(/Key \((.+?)\)=\((.+?)\)/);
   if (match) {
-    return `${match[1]}: "${match[2]}" no existe en ${match[3]}`;
+    return `${match[1]} "${match[2]}" ya existe`;
   }
-  return detail;
+  return 'Registro duplicado';
+}
+
+/**
+ * Resuelve un error de FK a un mensaje completo y user-friendly. Cubre los dos
+ * casos típicos:
+ *   1. INSERT/UPDATE referenciando un padre inexistente
+ *      ('is not present in table "x"' / 'no está presente en la tabla «x»')
+ *   2. DELETE/UPDATE de un padre todavía referenciado por hijos
+ *      ('is still referenced from table "x"' / 'todavía es referida desde la tabla «x»')
+ *
+ * Postgres localiza estos mensajes según el `lc_messages` del servidor (suele
+ * ser español en instalaciones venezolanas), por lo que matcheamos ambos
+ * idiomas. Si no calza ningún patrón, devolvemos un mensaje genérico (sin
+ * exponer el detalle crudo de PG).
+ */
+function parseForeignKeyMessage(detail: string): string {
+  const stillReferenced =
+    detail.match(/is still referenced from table "(.+?)"/) ??
+    detail.match(/todavía es referida desde la tabla [«"](.+?)[»"]/);
+  if (stillReferenced) {
+    const table = friendlyTable(stillReferenced[1]);
+    return `No se puede eliminar este registro porque está siendo usado por ${table}. Quítalo primero de los registros que lo referencian.`;
+  }
+
+  const notPresent =
+    detail.match(/Key \((.+?)\)=\((.+?)\) is not present in table "(.+?)"/) ??
+    detail.match(/La llave \((.+?)\)=\((.+?)\) no está presente en la tabla [«"](.+?)[»"]/);
+  if (notPresent) {
+    const table = friendlyTable(notPresent[3]);
+    return `El valor referenciado en ${notPresent[1]} no existe en ${table}.`;
+  }
+
+  return 'Operación rechazada: viola una restricción de integridad referencial.';
 }
 
 interface ErrorResponseBody {
@@ -70,33 +125,28 @@ export class AllExceptionsFilter implements ExceptionFilter {
         case '23505': {
           // unique_violation
           body.statusCode = HttpStatus.CONFLICT;
-          body.message = 'Registro duplicado';
-          if (driverError.detail) {
-            body.errors = { constraint: parseConstraintDetail(driverError.detail) };
-          }
+          body.message = driverError.detail ? parseUniqueDetail(driverError.detail) : 'Registro duplicado';
           break;
         }
         case '23503': {
           // foreign_key_violation
-          body.statusCode = HttpStatus.BAD_REQUEST;
-          body.message = 'Referencia inválida (llave foránea)';
-          if (driverError.detail) {
-            body.errors = { constraint: parseForeignKeyDetail(driverError.detail) };
-          }
+          body.statusCode = HttpStatus.CONFLICT;
+          body.message = parseForeignKeyMessage(driverError?.detail ?? '');
+          // Loggeamos el detalle crudo para diagnóstico, pero NO se lo exponemos
+          // al cliente para no filtrar nombres de tablas/columnas internas.
+          this.logger.warn(`FK violation: ${driverError?.detail ?? driverError?.message}`);
           break;
         }
         case '23502': {
           // not_null_violation
           body.statusCode = HttpStatus.BAD_REQUEST;
-          body.message = 'Campo requerido faltante';
-          body.errors = { column: driverError.column || 'desconocido' };
+          body.message = `Falta un campo requerido${driverError?.column ? `: ${driverError.column}` : ''}.`;
           break;
         }
         case '22P02': {
           // invalid_text_representation (e.g. invalid UUID)
           body.statusCode = HttpStatus.BAD_REQUEST;
-          body.message = 'Formato de dato inválido';
-          body.errors = { detail: driverError.message || 'UUID u otro campo con formato incorrecto' };
+          body.message = 'Uno de los datos enviados tiene un formato inválido.';
           break;
         }
         default: {

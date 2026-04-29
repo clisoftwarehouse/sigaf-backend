@@ -12,7 +12,6 @@ import {
 
 import { ProductBarcodeEntity } from './product-barcode.entity';
 import { ProductSubstituteEntity } from './product-substitute.entity';
-import { ProductTherapeuticUseEntity } from './product-therapeutic-use.entity';
 import { EntityRelationalHelper } from '@/common/utils/relational-entity-helper';
 import { ProductActiveIngredientEntity } from './product-active-ingredient.entity';
 import { BrandEntity } from '@/modules/brands/infrastructure/persistence/relational/entities/brand.entity';
@@ -127,7 +126,4 @@ export class ProductEntity extends EntityRelationalHelper {
 
   @OneToMany(() => ProductBarcodeEntity, (pb) => pb.product, { cascade: true })
   barcodes: ProductBarcodeEntity[];
-
-  @OneToMany(() => ProductTherapeuticUseEntity, (ptu) => ptu.product, { cascade: true })
-  therapeuticUses: ProductTherapeuticUseEntity[];
 }

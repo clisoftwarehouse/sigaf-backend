@@ -2,6 +2,7 @@ import { DataSource, Repository } from 'typeorm';
 import { Logger, Injectable } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 
+import { UserEntity } from '@/modules/users/infrastructure/persistence/relational/entities/user.entity';
 import { BrandEntity } from '@/modules/brands/infrastructure/persistence/relational/entities/brand.entity';
 import { BranchEntity } from '@/modules/branches/infrastructure/persistence/relational/entities/branch.entity';
 import { KardexEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/kardex.entity';
@@ -13,12 +14,11 @@ import { InventoryLotEntity } from '@/modules/inventory/infrastructure/persisten
 import { ProductBarcodeEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product-barcode.entity';
 import { ExchangeRateEntity } from '@/modules/exchange-rates/infrastructure/persistence/relational/entities/exchange-rate.entity';
 import { WarehouseLocationEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/warehouse-location.entity';
+import { TherapeuticUseEntity } from '@/modules/therapeutic-uses/infrastructure/persistence/relational/entities/therapeutic-use.entity';
 import { ActiveIngredientEntity } from '@/modules/active-ingredients/infrastructure/persistence/relational/entities/active-ingredient.entity';
 import { ProductActiveIngredientEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product-active-ingredient.entity';
 
 // ----------------------------------------------------------------------
-
-const SYSTEM_USER = 'system';
 
 const pickOne = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 const daysFromNow = (days: number) => {
@@ -57,7 +57,21 @@ export class DemoSeedService {
     private readonly lotRepo: Repository<InventoryLotEntity>,
     @InjectRepository(KardexEntity)
     private readonly kardexRepo: Repository<KardexEntity>,
+    @InjectRepository(TherapeuticUseEntity)
+    private readonly therapeuticUseRepo: Repository<TherapeuticUseEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userRepo: Repository<UserEntity>,
   ) {}
+
+  private async getSystemUserId(): Promise<string> {
+    const admin = await this.userRepo.findOne({ where: { username: 'admin' } });
+    if (!admin) {
+      throw new Error(
+        'Demo seed requiere el usuario "admin" — corre antes UserSeed (npm run seed:run:relational lo hace en orden).',
+      );
+    }
+    return admin.id;
+  }
 
   async run(): Promise<void> {
     this.logger.log('Running demo data seed...');
@@ -66,7 +80,8 @@ export class DemoSeedService {
     const suppliers = await this.seedSuppliers();
     const brands = await this.seedBrands();
     const categories = await this.seedCategories();
-    const ingredients = await this.seedActiveIngredients();
+    const therapeuticUses = await this.seedTherapeuticUses();
+    const ingredients = await this.seedActiveIngredients(therapeuticUses);
     const products = await this.seedProducts(categories, brands, ingredients);
     await this.seedTerminals(branches);
     await this.seedLocations(branches);
@@ -249,32 +264,144 @@ export class DemoSeedService {
   }
 
   // ── Active Ingredients ──────────────────────────────────────────────
-  private async seedActiveIngredients(): Promise<ActiveIngredientEntity[]> {
-    const data = [
+  private async seedActiveIngredients(therapeuticUses: TherapeuticUseEntity[]): Promise<ActiveIngredientEntity[]> {
+    const useByName = (name: string): string | null => therapeuticUses.find((t) => t.name === name)?.id ?? null;
+
+    const data: Array<{
+      name: string;
+      innName: string;
+      atcCode: string;
+      therapeuticUseName: string;
+    }> = [
       {
         name: 'Paracetamol',
         innName: 'Paracetamol',
         atcCode: 'N02BE01',
-        therapeuticGroup: 'Analgésico / antipirético',
+        therapeuticUseName: 'Analgésico (Dolor)',
       },
-      { name: 'Ibuprofeno', innName: 'Ibuprofen', atcCode: 'M01AE01', therapeuticGroup: 'AINE' },
+      {
+        name: 'Ibuprofeno',
+        innName: 'Ibuprofen',
+        atcCode: 'M01AE01',
+        therapeuticUseName: 'Antiinflamatorio (Dolor e Inflamación)',
+      },
       {
         name: 'Amoxicilina',
         innName: 'Amoxicillin',
         atcCode: 'J01CA04',
-        therapeuticGroup: 'Antibiótico betalactámico',
+        therapeuticUseName: 'Antibiótico',
       },
-      { name: 'Loratadina', innName: 'Loratadine', atcCode: 'R06AX13', therapeuticGroup: 'Antihistamínico H1' },
-      { name: 'Omeprazol', innName: 'Omeprazole', atcCode: 'A02BC01', therapeuticGroup: 'Inhibidor bomba de protones' },
-      { name: 'Acetaminofén', innName: 'Acetaminophen', atcCode: 'N02BE01', therapeuticGroup: 'Analgésico' },
-      { name: 'Vitamina C', innName: 'Ascorbic acid', atcCode: 'A11GA01', therapeuticGroup: 'Vitamina' },
-      { name: 'Diclofenaco', innName: 'Diclofenac', atcCode: 'M01AB05', therapeuticGroup: 'AINE' },
+      {
+        name: 'Loratadina',
+        innName: 'Loratadine',
+        atcCode: 'R06AX13',
+        therapeuticUseName: 'Antihistamínico (Alergias)',
+      },
+      {
+        name: 'Omeprazol',
+        innName: 'Omeprazole',
+        atcCode: 'A02BC01',
+        therapeuticUseName: 'Antiácido / Protector Gástrico (Acidez y Gastritis)',
+      },
+      {
+        name: 'Acetaminofén',
+        innName: 'Acetaminophen',
+        atcCode: 'N02BE01',
+        therapeuticUseName: 'Analgésico (Dolor)',
+      },
+      {
+        name: 'Vitamina C',
+        innName: 'Ascorbic acid',
+        atcCode: 'A11GA01',
+        therapeuticUseName: 'Suplemento Vitamínico (Vitaminas)',
+      },
+      {
+        name: 'Diclofenaco',
+        innName: 'Diclofenac',
+        atcCode: 'M01AB05',
+        therapeuticUseName: 'Antiinflamatorio (Dolor e Inflamación)',
+      },
     ];
     const out: ActiveIngredientEntity[] = [];
     for (const i of data) {
       let existing = await this.ingredientRepo.findOne({ where: { name: i.name } });
       if (!existing) {
-        existing = await this.ingredientRepo.save(this.ingredientRepo.create(i));
+        existing = await this.ingredientRepo.save(
+          this.ingredientRepo.create({
+            name: i.name,
+            innName: i.innName,
+            atcCode: i.atcCode,
+            therapeuticUseId: useByName(i.therapeuticUseName),
+          }),
+        );
+      }
+      out.push(existing);
+    }
+    return out;
+  }
+
+  // ── Therapeutic Uses (Acción Terapéutica) ──────────────────────────
+  private async seedTherapeuticUses(): Promise<TherapeuticUseEntity[]> {
+    const data: Array<{ name: string; atcCode?: string }> = [
+      { name: 'Analgésico (Dolor)', atcCode: 'N02' },
+      { name: 'Ansiolítico / Sedante (Ansiedad)', atcCode: 'N05B' },
+      { name: 'Antiácido / Protector Gástrico (Acidez y Gastritis)', atcCode: 'A02' },
+      { name: 'Antianémico (Anemia)', atcCode: 'B03' },
+      { name: 'Antiasmático / Broncodilatador', atcCode: 'R03' },
+      { name: 'Antibiótico', atcCode: 'J01' },
+      { name: 'Anticoagulante', atcCode: 'B01' },
+      { name: 'Anticonceptivo', atcCode: 'G03A' },
+      { name: 'Anticonvulsivo', atcCode: 'N03' },
+      { name: 'Antidepresivo', atcCode: 'N06A' },
+      { name: 'Antidiabético (Diabetes)', atcCode: 'A10' },
+      { name: 'Antidiarreico (Diarrea)', atcCode: 'A07' },
+      { name: 'Antiemético (Náuseas y Vómito)', atcCode: 'A04' },
+      { name: 'Antiespasmódico (Cólicos)', atcCode: 'A03' },
+      { name: 'Antigripal (Gripe y Resfriado)', atcCode: 'R05X' },
+      { name: 'Antihipertensivo (Presión Alta)', atcCode: 'C02' },
+      { name: 'Antihistamínico (Alergias)', atcCode: 'R06' },
+      { name: 'Antiinflamatorio (Dolor e Inflamación)', atcCode: 'M01' },
+      { name: 'Antimicótico (Hongos)', atcCode: 'J02' },
+      { name: 'Antimigrañoso (Dolor de Cabeza)', atcCode: 'N02C' },
+      { name: 'Antiparasitario (Desparasitante)', atcCode: 'P02' },
+      { name: 'Antipirético (Fiebre)', atcCode: 'N02B' },
+      { name: 'Antipruriginoso (Picazón)', atcCode: 'D04A' },
+      { name: 'Antiséptico / Desinfectante', atcCode: 'D08' },
+      { name: 'Antitusivo (Tos Seca)', atcCode: 'R05D' },
+      { name: 'Antiviral', atcCode: 'J05' },
+      { name: 'Cicatrizante (Heridas y Quemaduras)', atcCode: 'D03' },
+      { name: 'Control de Colesterol', atcCode: 'C10' },
+      { name: 'Corticosteroide / Corticoide', atcCode: 'H02' },
+      { name: 'Descongestionante Nasal', atcCode: 'R01A' },
+      { name: 'Diurético (Retención de Líquidos)', atcCode: 'C03' },
+      { name: 'Enzimas Digestivas', atcCode: 'A09' },
+      { name: 'Inductor del Sueño (Insomnio)', atcCode: 'N05C' },
+      { name: 'Laxante / Evacuante Intestinal (Estreñimiento)', atcCode: 'A06' },
+      { name: 'Lubricante / Humectante (Resequedad)' },
+      { name: 'Mucolítico / Expectorante (Tos con Flema)', atcCode: 'R05C' },
+      { name: 'Probiótico (Flora Intestinal)', atcCode: 'A07FA' },
+      { name: 'Relajante Muscular', atcCode: 'M03' },
+      { name: 'Suplemento Mineral', atcCode: 'A12' },
+      { name: 'Suplemento Nutricional', atcCode: 'V06' },
+      { name: 'Suplemento Vitamínico (Vitaminas)', atcCode: 'A11' },
+      { name: 'Terapia Hormonal', atcCode: 'H' },
+      { name: 'Tratamiento Acné', atcCode: 'D10' },
+      { name: 'Vacuna', atcCode: 'J07' },
+      { name: 'Vasodilatador (Circulación)', atcCode: 'C04' },
+    ];
+
+    const out: TherapeuticUseEntity[] = [];
+    for (const t of data) {
+      let existing = await this.therapeuticUseRepo.findOne({ where: { name: t.name } });
+      if (!existing) {
+        existing = await this.therapeuticUseRepo.save(
+          this.therapeuticUseRepo.create({
+            name: t.name,
+            atcCode: t.atcCode ?? null,
+            description: null,
+          }),
+        );
+        this.logger.log(`Therapeutic use "${t.name}" created`);
       }
       out.push(existing);
     }
@@ -675,6 +802,7 @@ export class DemoSeedService {
     branches: BranchEntity[],
     suppliers: SupplierEntity[],
   ): Promise<void> {
+    const systemUserId = await this.getSystemUserId();
     // ~4 lotes por producto, repartidos entre sucursales
     for (const product of products) {
       for (let i = 0; i < 4; i += 1) {
@@ -726,7 +854,7 @@ export class DemoSeedService {
               balanceAfter: quantity,
               referenceType: 'inventory_lot',
               referenceId: lot.id,
-              userId: SYSTEM_USER,
+              userId: systemUserId,
             }),
           );
         });

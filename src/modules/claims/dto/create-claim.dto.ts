@@ -1,13 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  Min,
-  IsEnum,
-  IsUUID,
-  IsNumber,
-  IsString,
-  MaxLength,
-  IsOptional,
-} from 'class-validator';
+import { Min, IsEnum, IsUUID, IsNumber, IsString, MaxLength, IsOptional } from 'class-validator';
 
 export class CreateClaimDto {
   @ApiProperty({ description: 'ID del proveedor' })
