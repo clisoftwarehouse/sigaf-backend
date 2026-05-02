@@ -64,6 +64,13 @@ export class ProductEntity extends EntityRelationalHelper {
   @Column('boolean', { name: 'is_antibiotic', default: false })
   isAntibiotic: boolean;
 
+  /**
+   * Producto importado (mayoristas extranjeros). Categoría especial que puede
+   * requerir aprobador adicional al crear OCs (PDF Política OC §2).
+   */
+  @Column('boolean', { name: 'is_imported', default: false })
+  isImported: boolean;
+
   @Column('boolean', { name: 'requires_recipe', default: false })
   requiresRecipe: boolean;
 

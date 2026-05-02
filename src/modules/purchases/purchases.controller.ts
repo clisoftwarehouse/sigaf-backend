@@ -3,14 +3,24 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Get, Put, Body, Post, Param, Query, Request, UseGuards, Controller, ParseUUIDPipe } from '@nestjs/common';
 
 import { PurchasesService } from './purchases.service';
-import { CreateGoodsReceiptDto, QueryPurchaseOrderDto, CreatePurchaseOrderDto, UpdatePurchaseOrderDto } from './dto';
+import { ApprovalEngineService } from './approval-engine.service';
+import {
+  ReapproveReceiptDto,
+  CreateGoodsReceiptDto,
+  QueryPurchaseOrderDto,
+  CreatePurchaseOrderDto,
+  UpdatePurchaseOrderDto,
+} from './dto';
 
 @ApiTags('Purchases')
 @ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'))
 @Controller({ path: 'purchases', version: '1' })
 export class PurchasesController {
-  constructor(private readonly purchasesService: PurchasesService) {}
+  constructor(
+    private readonly purchasesService: PurchasesService,
+    private readonly approvalEngine: ApprovalEngineService,
+  ) {}
 
   // ─── PURCHASE ORDERS ──────────────────────────────────────────────────
 
@@ -48,6 +58,14 @@ export class PurchasesController {
     return this.purchasesService.approveOrder(id, req.user.id);
   }
 
+  @Get('orders/:id/approval-status')
+  @ApiOperation({
+    summary: 'Consultar requisitos de aprobación y si el usuario actual puede firmar',
+  })
+  getApprovalStatus(@Param('id', ParseUUIDPipe) id: string, @Request() req: { user: { id: string } }) {
+    return this.approvalEngine.checkUserCanApprove(id, req.user.id);
+  }
+
   // ─── GOODS RECEIPTS ───────────────────────────────────────────────────
 
   @Get('receipts')
@@ -72,5 +90,19 @@ export class PurchasesController {
   @ApiOperation({ summary: 'Crear recepción de mercancía (crea lotes e inserta kardex)' })
   createReceipt(@Body() dto: CreateGoodsReceiptDto, @Request() req: { user: { id: string } }) {
     return this.purchasesService.createReceipt(dto, req.user.id);
+  }
+
+  @Put('receipts/:id/reapprove')
+  @ApiOperation({
+    summary:
+      'Reaprueba una recepción bloqueada por exceso de tolerancia (PDF Política OC §5). ' +
+      'Crea los lotes pendientes y publica precios.',
+  })
+  reapproveReceipt(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ReapproveReceiptDto,
+    @Request() req: { user: { id: string } },
+  ) {
+    return this.purchasesService.reapproveReceipt(id, req.user.id, dto);
   }
 }

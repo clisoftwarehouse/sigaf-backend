@@ -1,7 +1,8 @@
-import { Column, Entity, ManyToOne, JoinColumn, CreateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, ManyToOne, JoinColumn, CreateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
 
 import { GoodsReceiptEntity } from './goods-receipt.entity';
 import { EntityRelationalHelper } from '@/common/utils/relational-entity-helper';
+import { GoodsReceiptItemDiscrepancyEntity } from './goods-receipt-item-discrepancy.entity';
 
 @Entity('goods_receipt_items')
 export class GoodsReceiptItemEntity extends EntityRelationalHelper {
@@ -17,11 +18,27 @@ export class GoodsReceiptItemEntity extends EntityRelationalHelper {
   @Column('uuid', { name: 'product_id' })
   productId: string;
 
-  @Column('uuid', { name: 'lot_id' })
-  lotId: string;
+  /**
+   * Nullable: las recepciones bloqueadas por exceso de tolerancia
+   * (`requires_reapproval = true`) NO crean lote hasta ser reaprobadas. El
+   * service rellena este FK durante el reapprove.
+   */
+  @Column('uuid', { name: 'lot_id', nullable: true })
+  lotId: string | null;
 
+  /** Cantidad físicamente recibida en sucursal. */
   @Column('decimal', { precision: 12, scale: 3 })
   quantity: number;
+
+  /**
+   * Cantidad que dice la factura del proveedor. Puede diferir tanto de la
+   * `quantity` ordenada en la OC como de `quantity` (recibido físico).
+   * Permite cruzar 3 variables (ordenada / facturada / recibida) y detectar
+   * faltantes vs sobrantes vs errores de facturación.
+   * Nullable para recepciones legacy creadas antes de Fase C.
+   */
+  @Column('decimal', { name: 'invoiced_quantity', precision: 18, scale: 4, nullable: true })
+  invoicedQuantity: number | null;
 
   @Column('decimal', { name: 'unit_cost_usd', precision: 18, scale: 4 })
   unitCostUsd: number;
@@ -47,4 +64,7 @@ export class GoodsReceiptItemEntity extends EntityRelationalHelper {
   @ManyToOne(() => GoodsReceiptEntity)
   @JoinColumn({ name: 'receipt_id' })
   receipt: GoodsReceiptEntity;
+
+  @OneToMany(() => GoodsReceiptItemDiscrepancyEntity, (d) => d.receiptItem, { cascade: true })
+  discrepancies: GoodsReceiptItemDiscrepancyEntity[];
 }

@@ -1,6 +1,15 @@
-import { Column, Entity, CreateDateColumn, UpdateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 import { EntityRelationalHelper } from '@/common/utils/relational-entity-helper';
+import { BranchGroupEntity } from '@/modules/branch-groups/infrastructure/persistence/relational/entities/branch-group.entity';
 
 @Entity('branches')
 export class BranchEntity extends EntityRelationalHelper {
@@ -21,6 +30,19 @@ export class BranchEntity extends EntityRelationalHelper {
 
   @Column('varchar', { length: 150, nullable: true })
   email: string | null;
+
+  /**
+   * FK al grupo que agrupa esta sucursal. Determina qué matriz de aprobación
+   * de OCs aplica (PDF Política OC §1+2). Nullable durante el período de
+   * migración; en producción todas las sucursales deberían tener un grupo
+   * asignado (al menos el "Sin asignar" creado en la migración).
+   */
+  @Column('uuid', { name: 'branch_group_id', nullable: true })
+  branchGroupId: string | null;
+
+  @ManyToOne(() => BranchGroupEntity, { eager: false, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'branch_group_id' })
+  branchGroup: BranchGroupEntity | null;
 
   @Column('boolean', { name: 'is_active', default: true })
   isActive: boolean;

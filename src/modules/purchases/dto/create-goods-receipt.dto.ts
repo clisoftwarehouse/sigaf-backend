@@ -13,6 +13,28 @@ import {
   ValidateNested,
 } from 'class-validator';
 
+import {
+  DiscrepancyReason,
+  DISCREPANCY_REASONS,
+} from '../infrastructure/persistence/relational/entities/goods-receipt-item-discrepancy.entity';
+
+export class DiscrepancyInputDto {
+  @ApiProperty({ enum: DISCREPANCY_REASONS, description: 'Razón de la discrepancia' })
+  @IsEnum(DISCREPANCY_REASONS)
+  reason: DiscrepancyReason;
+
+  @ApiProperty({ example: 3, description: 'Cantidad afectada por esta razón' })
+  @IsNumber()
+  @Min(0.001)
+  quantity: number;
+
+  @ApiPropertyOptional({ description: 'Notas adicionales (obligatorio si reason=other)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  notes?: string;
+}
+
 export class CreateGoodsReceiptItemDto {
   @ApiPropertyOptional({
     description: 'ID de la orden de compra asociada a este ítem (permite consolidar varias OCs en una factura)',
@@ -34,20 +56,47 @@ export class CreateGoodsReceiptItemDto {
   @IsString()
   expirationDate: string;
 
-  @ApiProperty({ example: 100, description: 'Cantidad recibida' })
+  @ApiProperty({ example: 100, description: 'Cantidad recibida físicamente en sucursal' })
   @IsNumber()
   @Min(0.001)
   quantity: number;
+
+  @ApiPropertyOptional({
+    example: 100,
+    description:
+      'Cantidad que dice la factura del proveedor. Si difiere de `quantity` se generan ' +
+      'discrepancias. Default = `quantity` si se omite.',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  invoicedQuantity?: number;
+
+  @ApiPropertyOptional({
+    type: [DiscrepancyInputDto],
+    description: 'Discrepancias por línea. La suma de cantidades debe coincidir con |invoicedQuantity - quantity|.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => DiscrepancyInputDto)
+  discrepancies?: DiscrepancyInputDto[];
 
   @ApiProperty({ example: 2.5, description: 'Costo unitario USD' })
   @IsNumber()
   @Min(0)
   unitCostUsd: number;
 
-  @ApiProperty({ example: 5.0, description: 'Precio de venta en USD (siempre en dólares, nunca en Bs)' })
+  @ApiPropertyOptional({
+    example: 5.0,
+    description:
+      'Precio de venta en USD. OPCIONAL — si se omite, el lote se crea sin precio publicado y ' +
+      'la fijación queda a cargo del módulo de Precios (fuente de verdad para pricing).',
+  })
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  salePrice: number;
+  salePrice?: number;
 
   @ApiPropertyOptional({ example: 5, description: 'Descuento por línea en %' })
   @IsOptional()
@@ -105,6 +154,37 @@ export class CreateGoodsReceiptDto {
   @IsString()
   @MaxLength(500)
   notes?: string;
+
+  @ApiPropertyOptional({
+    enum: ['USD', 'VES'],
+    example: 'USD',
+    description:
+      'Moneda original de la factura física. Si es VES, `nativeTotal` es obligatorio; ' +
+      '`exchangeRateUsed` es opcional (si se omite, se resuelve la última tasa BCV). Default: USD.',
+  })
+  @IsOptional()
+  @IsEnum(['USD', 'VES'])
+  nativeCurrency?: 'USD' | 'VES';
+
+  @ApiPropertyOptional({
+    example: 3650.0,
+    description: 'Total que dice la factura en moneda nativa (Bs. cuando nativeCurrency=VES).',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  nativeTotal?: number;
+
+  @ApiPropertyOptional({
+    example: 36.5,
+    description:
+      'Tasa de cambio Bs./USD a aplicar. Si se omite y nativeCurrency=VES, ' +
+      'el backend resuelve la última tasa BCV registrada.',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0.0001)
+  exchangeRateUsed?: number;
 
   @ApiProperty({ type: [CreateGoodsReceiptItemDto], description: 'Ítems recibidos' })
   @IsArray()

@@ -1,11 +1,11 @@
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Min, IsEmail, Matches, IsNumber, IsString, IsBoolean, MaxLength, IsOptional } from 'class-validator';
+import { Min, IsEnum, IsEmail, Matches, IsNumber, IsString, IsBoolean, MaxLength, IsOptional } from 'class-validator';
 
 import {
   RIF_HINT,
-  PHONE_HINT,
   RIF_REGEX,
+  PHONE_HINT,
   PHONE_REGEX,
   normalizeRif,
   normalizePhone,
@@ -68,4 +68,14 @@ export class CreateSupplierDto {
   @IsNumber()
   @Min(0)
   consignmentCommissionPct?: number;
+
+  @ApiPropertyOptional({
+    enum: ['USD', 'VES'],
+    example: 'USD',
+    description:
+      'Moneda en que el proveedor emite sus facturas. Pre-selecciona la moneda en el formulario de recepción. Default: USD.',
+  })
+  @IsOptional()
+  @IsEnum(['USD', 'VES'])
+  invoicesInCurrency?: 'USD' | 'VES';
 }

@@ -47,6 +47,14 @@ export class SupplierEntity extends EntityRelationalHelper {
   @Column('boolean', { name: 'is_active', default: true })
   isActive: boolean;
 
+  /**
+   * Moneda en la que el proveedor emite sus facturas. Solo es una pista para
+   * pre-seleccionar la moneda en el formulario de recepción; el operador puede
+   * sobreescribirlo caso por caso.
+   */
+  @Column('varchar', { name: 'invoices_in_currency', length: 3, default: 'USD' })
+  invoicesInCurrency: 'USD' | 'VES';
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 

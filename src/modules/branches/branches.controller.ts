@@ -1,6 +1,6 @@
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { Get, Put, Body, Post, Param, Delete, UseGuards, Controller, ParseUUIDPipe } from '@nestjs/common';
+import { Get, Put, Body, Post, Param, Query, Delete, UseGuards, Controller, ParseUUIDPipe } from '@nestjs/common';
 
 import { BranchesService } from './branches.service';
 import { CreateBranchDto, UpdateBranchDto } from './dto';
@@ -13,9 +13,13 @@ export class BranchesController {
   constructor(private readonly branchesService: BranchesService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Listar sucursales' })
-  findAll() {
-    return this.branchesService.findAll();
+  @ApiOperation({
+    summary: 'Listar sucursales (por default todas; ?isActive=true para solo activas)',
+  })
+  findAll(@Query('isActive') isActive?: string) {
+    return this.branchesService.findAll({
+      isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
+    });
   }
 
   @Get(':id')

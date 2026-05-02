@@ -101,14 +101,30 @@ export class BcvScraperService {
   }
 
   /**
-   * Intenta extraer la fecha efectiva (`<span>Fecha Valor...</span>`). Si el
-   * parseo falla, retorna `null` y el caller usa la fecha de hoy.
+   * Intenta extraer la fecha efectiva. El HTML del BCV tiene la forma:
+   *   <div class="pull-right dinpro center">
+   *     Fecha Valor: <span class="date-display-single" content="2026-04-29T...">
+   *       Miércoles, 29 Abril 2026
+   *     </span>
+   *
+   * Estrategia: matcheamos primero el atributo `content="YYYY-MM-DDTHH..."` del
+   * span de fecha (más robusto que parsear el texto en español). Como fallback,
+   * extraemos el texto del span y mapeamos el mes en español. Si todo falla,
+   * retornamos `null` y el caller usa la fecha de hoy.
    */
   private parseEffectiveDate(html: string): Date | null {
-    const dateMatch = html.match(/Fecha Valor[:\s]*<\/span>\s*<span[^>]*>\s*([^<]+?)\s*</i);
-    if (!dateMatch) return null;
-    const text = dateMatch[1].trim();
-    // Formato esperado: "Miércoles, 16 Abril 2026"
+    // Primary: atributo `content` con ISO date dentro del span de Fecha Valor.
+    const isoMatch = html.match(/Fecha Valor[\s\S]{0,200}?<span[^>]*content=["'](\d{4}-\d{2}-\d{2})/i);
+    if (isoMatch) {
+      const iso = isoMatch[1];
+      const [y, mo, d] = iso.split('-').map((p) => parseInt(p, 10));
+      return new Date(Date.UTC(y, mo - 1, d));
+    }
+
+    // Fallback: parseo del texto en español dentro del span.
+    const textMatch = html.match(/Fecha Valor[\s\S]{0,200}?<span[^>]*>\s*([^<]+?)\s*</i);
+    if (!textMatch) return null;
+    const text = textMatch[1].trim();
     const months: Record<string, number> = {
       enero: 0,
       febrero: 1,

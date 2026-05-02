@@ -12,8 +12,13 @@ export class BranchesService {
     private readonly branchRepo: Repository<BranchEntity>,
   ) {}
 
-  async findAll(): Promise<BranchEntity[]> {
-    return this.branchRepo.find({ where: { isActive: true } });
+  async findAll(query: { isActive?: boolean } = {}): Promise<BranchEntity[]> {
+    // Default: retorna TODAS (activas + inactivas) para que módulos admin
+    // (ej. configuración de grupos) puedan ver y gestionar sucursales
+    // archivadas. El consumidor pasa `isActive=true` cuando solo quiere
+    // las activas (formularios de OC, recepción, etc).
+    const where = query.isActive === undefined ? {} : { isActive: query.isActive };
+    return this.branchRepo.find({ where, order: { name: 'ASC' } });
   }
 
   async findOne(id: string): Promise<BranchEntity> {
