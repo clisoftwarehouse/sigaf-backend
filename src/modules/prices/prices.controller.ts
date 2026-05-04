@@ -43,9 +43,16 @@ export class PricesController {
   }
 
   @Put(':id')
-  @ApiOperation({ summary: 'Corrección sobre un precio (typo/notas). No cambia vigencia ni scope.' })
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdatePriceDto) {
-    return this.service.update(id, dto);
+  @ApiOperation({
+    summary:
+      'Corrección sobre un precio (typo/notas). No cambia vigencia ni scope. Si se modifica priceUsd se exige justification y queda registrado en audit_log.',
+  })
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdatePriceDto,
+    @Request() req: { user: { id: string } },
+  ) {
+    return this.service.update(id, dto, req.user?.id || 'system');
   }
 
   @Post(':id/expire')

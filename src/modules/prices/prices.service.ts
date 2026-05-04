@@ -2,6 +2,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, MoreThan, Repository, DataSource, LessThanOrEqual } from 'typeorm';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 
+import { AuditService } from '../audit/audit.service';
 import { PriceEntity } from './infrastructure/persistence/relational/entities/price.entity';
 import { CreatePriceDto, UpdatePriceDto, QueryPricesDto, QueryCurrentPriceDto } from './dto';
 
@@ -31,6 +32,7 @@ export class PricesService {
     @InjectRepository(PriceEntity)
     private readonly repo: Repository<PriceEntity>,
     private readonly dataSource: DataSource,
+    private readonly auditService: AuditService,
   ) {}
 
   /**
@@ -100,11 +102,40 @@ export class PricesService {
     return price;
   }
 
-  async update(id: string, dto: UpdatePriceDto): Promise<PriceEntity> {
+  /**
+   * Corrección sobre un precio existente. Si se modifica `priceUsd` se exige
+   * `justification` y se registra en `audit_log` (action=UPDATE, table=prices)
+   * con old/new values y la justificación dada por el usuario.
+   *
+   * Esto NO crea una nueva vigencia — usar `create()` para precios nuevos.
+   */
+  async update(id: string, dto: UpdatePriceDto, userId: string): Promise<PriceEntity> {
     const price = await this.findOne(id);
+    const oldValues = { priceUsd: Number(price.priceUsd), notes: price.notes };
+
+    const priceChanged = dto.priceUsd != null && Number(dto.priceUsd) !== Number(price.priceUsd);
+    if (priceChanged && !dto.justification) {
+      throw new BadRequestException('Se requiere justificación para modificar el precio');
+    }
+
     if (dto.priceUsd != null) price.priceUsd = dto.priceUsd;
     if (dto.notes !== undefined) price.notes = dto.notes;
-    return this.repo.save(price);
+
+    const updated = await this.repo.save(price);
+
+    if (priceChanged) {
+      await this.auditService.log({
+        tableName: 'prices',
+        recordId: id,
+        action: 'UPDATE',
+        oldValues,
+        newValues: { priceUsd: Number(updated.priceUsd), notes: updated.notes },
+        justification: dto.justification,
+        userId,
+      });
+    }
+
+    return updated;
   }
 
   /**
