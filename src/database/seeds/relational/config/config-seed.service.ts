@@ -5,7 +5,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { GlobalConfigEntity } from '@/modules/config-global/infrastructure/persistence/relational/entities/global-config.entity';
 
 const CONFIG_ITEMS = [
-  { key: 'bcv_rate_usd', value: '36.50', description: 'Tasa BCV USD/VES', dataType: 'decimal' },
   { key: 'iva_general_pct', value: '16.00', description: 'IVA general (%)', dataType: 'decimal' },
   { key: 'iva_reduced_pct', value: '8.00', description: 'IVA reducido (%)', dataType: 'decimal' },
   { key: 'igtf_pct', value: '3.00', description: 'IGTF (%)', dataType: 'decimal' },

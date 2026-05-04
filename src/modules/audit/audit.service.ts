@@ -1,7 +1,8 @@
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
+import { UserEntity } from '@/modules/users/infrastructure/persistence/relational/entities/user.entity';
 import { AuditLogEntity } from './infrastructure/persistence/relational/entities/audit-log.entity';
 
 export interface AuditEntry {
@@ -17,11 +18,32 @@ export interface AuditEntry {
   ipAddress?: string;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const USER_REF_FIELDS = new Set([
+  'userId',
+  'createdBy',
+  'updatedBy',
+  'deletedBy',
+  'approvedBy',
+  'reapprovedBy',
+  'cancelledBy',
+  'receivedBy',
+  'closedBy',
+  'reviewedBy',
+]);
+
+function isUserRefField(field: string): boolean {
+  return USER_REF_FIELDS.has(field) || field.endsWith('By');
+}
+
 @Injectable()
 export class AuditService {
   constructor(
     @InjectRepository(AuditLogEntity)
     private readonly auditRepo: Repository<AuditLogEntity>,
+    @InjectRepository(UserEntity)
+    private readonly usersRepo: Repository<UserEntity>,
   ) {}
 
   async log(entry: AuditEntry): Promise<AuditLogEntity> {
@@ -56,7 +78,13 @@ export class AuditService {
     to?: string;
     page?: number;
     limit?: number;
-  }): Promise<{ data: AuditLogEntity[]; total: number; page: number; limit: number }> {
+  }): Promise<{
+    data: AuditLogEntity[];
+    total: number;
+    page: number;
+    limit: number;
+    users: Record<string, string>;
+  }> {
     const page = query.page || 1;
     const limit = query.limit || 20;
 
@@ -87,7 +115,41 @@ export class AuditService {
       .orderBy('a.createdAt', 'DESC')
       .getManyAndCount();
 
-    return { data, total, page, limit };
+    const users = await this.resolveUserNames(data);
+
+    return { data, total, page, limit, users };
+  }
+
+  private async resolveUserNames(rows: AuditLogEntity[]): Promise<Record<string, string>> {
+    const ids = new Set<string>();
+
+    for (const row of rows) {
+      if (row.userId) ids.add(row.userId);
+      this.collectUserRefIds(row.oldValues, ids);
+      this.collectUserRefIds(row.newValues, ids);
+    }
+
+    if (ids.size === 0) return {};
+
+    const found = await this.usersRepo.find({
+      where: { id: In([...ids]) },
+      select: { id: true, fullName: true },
+    });
+
+    const map: Record<string, string> = {};
+    for (const u of found) {
+      map[u.id] = u.fullName;
+    }
+    return map;
+  }
+
+  private collectUserRefIds(values: Record<string, unknown> | null, ids: Set<string>): void {
+    if (!values) return;
+    for (const [key, val] of Object.entries(values)) {
+      if (typeof val === 'string' && UUID_RE.test(val) && isUserRefField(key)) {
+        ids.add(val);
+      }
+    }
   }
 
   private getChangedFields(oldValues: Record<string, unknown>, newValues: Record<string, unknown>): string[] {
