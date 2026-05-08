@@ -18,6 +18,11 @@ export class QueryProductDto {
   @IsUUID()
   brandId?: string;
 
+  @ApiPropertyOptional({ description: 'Sucursal del cajero. Si está, prefiere overrides de precio para esa sucursal.' })
+  @IsOptional()
+  @IsUUID()
+  branchId?: string;
+
   @ApiPropertyOptional({
     enum: ['pharmaceutical', 'controlled', 'otc', 'grocery', 'miscellaneous', 'weighable'],
     description: 'Tipo de producto',

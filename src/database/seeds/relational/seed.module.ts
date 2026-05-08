@@ -11,26 +11,6 @@ import { DemoSeedModule } from './demo/demo-seed.module';
 import databaseConfig from '../../config/database.config';
 import { ConfigSeedModule } from './config/config-seed.module';
 import { PermissionSeedModule } from './permission/permission-seed.module';
-import { RoleEntity } from '@/modules/roles/infrastructure/persistence/relational/entities/role.entity';
-import { UserEntity } from '@/modules/users/infrastructure/persistence/relational/entities/user.entity';
-import { PermissionEntity } from '@/modules/permissions/infrastructure/persistence/relational/entities/permission.entity';
-import { RolePermissionEntity } from '@/modules/permissions/infrastructure/persistence/relational/entities/role-permission.entity';
-import { GlobalConfigEntity } from '@/modules/config-global/infrastructure/persistence/relational/entities/global-config.entity';
-import { BranchEntity } from '@/modules/branches/infrastructure/persistence/relational/entities/branch.entity';
-import { SupplierEntity } from '@/modules/suppliers/infrastructure/persistence/relational/entities/supplier.entity';
-import { BrandEntity } from '@/modules/brands/infrastructure/persistence/relational/entities/brand.entity';
-import { CategoryEntity } from '@/modules/categories/infrastructure/persistence/relational/entities/category.entity';
-import { ActiveIngredientEntity } from '@/modules/active-ingredients/infrastructure/persistence/relational/entities/active-ingredient.entity';
-import { ProductEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product.entity';
-import { ProductBarcodeEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product-barcode.entity';
-import { ProductSubstituteEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product-substitute.entity';
-import { ProductActiveIngredientEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product-active-ingredient.entity';
-import { TherapeuticUseEntity } from '@/modules/therapeutic-uses/infrastructure/persistence/relational/entities/therapeutic-use.entity';
-import { TerminalEntity } from '@/modules/terminals/infrastructure/persistence/relational/entities/terminal.entity';
-import { WarehouseLocationEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/warehouse-location.entity';
-import { ExchangeRateEntity } from '@/modules/exchange-rates/infrastructure/persistence/relational/entities/exchange-rate.entity';
-import { InventoryLotEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/inventory-lot.entity';
-import { KardexEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/kardex.entity';
 
 @Module({
   imports: [
@@ -55,28 +35,9 @@ import { KardexEntity } from '@/modules/inventory/infrastructure/persistence/rel
           dropSchema: false,
           keepConnectionAlive: true,
           logging: configService.get('app.nodeEnv', { infer: true }) !== 'production',
-          entities: [
-            RoleEntity,
-            UserEntity,
-            PermissionEntity,
-            RolePermissionEntity,
-            GlobalConfigEntity,
-            BranchEntity,
-            SupplierEntity,
-            BrandEntity,
-            CategoryEntity,
-            ActiveIngredientEntity,
-            ProductEntity,
-            ProductBarcodeEntity,
-            ProductActiveIngredientEntity,
-            ProductSubstituteEntity,
-            TherapeuticUseEntity,
-            TerminalEntity,
-            WarehouseLocationEntity,
-            ExchangeRateEntity,
-            InventoryLotEntity,
-            KardexEntity,
-          ],
+          // Cargar todas las entities por glob para evitar errores de relaciones
+          // huérfanas cuando se agregan módulos nuevos sin actualizar este array.
+          entities: [__dirname + '/../../../**/*.entity{.ts,.js}'],
           extra: {
             max: configService.get('database.maxConnections', { infer: true }),
             ssl: configService.get('database.sslEnabled', { infer: true })

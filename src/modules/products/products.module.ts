@@ -5,6 +5,7 @@ import { AuditModule } from '../audit/audit.module';
 import { ProductsService } from './products.service';
 import { ProductsController } from './products.controller';
 import { ProductEntity } from './infrastructure/persistence/relational/entities/product.entity';
+import { PriceEntity } from '@/modules/prices/infrastructure/persistence/relational/entities/price.entity';
 import { ProductBarcodeEntity } from './infrastructure/persistence/relational/entities/product-barcode.entity';
 import { ProductSubstituteEntity } from './infrastructure/persistence/relational/entities/product-substitute.entity';
 import { InventoryLotEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/inventory-lot.entity';
@@ -22,6 +23,7 @@ import { GoodsReceiptItemEntity } from '@/modules/purchases/infrastructure/persi
       InventoryLotEntity,
       GoodsReceiptEntity,
       GoodsReceiptItemEntity,
+      PriceEntity,
     ]),
     AuditModule,
   ],

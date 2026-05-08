@@ -4,6 +4,7 @@ import { Injectable, NotFoundException, ConflictException, BadRequestException }
 
 import { AuditService } from '../audit/audit.service';
 import { ProductEntity } from './infrastructure/persistence/relational/entities/product.entity';
+import { PriceEntity } from '@/modules/prices/infrastructure/persistence/relational/entities/price.entity';
 import { ProductBarcodeEntity } from './infrastructure/persistence/relational/entities/product-barcode.entity';
 import { ProductSubstituteEntity } from './infrastructure/persistence/relational/entities/product-substitute.entity';
 import { InventoryLotEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/inventory-lot.entity';
@@ -33,6 +34,8 @@ export class ProductsService {
     private readonly lotRepo: Repository<InventoryLotEntity>,
     @InjectRepository(GoodsReceiptItemEntity)
     private readonly goodsReceiptItemRepo: Repository<GoodsReceiptItemEntity>,
+    @InjectRepository(PriceEntity)
+    private readonly priceRepo: Repository<PriceEntity>,
     private readonly auditService: AuditService,
   ) {}
 
@@ -94,7 +97,9 @@ export class ProductsService {
 
     const productIds = data.map((p) => p.id);
     let stockMap: Record<string, number> = {};
+    let priceMap: Record<string, number> = {};
     if (productIds.length) {
+      // Stock disponible global (todas las sucursales).
       const stocks = await this.lotRepo
         .createQueryBuilder('lot')
         .select('lot.product_id', 'productId')
@@ -109,11 +114,42 @@ export class ProductsService {
         },
         {} as Record<string, number>,
       );
+
+      // Precio vigente: prefiere override por sucursal si se pasa branchId,
+      // si no o si no existe override, usa el precio global.
+      const priceQb = this.priceRepo
+        .createQueryBuilder('p')
+        .where('p.product_id IN (:...ids)', { ids: productIds })
+        .andWhere('p.effective_to IS NULL');
+      if (query.branchId) {
+        priceQb.andWhere('(p.branch_id = :branchId OR p.branch_id IS NULL)', {
+          branchId: query.branchId,
+        });
+      } else {
+        priceQb.andWhere('p.branch_id IS NULL');
+      }
+      const prices = await priceQb.getMany();
+      // Reducimos: si hay branch-specific lo preferimos sobre el global.
+      const priceCandidates: Record<string, { priceUsd: number; isBranchSpecific: boolean }> = {};
+      for (const price of prices) {
+        const key = price.productId;
+        const isBranchSpecific = !!price.branchId;
+        const current = priceCandidates[key];
+        if (!current || (isBranchSpecific && !current.isBranchSpecific)) {
+          priceCandidates[key] = {
+            priceUsd: parseFloat(price.priceUsd as unknown as string) || 0,
+            isBranchSpecific,
+          };
+        }
+      }
+      priceMap = Object.fromEntries(Object.entries(priceCandidates).map(([k, v]) => [k, v.priceUsd]));
     }
 
     const enriched = data.map((p) => ({
       ...p,
       totalStock: stockMap[p.id] || 0,
+      currentPriceUsd:
+        priceMap[p.id] ?? (typeof p.pmvp === 'number' ? p.pmvp : parseFloat(p.pmvp as unknown as string) || null),
     }));
 
     return { data: enriched, total, page, limit };
