@@ -9,10 +9,9 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
+import { BranchGroupEntity } from './branch-group.entity';
 import { EntityRelationalHelper } from '@/common/utils/relational-entity-helper';
 import { RoleEntity } from '@/modules/roles/infrastructure/persistence/relational/entities/role.entity';
-
-import { BranchGroupEntity } from './branch-group.entity';
 
 /**
  * Categorías especiales (bandera por producto) que requieren un aprobador

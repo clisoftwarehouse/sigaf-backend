@@ -46,6 +46,9 @@ export class UserEntity extends EntityRelationalHelper {
   @JoinColumn({ name: 'role_id' })
   role: RoleEntity;
 
+  @Column({ type: 'varchar', length: 255, name: 'supervisor_pin_hash', nullable: true })
+  supervisorPinHash: string | null;
+
   @Column({ type: 'boolean', name: 'is_active', default: true })
   isActive: boolean;
 

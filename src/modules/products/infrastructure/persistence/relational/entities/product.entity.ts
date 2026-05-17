@@ -119,6 +119,19 @@ export class ProductEntity extends EntityRelationalHelper {
   @Column('boolean', { name: 'inventory_blocked', default: false })
   inventoryBlocked: boolean;
 
+  /**
+   * Campos del layout de creación unificado (QA 2026-05). Todos opcionales
+   * para mantener compatibilidad con productos creados antes del rediseño.
+   */
+  @Column('varchar', { name: 'dosage_form', length: 30, nullable: true })
+  dosageForm: string | null;
+
+  @Column('varchar', { name: 'commercial_line', length: 100, nullable: true })
+  commercialLine: string | null;
+
+  @Column('varchar', { name: 'commercial_variant', length: 100, nullable: true })
+  commercialVariant: string | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 

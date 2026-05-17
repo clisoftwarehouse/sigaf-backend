@@ -36,6 +36,23 @@ export class PricesController {
     return this.service.getCurrentPrice(query);
   }
 
+  @Get('effective')
+  @ApiOperation({
+    summary:
+      'Precio efectivo: precio principal × factor de revaluación (modo reposición). Incluye conversión a Bs a tasa BCV.',
+  })
+  getEffective(@Query() query: QueryCurrentPriceDto) {
+    return this.service.getEffectivePrice(query);
+  }
+
+  @Get('revaluation-factor')
+  @ApiOperation({
+    summary: 'Factor de revaluación vigente (tasa REPOSICION / tasa BCV). 1.0 si modo reposición inactivo.',
+  })
+  getRevaluationFactor() {
+    return this.service.getRevaluationFactor();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Obtener precio por ID' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {

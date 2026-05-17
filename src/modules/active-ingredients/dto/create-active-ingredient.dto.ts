@@ -1,5 +1,5 @@
-import { IsUUID, IsString, MaxLength, IsOptional } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsUUID, IsString, MaxLength, IsOptional } from 'class-validator';
 
 export class CreateActiveIngredientDto {
   @ApiProperty({ example: 'Losartán Potásico', description: 'Nombre del principio activo' })

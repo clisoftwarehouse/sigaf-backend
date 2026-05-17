@@ -1,8 +1,9 @@
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Logger, Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { Logger, Injectable, BadRequestException } from '@nestjs/common';
 
+import { RateSource } from './rate-sources';
 import { BcvScraperService } from './bcv-scraper.service';
 import { OverrideRateDto, CreateExchangeRateDto } from './dto';
 import { ExchangeRateEntity } from './infrastructure/persistence/relational/entities/exchange-rate.entity';
@@ -17,7 +18,12 @@ export class ExchangeRatesService {
     private readonly bcvScraper: BcvScraperService,
   ) {}
 
-  async findAll(query: { currencyFrom?: string; currencyTo?: string; limit?: number }): Promise<ExchangeRateEntity[]> {
+  async findAll(query: {
+    currencyFrom?: string;
+    currencyTo?: string;
+    source?: string;
+    limit?: number;
+  }): Promise<ExchangeRateEntity[]> {
     const qb = this.repo.createQueryBuilder('er');
 
     if (query.currencyFrom) {
@@ -26,28 +32,64 @@ export class ExchangeRatesService {
     if (query.currencyTo) {
       qb.andWhere('er.currencyTo = :currencyTo', { currencyTo: query.currencyTo });
     }
+    if (query.source) {
+      qb.andWhere('er.source = :source', { source: query.source });
+    }
 
     return qb
       .orderBy('er.effectiveDate', 'DESC')
+      .addOrderBy('er.createdAt', 'DESC')
       .take(query.limit || 30)
       .getMany();
   }
 
-  async getLatest(currencyFrom = 'USD', currencyTo = 'VES'): Promise<ExchangeRateEntity | null> {
+  async getLatest(currencyFrom = 'USD', currencyTo = 'VES', source?: RateSource): Promise<ExchangeRateEntity | null> {
     return this.repo.findOne({
-      where: { currencyFrom, currencyTo },
-      order: { effectiveDate: 'DESC' },
+      where: {
+        currencyFrom,
+        currencyTo,
+        ...(source ? { source } : {}),
+      },
+      order: { effectiveDate: 'DESC', createdAt: 'DESC' },
     });
   }
 
   async create(dto: CreateExchangeRateDto): Promise<ExchangeRateEntity> {
+    const currencyFrom = dto.currencyFrom || 'USD';
+    const currencyTo = dto.currencyTo || 'VES';
+    const source = dto.source || 'BCV';
+
+    // Tasa de reposición NUNCA puede ser menor a la BCV vigente, de lo
+    // contrario el negocio pierde poder de reposición en cada venta.
+    if (source === 'REPOSICION') {
+      await this.assertReposicionNotBelowBcv(dto.rate, currencyFrom, currencyTo);
+    }
+
     const item = this.repo.create({
       ...dto,
-      currencyFrom: dto.currencyFrom || 'USD',
-      currencyTo: dto.currencyTo || 'VES',
-      source: dto.source || 'BCV',
+      currencyFrom,
+      currencyTo,
+      source,
     });
     return this.repo.save(item);
+  }
+
+  /**
+   * Valida que `rate` (tasa de reposición candidata) sea >= a la última tasa
+   * BCV vigente. Si no hay BCV registrado, deja pasar (caso edge de primer
+   * arranque del sistema).
+   */
+  private async assertReposicionNotBelowBcv(rate: number, currencyFrom: string, currencyTo: string): Promise<void> {
+    const bcv = await this.repo.findOne({
+      where: { currencyFrom, currencyTo, source: 'BCV' },
+      order: { effectiveDate: 'DESC', createdAt: 'DESC' },
+    });
+    if (!bcv) return;
+    if (Number(rate) < Number(bcv.rate)) {
+      throw new BadRequestException(
+        `La tasa de reposición (${rate}) no puede ser menor a la tasa BCV vigente (${bcv.rate}). Esto causaría pérdidas al revalorizar precios.`,
+      );
+    }
   }
 
   /**

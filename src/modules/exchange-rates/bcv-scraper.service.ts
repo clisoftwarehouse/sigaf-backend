@@ -86,7 +86,9 @@ export class BcvScraperService {
       throw new ServiceUnavailableException('No se encontró el bloque id="dolar" en la página del BCV');
     }
     const window = html.slice(dolarIdx, dolarIdx + 2000);
-    const strongMatch = window.match(/<strong>\s*([\d.,]+)\s*<\/strong>/i);
+    // El BCV puede agregar atributos al <strong> (p.ej. class="strong-tb").
+    // [^>]* tolera cualquier atributo opcional sin romper el match.
+    const strongMatch = window.match(/<strong[^>]*>\s*([\d.,]+)\s*<\/strong>/i);
     if (!strongMatch) {
       throw new ServiceUnavailableException('No se encontró la tasa USD en el bloque #dolar');
     }

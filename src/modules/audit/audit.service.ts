@@ -2,8 +2,8 @@ import { In, Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { UserEntity } from '@/modules/users/infrastructure/persistence/relational/entities/user.entity';
 import { AuditLogEntity } from './infrastructure/persistence/relational/entities/audit-log.entity';
+import { UserEntity } from '@/modules/users/infrastructure/persistence/relational/entities/user.entity';
 
 export interface AuditEntry {
   tableName: string;

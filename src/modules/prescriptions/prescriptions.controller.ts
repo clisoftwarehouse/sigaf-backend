@@ -1,0 +1,61 @@
+import { AuthGuard } from '@nestjs/passport';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Get,
+  Put,
+  Req,
+  Body,
+  Post,
+  Param,
+  Query,
+  HttpCode,
+  UseGuards,
+  Controller,
+  ParseUUIDPipe,
+} from '@nestjs/common';
+
+import { PrescriptionsService } from './prescriptions.service';
+import { QueryPrescriptionDto, CreatePrescriptionDto, UpdatePrescriptionDto } from './dto';
+
+interface RequestWithUser {
+  user?: { id?: string };
+}
+
+@ApiTags('Prescriptions')
+@ApiBearerAuth()
+@UseGuards(AuthGuard('jwt'))
+@Controller({ path: 'prescriptions', version: '1' })
+export class PrescriptionsController {
+  constructor(private readonly prescriptionsService: PrescriptionsService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Listar récipes (paginado)' })
+  findAll(@Query() query: QueryPrescriptionDto) {
+    return this.prescriptionsService.findAll(query);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Obtener récipe por id (con items)' })
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.prescriptionsService.findOne(id);
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'Registrar récipe médico (con items)' })
+  create(@Body() dto: CreatePrescriptionDto, @Req() req: RequestWithUser) {
+    return this.prescriptionsService.create(dto, req.user?.id ?? null);
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: 'Actualizar metadatos del récipe (no items)' })
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdatePrescriptionDto) {
+    return this.prescriptionsService.update(id, dto);
+  }
+
+  @Post(':id/cancel')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Anular récipe (no se puede deshacer)' })
+  cancel(@Param('id', ParseUUIDPipe) id: string) {
+    return this.prescriptionsService.cancel(id);
+  }
+}

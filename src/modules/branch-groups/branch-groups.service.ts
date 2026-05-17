@@ -125,7 +125,10 @@ export class BranchGroupsService {
       return manager.find(BranchGroupAmountApprovalRuleEntity, {
         where: { branchGroupId },
         relations: ['role'],
-        order: { minUsd: 'ASC' },
+        // Orden estable por creación: el operador espera ver las reglas en el
+        // mismo orden en que las creó, no reordenadas por valor (0-10 después
+        // de 50-100 si el de 0-10 se creó después).
+        order: { createdAt: 'ASC' },
       });
     });
   }

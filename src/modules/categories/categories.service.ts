@@ -70,20 +70,88 @@ export class CategoriesService {
     return this.categoryRepo.save(category);
   }
 
-  async remove(id: string): Promise<{ success: boolean }> {
+  /**
+   * Cuenta subcategorías activas (recursivo). Usado por la UI para preguntar
+   * al operador si quiere inactivar también las descendientes antes de hacerlo.
+   */
+  async countActiveDescendants(id: string): Promise<number> {
+    const visited = new Set<string>();
+    let total = 0;
+    const queue: string[] = [id];
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      if (visited.has(current)) continue;
+      visited.add(current);
+      const children = await this.categoryRepo.find({
+        where: { parentId: current, isActive: true },
+        select: ['id'],
+      });
+      total += children.length;
+      for (const c of children) queue.push(c.id);
+    }
+    return total;
+  }
+
+  /**
+   * Inactiva la categoría. Por defecto rechaza si tiene productos o
+   * subcategorías activas. Con `cascade=true` inactiva también todas las
+   * subcategorías descendientes (DFS recursivo). Los productos vinculados
+   * siempre bloquean — eso se resuelve reasignándolos primero.
+   */
+  async remove(
+    id: string,
+    options: { cascade?: boolean } = {},
+  ): Promise<{ success: boolean; deactivatedCount: number }> {
     await this.findOne(id);
+
+    // Productos vinculados siempre bloquean (independiente del flag cascade).
     const linkedProducts = await this.productRepo.count({ where: { categoryId: id, isActive: true } });
     if (linkedProducts > 0) {
       throw new ConflictException(
-        `No se puede inactivar la categoría: ${linkedProducts} producto(s) activo(s) la referencian`,
+        `No se puede inactivar la categoría: ${linkedProducts} producto(s) activo(s) la referencian. Reasígnalos o inactívalos primero.`,
       );
     }
-    const childCount = await this.categoryRepo.count({ where: { parentId: id, isActive: true } });
-    if (childCount > 0) {
-      throw new ConflictException(`No se puede inactivar la categoría: tiene ${childCount} subcategoría(s) activa(s)`);
+
+    if (!options.cascade) {
+      const childCount = await this.categoryRepo.count({ where: { parentId: id, isActive: true } });
+      if (childCount > 0) {
+        throw new ConflictException(
+          `No se puede inactivar la categoría: tiene ${childCount} subcategoría(s) activa(s). Confirma cascada para inactivarlas también.`,
+        );
+      }
+      await this.categoryRepo.update(id, { isActive: false });
+      return { success: true, deactivatedCount: 1 };
     }
-    await this.categoryRepo.update(id, { isActive: false });
-    return { success: true };
+
+    // Cascada: inactivamos toda la rama descendente. Si alguna sub tiene
+    // productos activos, rechazamos todo el batch para mantener consistencia.
+    const idsToDeactivate: string[] = [id];
+    const queue: string[] = [id];
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      const children = await this.categoryRepo.find({
+        where: { parentId: current, isActive: true },
+        select: ['id'],
+      });
+      for (const c of children) {
+        idsToDeactivate.push(c.id);
+        queue.push(c.id);
+      }
+    }
+
+    const productsInBranch = await this.productRepo
+      .createQueryBuilder('p')
+      .where('p.categoryId IN (:...ids)', { ids: idsToDeactivate })
+      .andWhere('p.isActive = true')
+      .getCount();
+    if (productsInBranch > 0) {
+      throw new ConflictException(
+        `No se puede inactivar la rama: ${productsInBranch} producto(s) activo(s) están en alguna subcategoría. Reasígnalos antes de inactivar.`,
+      );
+    }
+
+    await this.categoryRepo.update(idsToDeactivate, { isActive: false });
+    return { success: true, deactivatedCount: idsToDeactivate.length };
   }
 
   async restore(id: string): Promise<CategoryEntity> {

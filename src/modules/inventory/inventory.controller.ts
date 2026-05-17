@@ -93,6 +93,14 @@ export class InventoryController {
     return this.inventoryService.getStockDetail(productId, query);
   }
 
+  @Get('products/:productId/average-cost')
+  @ApiOperation({
+    summary: 'Costo promedio ponderado del producto. Si no se pasa branchId agrega todas las sucursales.',
+  })
+  getAverageCost(@Param('productId', ParseUUIDPipe) productId: string, @Query('branchId') branchId?: string) {
+    return this.inventoryService.getAverageCost(productId, branchId);
+  }
+
   @Post('adjustments')
   @ApiOperation({
     summary: 'Crear ajuste de inventario positivo o negativo (daño, corrección, count_difference, expiry_write_off)',

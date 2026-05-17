@@ -47,7 +47,11 @@ export class ImportsController {
       required: ['file'],
     },
   })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+    }),
+  )
   async import(
     @Param('type') type: string,
     @Query('dryRun') dryRun: string | undefined,

@@ -1,10 +1,18 @@
 import ms from 'ms';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
+import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
 import { randomStringGenerator } from '@nestjs/common/utils/random-string-generator.util';
-import { HttpStatus, Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  HttpStatus,
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
 import { User } from '../users/domain/user';
 import { Session } from '../session/domain/session';
@@ -14,6 +22,10 @@ import { SessionService } from '../session/session.service';
 import { NullableType } from '@/common/utils/types/nullable.type';
 import { JwtPayloadType, JwtRefreshPayloadType } from './strategies/types';
 import { AuthUpdateDto, LoginResponseDto, AuthEmailLoginDto } from './dto';
+import { UserEntity } from '../users/infrastructure/persistence/relational/entities/user.entity';
+
+const PIN_BCRYPT_ROUNDS = 8;
+const PIN_REGEX = /^\d{4,6}$/;
 
 @Injectable()
 export class AuthService {
@@ -22,7 +34,36 @@ export class AuthService {
     private usersService: UsersService,
     private sessionService: SessionService,
     private configService: ConfigService<AllConfigType>,
+    @InjectRepository(UserEntity)
+    private readonly userRepo: Repository<UserEntity>,
   ) {}
+
+  async setSupervisorPin(userId: string, pin: string): Promise<void> {
+    if (!PIN_REGEX.test(pin)) {
+      throw new BadRequestException('El PIN debe tener entre 4 y 6 dígitos numéricos');
+    }
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException({
+        status: HttpStatus.UNAUTHORIZED,
+        errors: { user: 'userNotFound' },
+      });
+    }
+    user.supervisorPinHash = await bcrypt.hash(pin, PIN_BCRYPT_ROUNDS);
+    await this.userRepo.save(user);
+  }
+
+  async verifySupervisorPin(args: { userId: string; pin: string }): Promise<{ valid: boolean; userId: string }> {
+    if (!PIN_REGEX.test(args.pin)) {
+      return { valid: false, userId: args.userId };
+    }
+    const user = await this.userRepo.findOne({ where: { id: args.userId, isActive: true } });
+    if (!user || !user.supervisorPinHash) {
+      return { valid: false, userId: args.userId };
+    }
+    const ok = await bcrypt.compare(args.pin, user.supervisorPinHash);
+    return { valid: ok, userId: args.userId };
+  }
 
   async validateLogin(loginDto: AuthEmailLoginDto): Promise<LoginResponseDto> {
     const user = await this.usersService.findByEmailOrUsername(loginDto.email);

@@ -2,17 +2,16 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Logger, Injectable, NotFoundException } from '@nestjs/common';
 
+import { UserEntity } from '@/modules/users/infrastructure/persistence/relational/entities/user.entity';
+import { PurchaseOrderEntity } from './infrastructure/persistence/relational/entities/purchase-order.entity';
 import { BranchEntity } from '@/modules/branches/infrastructure/persistence/relational/entities/branch.entity';
 import { ProductEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product.entity';
-import { UserEntity } from '@/modules/users/infrastructure/persistence/relational/entities/user.entity';
+import { PurchaseOrderItemEntity } from './infrastructure/persistence/relational/entities/purchase-order-item.entity';
 import { BranchGroupAmountApprovalRuleEntity } from '@/modules/branch-groups/infrastructure/persistence/relational/entities/branch-group-amount-approval-rule.entity';
 import {
   CategoryFlag,
   BranchGroupCategoryApprovalRuleEntity,
 } from '@/modules/branch-groups/infrastructure/persistence/relational/entities/branch-group-category-approval-rule.entity';
-
-import { PurchaseOrderEntity } from './infrastructure/persistence/relational/entities/purchase-order.entity';
-import { PurchaseOrderItemEntity } from './infrastructure/persistence/relational/entities/purchase-order-item.entity';
 
 /**
  * Resultado de evaluar quién puede aprobar una OC.

@@ -1,21 +1,32 @@
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Min, IsEnum, IsEmail, Matches, IsNumber, IsString, IsBoolean, MaxLength, IsOptional } from 'class-validator';
+import {
+  Max,
+  Min,
+  IsEnum,
+  IsEmail,
+  Matches,
+  IsNumber,
+  IsString,
+  IsBoolean,
+  MaxLength,
+  IsOptional,
+} from 'class-validator';
 
 import {
-  RIF_HINT,
-  RIF_REGEX,
   PHONE_HINT,
   PHONE_REGEX,
   normalizeRif,
   normalizePhone,
+  SUPPLIER_RIF_HINT,
+  SUPPLIER_RIF_REGEX,
 } from '@/common/utils/venezuelan-id';
 
 export class CreateSupplierDto {
   @ApiProperty({ example: 'J-12345678-0', description: 'RIF del proveedor' })
   @IsString()
   @Transform(({ value }) => normalizeRif(value))
-  @Matches(RIF_REGEX, { message: RIF_HINT })
+  @Matches(SUPPLIER_RIF_REGEX, { message: SUPPLIER_RIF_HINT })
   @MaxLength(20)
   rif: string;
 
@@ -78,4 +89,53 @@ export class CreateSupplierDto {
   @IsOptional()
   @IsEnum(['USD', 'VES'])
   invoicesInCurrency?: 'USD' | 'VES';
+
+  // ─── Descuentos comerciales (BI) ───────────────────────────────────────
+  @ApiPropertyOptional({ description: '¿El proveedor ofrece descuento de cabecera (sobre subtotal)?' })
+  @IsOptional()
+  @IsBoolean()
+  hasHeaderDiscount?: boolean;
+
+  @ApiPropertyOptional({ description: '% típico de descuento de cabecera' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  headerDiscountPct?: number;
+
+  @ApiPropertyOptional({ description: '¿El proveedor ofrece descuento lineal (por línea)?' })
+  @IsOptional()
+  @IsBoolean()
+  hasLinearDiscount?: boolean;
+
+  @ApiPropertyOptional({ description: '% típico de descuento lineal' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  linearDiscountPct?: number;
+
+  @ApiPropertyOptional({ description: '¿El proveedor ofrece descuento por pronto pago?' })
+  @IsOptional()
+  @IsBoolean()
+  hasPromptPaymentDiscount?: boolean;
+
+  @ApiPropertyOptional({ description: '% típico de descuento por pronto pago' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  promptPaymentDiscountPct?: number;
+
+  @ApiPropertyOptional({ description: '¿El proveedor ofrece descuento por volumen?' })
+  @IsOptional()
+  @IsBoolean()
+  hasVolumeDiscount?: boolean;
+
+  @ApiPropertyOptional({ description: '% típico de descuento por volumen' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  volumeDiscountPct?: number;
 }

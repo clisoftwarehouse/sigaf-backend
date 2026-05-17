@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { DemoSeedService } from './demo-seed.service';
+import { UserEntity } from '@/modules/users/infrastructure/persistence/relational/entities/user.entity';
 import { BrandEntity } from '@/modules/brands/infrastructure/persistence/relational/entities/brand.entity';
 import { BranchEntity } from '@/modules/branches/infrastructure/persistence/relational/entities/branch.entity';
 import { KardexEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/kardex.entity';
@@ -13,10 +14,9 @@ import { InventoryLotEntity } from '@/modules/inventory/infrastructure/persisten
 import { ProductBarcodeEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product-barcode.entity';
 import { ExchangeRateEntity } from '@/modules/exchange-rates/infrastructure/persistence/relational/entities/exchange-rate.entity';
 import { WarehouseLocationEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/warehouse-location.entity';
+import { TherapeuticUseEntity } from '@/modules/therapeutic-uses/infrastructure/persistence/relational/entities/therapeutic-use.entity';
 import { ActiveIngredientEntity } from '@/modules/active-ingredients/infrastructure/persistence/relational/entities/active-ingredient.entity';
 import { ProductActiveIngredientEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product-active-ingredient.entity';
-import { TherapeuticUseEntity } from '@/modules/therapeutic-uses/infrastructure/persistence/relational/entities/therapeutic-use.entity';
-import { UserEntity } from '@/modules/users/infrastructure/persistence/relational/entities/user.entity';
 
 @Module({
   imports: [

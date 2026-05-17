@@ -1,3 +1,4 @@
+export * from './verify-pin.dto';
 export * from './auth-update.dto';
 export * from './login-response.dto';
 export * from './auth-email-login.dto';

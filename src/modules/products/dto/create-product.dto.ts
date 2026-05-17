@@ -203,6 +203,34 @@ export class CreateProductDto {
   @Min(0)
   leadTimeDays?: number;
 
+  // ─── Campos del layout unificado (QA 2026-05) ─────────────────────────
+  @ApiPropertyOptional({
+    example: 'TAB',
+    description: 'Forma farmacéutica (solo aplica a medicamentos): TAB, CAP, SUSP, JBE, etc.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  dosageForm?: string;
+
+  @ApiPropertyOptional({
+    example: 'Total 12 Clean Mint',
+    description: 'Línea o sub-marca (solo productos masivos)',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  commercialLine?: string;
+
+  @ApiPropertyOptional({
+    example: 'CREMA DENTAL',
+    description: 'Variante de producto masivo (categoría retail)',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  commercialVariant?: string;
+
   @ApiPropertyOptional({
     type: [CreateBarcodeDto],
     description: 'Códigos de barra del producto (EAN-13, EAN-8, UPC, internos, etc.)',

@@ -30,6 +30,21 @@ const PERMISSIONS = [
   { code: 'pos.void', description: 'Anular ventas', module: 'pos' },
   { code: 'pos.return', description: 'Devoluciones', module: 'pos' },
   { code: 'pos.cash_session', description: 'Gestionar sesión de caja', module: 'pos' },
+  { code: 'pos.discount.override', description: 'Override de descuento manual', module: 'pos' },
+  // Customers (B2C)
+  { code: 'customers.view', description: 'Ver clientes', module: 'customers' },
+  { code: 'customers.manage', description: 'Crear/editar clientes', module: 'customers' },
+  // Prescriptions
+  { code: 'prescriptions.view', description: 'Ver récipes', module: 'prescriptions' },
+  { code: 'prescriptions.manage', description: 'Registrar/editar récipes', module: 'prescriptions' },
+  // Cash Sessions
+  { code: 'cash.open', description: 'Abrir sesión de caja', module: 'cash' },
+  { code: 'cash.close', description: 'Cerrar sesión de caja', module: 'cash' },
+  { code: 'cash.adjust', description: 'Movimientos manuales (payout/deposit/adjustment)', module: 'cash' },
+  { code: 'cash.view', description: 'Ver sesiones y reportes X/Z', module: 'cash' },
+  // Terminals (admin)
+  { code: 'terminals.pair', description: 'Generar códigos de emparejamiento', module: 'terminals' },
+  { code: 'terminals.revoke_key', description: 'Revocar apiKey de un terminal', module: 'terminals' },
   // Audit
   { code: 'audit.view', description: 'Ver auditoría', module: 'audit' },
   // Admin

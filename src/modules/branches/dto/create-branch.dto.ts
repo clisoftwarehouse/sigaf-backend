@@ -2,12 +2,12 @@ import { Transform } from 'class-transformer';
 import { IsEmail, Matches, IsString, MaxLength, IsOptional } from 'class-validator';
 
 import {
-  RIF_HINT,
   PHONE_HINT,
-  RIF_REGEX,
   PHONE_REGEX,
   normalizeRif,
   normalizePhone,
+  BRANCH_RIF_HINT,
+  BRANCH_RIF_REGEX,
 } from '@/common/utils/venezuelan-id';
 
 export class CreateBranchDto {
@@ -19,7 +19,7 @@ export class CreateBranchDto {
 
   @IsString()
   @Transform(({ value }) => normalizeRif(value))
-  @Matches(RIF_REGEX, { message: RIF_HINT })
+  @Matches(BRANCH_RIF_REGEX, { message: BRANCH_RIF_HINT })
   @MaxLength(20)
   rif: string;
 

@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 
 import { AuditService } from '../audit/audit.service';
+import { ClaimsService } from '../claims/claims.service';
 import { PricesService } from '../prices/prices.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { ApprovalEngineService } from './approval-engine.service';
@@ -71,6 +72,7 @@ export class PurchasesService {
     private readonly pricesService: PricesService,
     private readonly approvalEngine: ApprovalEngineService,
     private readonly exchangeRatesService: ExchangeRatesService,
+    private readonly claimsService: ClaimsService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -434,16 +436,21 @@ export class PurchasesService {
       const savedReceipt = await queryRunner.manager.save(receipt);
 
       for (const { item, discountPct, itemSubtotal } of itemsComputed) {
-        // Solo creamos lote si la recepción NO está bloqueada por reaprobación.
-        // Si requiere reaprobación, lotId queda NULL y se llena en `reapproveReceipt`.
+        // Solo creamos lote si la recepción NO está bloqueada por reaprobación
+        // Y si efectivamente llegó stock (quantity > 0). Una línea con
+        // quantity=0 significa que todo lo facturado quedó como discrepancia
+        // (ej. la ampolla llegó dañada): se guarda el receipt_item para que
+        // el reclamo auto-generado tenga la trazabilidad, pero no crea lote.
         let lotId: string | null = null;
-        if (!toleranceExceeded) {
+        if (!toleranceExceeded && item.quantity > 0) {
+          // lotNumber/expirationDate ya validados como obligatorios en
+          // validateLineDiscrepancies cuando quantity > 0.
           const lot = await this.inventoryService.createLot(
             {
               productId: item.productId,
               branchId: dto.branchId,
-              lotNumber: item.lotNumber,
-              expirationDate: item.expirationDate,
+              lotNumber: item.lotNumber!,
+              expirationDate: item.expirationDate!,
               quantityReceived: item.quantity,
               costUsd: item.unitCostUsd,
               // salePrice opcional (Fase E): si no viene, el lote se crea con 0 y la
@@ -458,6 +465,14 @@ export class PurchasesService {
           lotId = lot.id;
         }
 
+        // Cuando la línea no recibió stock físico (todo quedó como discrepancia)
+        // no tenemos lote/vencimiento reales. Usamos placeholders para satisfacer
+        // las columnas NOT NULL — el receipt_item queda como referencia para el
+        // reclamo y para la trazabilidad de la OC, sin afectar inventario.
+        const lotNumberToStore = item.quantity > 0 ? (item.lotNumber ?? '') : 'SIN-LOTE';
+        const expirationDateToStore =
+          item.quantity > 0 && item.expirationDate ? new Date(item.expirationDate) : new Date(); // Fecha de la recepción como placeholder
+
         const receiptItem = this.receiptItemRepo.create({
           receiptId: savedReceipt.id,
           purchaseOrderId: item.purchaseOrderId || null,
@@ -469,8 +484,8 @@ export class PurchasesService {
           discountPct,
           subtotalUsd: itemSubtotal,
           salePrice: item.salePrice ?? 0,
-          lotNumber: item.lotNumber,
-          expirationDate: new Date(item.expirationDate),
+          lotNumber: lotNumberToStore,
+          expirationDate: expirationDateToStore,
         });
         const savedItem = await queryRunner.manager.save(receiptItem);
 
@@ -543,12 +558,27 @@ export class PurchasesService {
         }
       }
 
+      // Auto-genera reclamo al proveedor si la recepción tiene discrepancias.
+      // Se ejecuta fuera de la transacción principal: si el claim falla, la
+      // recepción sigue válida y se reporta el error en logs.
+      let autoClaim: { id: string; claimNumber: string } | null = null;
+      if (!toleranceExceeded) {
+        autoClaim = await this.autoGenerateClaimFromReceipt({
+          receiptId: savedReceipt.id,
+          receiptNumber,
+          supplierId: dto.supplierId,
+          branchId: dto.branchId,
+          userId,
+        });
+      }
+
       const result = await this.findOneReceipt(savedReceipt.id);
       return {
         ...result,
         affectedOrders,
         toleranceExceeded,
         toleranceDetails: toleranceExceeded ? toleranceDetails : undefined,
+        autoClaim,
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -801,6 +831,32 @@ export class PurchasesService {
     const totalDiscrepancyQty = (item.discrepancies ?? []).reduce((s, d) => s + Number(d.quantity), 0);
     const productLabel = productNameById.get(item.productId) ?? item.productId.slice(0, 8);
 
+    // Si la línea recibió stock físico, lote y vencimiento son obligatorios
+    // (van al lote en inventario). Si recibió 0 (todo discrepancia), no exigimos
+    // estos campos — el receipt_item queda como ancla del reclamo sin lote.
+    if (received > 0) {
+      if (!item.lotNumber?.trim()) {
+        throw new BadRequestException(
+          `Producto "${productLabel}": número de lote es obligatorio cuando se recibe stock (quantity > 0).`,
+        );
+      }
+      if (!item.expirationDate) {
+        throw new BadRequestException(
+          `Producto "${productLabel}": fecha de vencimiento es obligatoria cuando se recibe stock (quantity > 0).`,
+        );
+      }
+    }
+
+    // Si quantity=0 y NO hay discrepancias, la línea no tiene sentido (ni
+    // entró stock ni se está reclamando nada). Rechazamos para evitar registros
+    // huérfanos en la BD.
+    if (received === 0 && totalDiscrepancyQty < 0.001) {
+      throw new BadRequestException(
+        `Producto "${productLabel}": recibiste 0 unidades sin reportar discrepancias. ` +
+          `Indica al menos una razón (vencido, dañado, etc.) o elimina la línea.`,
+      );
+    }
+
     // Tolerancia de 0.001 para comparaciones decimales.
     const epsilon = 0.001;
     if (diff > epsilon && totalDiscrepancyQty < epsilon) {
@@ -994,5 +1050,173 @@ export class PurchasesService {
     // Math.ceil porque "1.4 días restantes" se debe mostrar como 2.
     // Si está vencida (remaining < 0) devolvemos 0 — el cron diario la limpiará.
     return Math.max(0, Math.ceil(remainingMs / (24 * 60 * 60 * 1000)));
+  }
+
+  /**
+   * Mapeo de razones de discrepancia → claim_type del módulo de reclamos.
+   * El claim resultante se categoriza por la razón predominante: si hay 5
+   * líneas con "missing" y 1 con "defective", el claim queda como "quantity".
+   * En empate gana el primero de la lista (orden de severidad).
+   */
+  private inferClaimType(reasons: string[]): 'quality' | 'quantity' | 'price_mismatch' | 'other' {
+    const counts: Record<string, number> = {};
+    for (const r of reasons) counts[r] = (counts[r] || 0) + 1;
+    const qualityReasons = ['expired', 'defective', 'damaged_packaging', 'damaged_in_transit', 'quality_failure'];
+    const quantityReasons = ['missing', 'excess'];
+    const qualityCount = qualityReasons.reduce((acc, r) => acc + (counts[r] || 0), 0);
+    const quantityCount = quantityReasons.reduce((acc, r) => acc + (counts[r] || 0), 0);
+    if (qualityCount > quantityCount) return 'quality';
+    if (quantityCount > qualityCount) return 'quantity';
+    if (qualityCount > 0) return 'quality';
+    return 'other';
+  }
+
+  private readonly REASON_LABEL: Record<string, string> = {
+    expired: 'Vencido',
+    defective: 'Defectuoso',
+    damaged_packaging: 'Empaque dañado',
+    damaged_in_transit: 'Daño en tránsito',
+    incorrect_product: 'Producto incorrecto',
+    missing: 'Faltante',
+    excess: 'Sobrante',
+    quality_failure: 'Falla de calidad',
+    other: 'Otro',
+  };
+
+  /**
+   * Genera automáticamente un reclamo al proveedor cuando una recepción tiene
+   * líneas con discrepancias. Calcula monto sumando `quantity × unit_cost_usd`
+   * de cada línea afectada e infiere el tipo de reclamo de las razones.
+   *
+   * Si no hay discrepancias, no hace nada. Se invoca FUERA de la transacción
+   * principal del receipt para evitar acoplamiento: si la creación del claim
+   * falla, no rompe el commit del receipt — solo loggeamos el error.
+   */
+  private async autoGenerateClaimFromReceipt(input: {
+    receiptId: string;
+    receiptNumber: string;
+    supplierId: string;
+    branchId: string;
+    userId: string;
+  }): Promise<{ id: string; claimNumber: string } | null> {
+    const items = await this.receiptItemRepo.find({
+      where: { receiptId: input.receiptId },
+      relations: ['discrepancies'],
+    });
+
+    const affectedLines = items.filter((it) => (it.discrepancies?.length ?? 0) > 0);
+    if (affectedLines.length === 0) return null;
+
+    const productNameById = await this.buildProductNameLookup(affectedLines.map((it) => it.productId));
+
+    const allReasons: string[] = [];
+    let amountUsd = 0;
+    const descriptionLines: string[] = [
+      `Reclamo automático generado por discrepancias en la recepción ${input.receiptNumber}.`,
+      '',
+      'Líneas afectadas:',
+    ];
+
+    for (const item of affectedLines) {
+      const cost = Number(item.unitCostUsd) || 0;
+      const productName = productNameById.get(item.productId) ?? item.productId;
+      for (const d of item.discrepancies ?? []) {
+        const qty = Number(d.quantity) || 0;
+        const reason = String(d.reason);
+        allReasons.push(reason);
+        amountUsd += qty * cost;
+        const reasonLabel = this.REASON_LABEL[reason] ?? reason;
+        const notesPart = d.notes ? ` — ${d.notes}` : '';
+        descriptionLines.push(
+          `• ${productName} · ${reasonLabel} · ${qty} ${qty === 1 ? 'unidad' : 'unidades'} · $${(qty * cost).toFixed(2)}${notesPart}`,
+        );
+      }
+    }
+
+    const claimType = this.inferClaimType(allReasons);
+
+    try {
+      const claim = await this.claimsService.create(
+        {
+          supplierId: input.supplierId,
+          receiptId: input.receiptId,
+          branchId: input.branchId,
+          claimType,
+          title: `Discrepancias en recepción ${input.receiptNumber}`,
+          description: descriptionLines.join('\n'),
+          amountUsd: +amountUsd.toFixed(4),
+        },
+        input.userId,
+      );
+      this.logger.log(
+        `[receipt ${input.receiptNumber}] Reclamo auto-generado ${claim.claimNumber} (tipo: ${claimType}, monto: $${amountUsd.toFixed(2)})`,
+      );
+      return { id: claim.id, claimNumber: claim.claimNumber };
+    } catch (err) {
+      // No falla la recepción si el claim no se puede crear — solo loggeamos.
+      this.logger.error(`[receipt ${input.receiptNumber}] No se pudo auto-generar reclamo: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Lista los productos recibidos en una recepción que NO tienen precio de venta
+   * vigente (ni global ni override por la sucursal del receipt). Usado por la UI
+   * post-recepción para empujar al operador a fijar precios en el módulo de Precios
+   * antes de seguir.
+   *
+   * Una sola query con NOT EXISTS subselect — performante incluso con muchos items.
+   */
+  async findUnpricedProductsByReceipt(receiptId: string): Promise<
+    Array<{
+      productId: string;
+      productName: string;
+      productSku: string | null;
+      branchId: string;
+      unitCostUsd: number;
+      receivedAt: Date;
+    }>
+  > {
+    const receipt = await this.receiptRepo.findOne({ where: { id: receiptId } });
+    if (!receipt) throw new NotFoundException('Recepción no encontrada');
+
+    const rows = await this.receiptItemRepo
+      .createQueryBuilder('ri')
+      .innerJoin(ProductEntity, 'p', 'p.id = ri.product_id')
+      .select('ri.product_id', 'productId')
+      .addSelect('COALESCE(p.short_name, p.description)', 'productName')
+      .addSelect('p.internal_code', 'productSku')
+      .addSelect('MAX(ri.unit_cost_usd)', 'unitCostUsd')
+      .addSelect('MAX(ri.created_at)', 'receivedAt')
+      .where('ri.receipt_id = :receiptId', { receiptId })
+      .andWhere('ri.quantity > 0')
+      .andWhere(
+        `NOT EXISTS (
+          SELECT 1 FROM prices pr
+          WHERE pr.product_id = ri.product_id
+            AND (pr.branch_id IS NULL OR pr.branch_id = :branchId)
+            AND pr.effective_from <= NOW()
+            AND (pr.effective_to IS NULL OR pr.effective_to > NOW())
+        )`,
+        { branchId: receipt.branchId },
+      )
+      .groupBy('ri.product_id, p.short_name, p.description, p.internal_code')
+      .orderBy('MAX(ri.created_at)', 'DESC')
+      .getRawMany<{
+        productId: string;
+        productName: string;
+        productSku: string | null;
+        unitCostUsd: string;
+        receivedAt: Date;
+      }>();
+
+    return rows.map((r) => ({
+      productId: r.productId,
+      productName: r.productName,
+      productSku: r.productSku,
+      branchId: receipt.branchId,
+      unitCostUsd: Number(r.unitCostUsd),
+      receivedAt: r.receivedAt,
+    }));
   }
 }

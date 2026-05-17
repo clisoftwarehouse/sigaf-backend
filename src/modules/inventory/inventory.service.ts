@@ -1439,4 +1439,73 @@ export class InventoryService {
 
     return this.kardexRepo.save(kardex);
   }
+
+  /**
+   * Costo promedio ponderado de un producto. Se calcula como:
+   *   SUM(quantity_available × cost_usd) / SUM(quantity_available)
+   * sobre todos los lotes activos del producto (status='available'). Si se
+   * provee `branchId`, restringe el cálculo a esa sucursal; sin branchId
+   * agrega todas las sucursales.
+   *
+   * Política: la recepción ya no fija precio (eso queda en el módulo de
+   * Precios), pero el costo SÍ se acumula aquí lote por lote. Este método
+   * es la fuente de verdad para reportes de margen y para análisis de costo
+   * de venta. No persistimos el resultado: se recalcula on-demand porque
+   * cualquier nueva entrada/salida lo movería.
+   *
+   * Retorna `null` si el producto no tiene lotes con stock disponible.
+   */
+  async getAverageCost(
+    productId: string,
+    branchId?: string,
+  ): Promise<{
+    productId: string;
+    branchId: string | null;
+    averageCostUsd: number | null;
+    totalQuantityAvailable: number;
+    lotsConsidered: number;
+    lastReceivedCostUsd: number | null;
+    lastReceivedAt: Date | null;
+  }> {
+    const qb = this.lotRepo
+      .createQueryBuilder('l')
+      .select('COALESCE(SUM(l.quantity_available * l.cost_usd), 0)', 'weighted')
+      .addSelect('COALESCE(SUM(l.quantity_available), 0)', 'totalQty')
+      .addSelect('COUNT(*)', 'lots')
+      .where('l.product_id = :productId', { productId })
+      .andWhere(`l.status = 'available'`)
+      .andWhere('l.quantity_available > 0');
+    if (branchId) {
+      qb.andWhere('l.branch_id = :branchId', { branchId });
+    }
+    const agg = await qb.getRawOne<{
+      weighted: string;
+      totalQty: string;
+      lots: string;
+    }>();
+
+    const totalQty = Number(agg?.totalQty ?? 0);
+    const weighted = Number(agg?.weighted ?? 0);
+    const lotsConsidered = Number(agg?.lots ?? 0);
+    const averageCostUsd = totalQty > 0 ? +(weighted / totalQty).toFixed(4) : null;
+
+    // Último costo recibido (lote más reciente con stock o no).
+    const lastLotQb = this.lotRepo
+      .createQueryBuilder('l')
+      .where('l.product_id = :productId', { productId })
+      .orderBy('l.created_at', 'DESC')
+      .limit(1);
+    if (branchId) lastLotQb.andWhere('l.branch_id = :branchId', { branchId });
+    const lastLot = await lastLotQb.getOne();
+
+    return {
+      productId,
+      branchId: branchId ?? null,
+      averageCostUsd,
+      totalQuantityAvailable: totalQty,
+      lotsConsidered,
+      lastReceivedCostUsd: lastLot ? Number(lastLot.costUsd) : null,
+      lastReceivedAt: lastLot?.createdAt ?? null,
+    };
+  }
 }

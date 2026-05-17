@@ -1,5 +1,5 @@
-import { IsString, MaxLength, MinLength, IsBoolean, IsOptional } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, MaxLength, MinLength, IsBoolean, IsOptional } from 'class-validator';
 
 export class CreateBranchGroupDto {
   @ApiProperty({ example: 'Caracas premium' })

@@ -55,6 +55,35 @@ export class SupplierEntity extends EntityRelationalHelper {
   @Column('varchar', { name: 'invoices_in_currency', length: 3, default: 'USD' })
   invoicesInCurrency: 'USD' | 'VES';
 
+  // ─── Descuentos comerciales (para BI) ──────────────────────────────────
+  // Cada tipo tiene un switch (¿lo ofrece?) y un porcentaje típico opcional.
+  // BI puede agregar tanto la presencia como la magnitud para ranking de
+  // proveedores y simulación de costos.
+
+  @Column('boolean', { name: 'has_header_discount', default: false })
+  hasHeaderDiscount: boolean;
+
+  @Column('decimal', { name: 'header_discount_pct', precision: 5, scale: 2, nullable: true })
+  headerDiscountPct: number | null;
+
+  @Column('boolean', { name: 'has_linear_discount', default: false })
+  hasLinearDiscount: boolean;
+
+  @Column('decimal', { name: 'linear_discount_pct', precision: 5, scale: 2, nullable: true })
+  linearDiscountPct: number | null;
+
+  @Column('boolean', { name: 'has_prompt_payment_discount', default: false })
+  hasPromptPaymentDiscount: boolean;
+
+  @Column('decimal', { name: 'prompt_payment_discount_pct', precision: 5, scale: 2, nullable: true })
+  promptPaymentDiscountPct: number | null;
+
+  @Column('boolean', { name: 'has_volume_discount', default: false })
+  hasVolumeDiscount: boolean;
+
+  @Column('decimal', { name: 'volume_discount_pct', precision: 5, scale: 2, nullable: true })
+  volumeDiscountPct: number | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 

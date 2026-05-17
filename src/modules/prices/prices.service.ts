@@ -3,6 +3,7 @@ import { IsNull, MoreThan, Repository, DataSource, LessThanOrEqual } from 'typeo
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 
 import { AuditService } from '../audit/audit.service';
+import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
 import { PriceEntity } from './infrastructure/persistence/relational/entities/price.entity';
 import { CreatePriceDto, UpdatePriceDto, QueryPricesDto, QueryCurrentPriceDto } from './dto';
 
@@ -26,6 +27,37 @@ export interface ResolvedPrice {
   resolvedAt: Date;
 }
 
+/**
+ * Información del factor de revaluación vigente.
+ *
+ * - `factor`: multiplicador aplicado al precio principal para obtener el
+ *   precio efectivo cobrado al cliente. 1.0 cuando el modo reposición está
+ *   inactivo (no hay tasa REPOSICION, o REPOSICION ≤ BCV).
+ * - `active`: true cuando factor > 1.0.
+ * - `bcvRate` / `reposicionRate`: tasas usadas para calcular el factor
+ *   (null si no están disponibles).
+ */
+export interface RevaluationFactor {
+  factor: number;
+  active: boolean;
+  bcvRate: number | null;
+  reposicionRate: number | null;
+}
+
+/**
+ * Precio efectivo: precio principal + factor de revaluación aplicado.
+ */
+export interface EffectivePrice extends ResolvedPrice {
+  /** Multiplicador activo (1.0 si modo reposición OFF). */
+  revaluationFactor: number;
+  /** priceUsd × revaluationFactor — lo que el cliente paga en USD. */
+  effectivePriceUsd: number;
+  /** Tasa BCV usada para convertir el precio efectivo a Bs. */
+  exchangeRateBcv: number | null;
+  /** effectivePriceUsd × exchangeRateBcv — lo que se cobra en Bs. */
+  effectivePriceBs: number | null;
+}
+
 @Injectable()
 export class PricesService {
   constructor(
@@ -33,7 +65,49 @@ export class PricesService {
     private readonly repo: Repository<PriceEntity>,
     private readonly dataSource: DataSource,
     private readonly auditService: AuditService,
+    private readonly exchangeRatesService: ExchangeRatesService,
   ) {}
+
+  /**
+   * Calcula el factor de revaluación vigente comparando la tasa de reposición
+   * con la tasa BCV oficial. Si la reposición es menor o igual al BCV o no
+   * existe, el factor es 1.0 (modo reposición inactivo).
+   */
+  async getRevaluationFactor(): Promise<RevaluationFactor> {
+    const [bcv, repo] = await Promise.all([
+      this.exchangeRatesService.getLatest('USD', 'VES', 'BCV'),
+      this.exchangeRatesService.getLatest('USD', 'VES', 'REPOSICION'),
+    ]);
+    const bcvRate = bcv ? Number(bcv.rate) : null;
+    const reposicionRate = repo ? Number(repo.rate) : null;
+    if (!bcvRate || !reposicionRate || bcvRate <= 0 || reposicionRate <= bcvRate) {
+      return { factor: 1.0, active: false, bcvRate, reposicionRate };
+    }
+    const factor = +(reposicionRate / bcvRate).toFixed(6);
+    return { factor, active: true, bcvRate, reposicionRate };
+  }
+
+  /**
+   * Resuelve el precio principal y le aplica el factor de revaluación vigente.
+   * Retorna también la conversión a Bs usando tasa BCV (oficial).
+   *
+   * Garantía contable: el priceUsd "principal" (lo que se ve en catálogo /
+   * etiquetas SUNDDE) NO cambia. El factor solo afecta `effectivePriceUsd`
+   * (lo que el cliente paga al momento del cobro).
+   */
+  async getEffectivePrice(query: QueryCurrentPriceDto): Promise<EffectivePrice> {
+    const [resolved, revaluation] = await Promise.all([this.getCurrentPrice(query), this.getRevaluationFactor()]);
+    const effectivePriceUsd = +(resolved.priceUsd * revaluation.factor).toFixed(4);
+    const exchangeRateBcv = revaluation.bcvRate;
+    const effectivePriceBs = exchangeRateBcv != null ? +(effectivePriceUsd * exchangeRateBcv).toFixed(2) : null;
+    return {
+      ...resolved,
+      revaluationFactor: revaluation.factor,
+      effectivePriceUsd,
+      exchangeRateBcv,
+      effectivePriceBs,
+    };
+  }
 
   /**
    * Crea un nuevo precio. Si ya existe uno vigente para el mismo scope

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AuditModule } from '../audit/audit.module';
+import { ClaimsModule } from '../claims/claims.module';
 import { PricesModule } from '../prices/prices.module';
 import { PurchasesService } from './purchases.service';
 import { PurchasesController } from './purchases.controller';
@@ -41,6 +42,7 @@ import { BranchGroupCategoryApprovalRuleEntity } from '@/modules/branch-groups/i
     InventoryModule,
     PricesModule,
     ExchangeRatesModule,
+    ClaimsModule,
   ],
   controllers: [PurchasesController],
   providers: [PurchasesService, ApprovalEngineService],

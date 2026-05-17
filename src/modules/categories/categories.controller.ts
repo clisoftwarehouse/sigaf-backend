@@ -47,9 +47,22 @@ export class CategoriesController {
     return this.categoriesService.update(id, dto);
   }
 
+  @Get(':id/active-descendants-count')
+  @ApiOperation({
+    summary:
+      'Cuenta subcategorías activas (recursivo). Útil para preguntar al usuario si quiere cascada antes de inactivar.',
+  })
+  async getActiveDescendantsCount(@Param('id', ParseUUIDPipe) id: string) {
+    const count = await this.categoriesService.countActiveDescendants(id);
+    return { count };
+  }
+
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.categoriesService.remove(id);
+  @ApiOperation({
+    summary: 'Inactiva la categoría. Con `?cascade=true` inactiva también las subcategorías descendientes.',
+  })
+  remove(@Param('id', ParseUUIDPipe) id: string, @Query('cascade') cascade?: string) {
+    return this.categoriesService.remove(id, { cascade: cascade === 'true' });
   }
 
   @Patch(':id/restore')

@@ -21,16 +21,36 @@ export function normalizeCedula(value: unknown): unknown {
 }
 
 // ─── RIF ─────────────────────────────────────────────────────────────────
-// Formato canónico: J-12345678-9 (V/E/J/G/P, 7-9 dígitos, dígito verificador)
-export const RIF_REGEX = /^[VEJGP]-\d{7,9}-\d$/;
-export const RIF_HINT = 'RIF debe tener formato J-12345678-9 (V/E/J/G/P)';
+// Formato canónico (estricto, con DV): 1 letra prefijo + 8 dígitos + 1 dígito
+// verificador. Ej. J-12345678-9. Total 10 dígitos sin guiones.
+export const RIF_REGEX = /^[VEJGP]-\d{8}-\d$/;
+export const RIF_HINT = 'RIF debe tener formato J-12345678-9 (8 dígitos + verificador)';
+
+// Regex específico para sucursales: solo personas jurídicas (J).
+export const BRANCH_RIF_REGEX = /^J-\d{8}-\d$/;
+export const BRANCH_RIF_HINT = 'RIF de sucursal debe ser jurídico: J-12345678-9';
+
+// Regex permisivo para proveedores: jurídicos (J/G) con DV, naturales (V/E/P)
+// SIN DV. SENIAT solo emite DV para personas jurídicas; las naturales que se
+// registran como proveedor usan su cédula como base sin verificador.
+export const SUPPLIER_RIF_REGEX = /^(?:[JG]-\d{8}-\d|[VEP]-\d{8})$/;
+export const SUPPLIER_RIF_HINT = 'RIF: J-12345678-9 (jurídico, con DV) o V-12345678 (natural, sin DV)';
 
 export function normalizeRif(value: unknown): unknown {
   if (typeof value !== 'string') return value;
   const cleaned = value.trim().toUpperCase().replace(/\s+/g, '');
   const compact = cleaned.replace(/[^A-Z0-9]/g, '');
-  const match = compact.match(/^([VEJGP])(\d{7,9})(\d)$/);
-  return match ? `${match[1]}-${match[2]}-${match[3]}` : cleaned;
+  // Aceptamos:
+  //   - Jurídico/Gobierno (J/G): 8 dígitos + verificador = "J-12345678-9"
+  //   - Natural/Pasaporte (V/E/P): 8 dígitos sin verificador = "V-12345678"
+  const jg = compact.match(/^([JG])(\d{8})(\d)$/);
+  if (jg) return `${jg[1]}-${jg[2]}-${jg[3]}`;
+  const natural = compact.match(/^([VEP])(\d{8})$/);
+  if (natural) return `${natural[1]}-${natural[2]}`;
+  // Fallback: si vino con DV (formato viejo) lo respetamos
+  const withDv = compact.match(/^([VEP])(\d{8})(\d)$/);
+  if (withDv) return `${withDv[1]}-${withDv[2]}-${withDv[3]}`;
+  return cleaned;
 }
 
 // ─── Teléfono ────────────────────────────────────────────────────────────

@@ -47,18 +47,31 @@ export class CreateGoodsReceiptItemDto {
   @IsUUID()
   productId: string;
 
-  @ApiProperty({ example: 'LOT-2026-001', description: 'Número de lote' })
+  @ApiPropertyOptional({
+    example: 'LOT-2026-001',
+    description: 'Número de lote. Obligatorio cuando `quantity > 0`; opcional si se recibe 0 (solo discrepancias).',
+  })
+  @IsOptional()
   @IsString()
   @MaxLength(50)
-  lotNumber: string;
+  lotNumber?: string;
 
-  @ApiProperty({ example: '2027-06-30', description: 'Fecha de vencimiento' })
+  @ApiPropertyOptional({
+    example: '2027-06-30',
+    description: 'Fecha de vencimiento. Obligatorio cuando `quantity > 0`; opcional si se recibe 0.',
+  })
+  @IsOptional()
   @IsString()
-  expirationDate: string;
+  expirationDate?: string;
 
-  @ApiProperty({ example: 100, description: 'Cantidad recibida físicamente en sucursal' })
+  @ApiProperty({
+    example: 100,
+    description:
+      'Cantidad recibida físicamente. Puede ser 0 cuando todo lo facturado quedó como ' +
+      'discrepancia (ej. llegó dañado). En ese caso, las discrepancias son obligatorias.',
+  })
   @IsNumber()
-  @Min(0.001)
+  @Min(0)
   quantity: number;
 
   @ApiPropertyOptional({

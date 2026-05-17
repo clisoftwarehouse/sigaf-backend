@@ -13,23 +13,29 @@ export class ExchangeRatesController {
   constructor(private readonly service: ExchangeRatesService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Listar tasas de cambio (BCV)' })
+  @ApiOperation({ summary: 'Listar tasas de cambio (filtrar por fuente: BCV, REPOSICION, manual)' })
   findAll(
     @Query('currencyFrom') currencyFrom?: string,
     @Query('currencyTo') currencyTo?: string,
+    @Query('source') source?: string,
     @Query('limit') limit?: string,
   ) {
     return this.service.findAll({
       currencyFrom,
       currencyTo,
+      source,
       limit: limit ? parseInt(limit, 10) : undefined,
     });
   }
 
   @Get('latest')
-  @ApiOperation({ summary: 'Obtener tasa de cambio más reciente' })
-  getLatest(@Query('currencyFrom') currencyFrom?: string, @Query('currencyTo') currencyTo?: string) {
-    return this.service.getLatest(currencyFrom, currencyTo);
+  @ApiOperation({ summary: 'Obtener tasa de cambio más reciente (opcionalmente por fuente)' })
+  getLatest(
+    @Query('currencyFrom') currencyFrom?: string,
+    @Query('currencyTo') currencyTo?: string,
+    @Query('source') source?: string,
+  ) {
+    return this.service.getLatest(currencyFrom, currencyTo, source as never);
   }
 
   @Post()

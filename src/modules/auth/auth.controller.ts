@@ -17,7 +17,7 @@ import {
 import { User } from '../users/domain/user';
 import { AuthService } from './auth.service';
 import { NullableType } from '../../common/utils/types/nullable.type';
-import { AuthUpdateDto, LoginResponseDto, AuthEmailLoginDto, RefreshResponseDto } from './dto';
+import { SetPinDto, VerifyPinDto, AuthUpdateDto, LoginResponseDto, AuthEmailLoginDto, RefreshResponseDto } from './dto';
 
 @ApiTags('Auth')
 @Controller({
@@ -88,5 +88,23 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   public async delete(@Request() request): Promise<void> {
     return this.service.softDelete(request.user);
+  }
+
+  @ApiBearerAuth()
+  @Patch('me/pin')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Establecer/actualizar mi PIN de supervisor' })
+  public async setMyPin(@Request() request, @Body() dto: SetPinDto): Promise<void> {
+    await this.service.setSupervisorPin(request.user.id, dto.pin);
+  }
+
+  @Post('verify-pin')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Verificar PIN de un supervisor (override en POS: descuento manual, anulación, etc.)',
+  })
+  public verifyPin(@Body() dto: VerifyPinDto): Promise<{ valid: boolean; userId: string }> {
+    return this.service.verifySupervisorPin({ userId: dto.userId, pin: dto.pin });
   }
 }

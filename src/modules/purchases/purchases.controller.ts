@@ -86,6 +86,16 @@ export class PurchasesController {
     return this.purchasesService.findOneReceipt(id);
   }
 
+  @Get('receipts/:id/unpriced-products')
+  @ApiOperation({
+    summary:
+      'Listar productos del receipt sin precio de venta vigente (ni global ni override por su sucursal). ' +
+      'Pensado para empujar al operador al módulo de Precios tras recibir mercancía.',
+  })
+  findUnpricedProductsByReceipt(@Param('id', ParseUUIDPipe) id: string) {
+    return this.purchasesService.findUnpricedProductsByReceipt(id);
+  }
+
   @Post('receipts')
   @ApiOperation({ summary: 'Crear recepción de mercancía (crea lotes e inserta kardex)' })
   createReceipt(@Body() dto: CreateGoodsReceiptDto, @Request() req: { user: { id: string } }) {

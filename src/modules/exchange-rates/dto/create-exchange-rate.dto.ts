@@ -1,4 +1,6 @@
-import { Min, IsNumber, IsString, MaxLength, IsOptional, IsDateString } from 'class-validator';
+import { Min, IsIn, IsNumber, IsString, MaxLength, IsOptional, IsDateString } from 'class-validator';
+
+import { RateSource, RATE_SOURCES } from '../rate-sources';
 
 export class CreateExchangeRateDto {
   @IsOptional()
@@ -16,9 +18,8 @@ export class CreateExchangeRateDto {
   rate: number;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  source?: string;
+  @IsIn(RATE_SOURCES)
+  source?: RateSource;
 
   @IsDateString()
   effectiveDate: string;

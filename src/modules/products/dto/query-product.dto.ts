@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Min, IsInt, IsEnum, IsUUID, IsString, IsBoolean, IsOptional } from 'class-validator';
 
@@ -43,7 +43,12 @@ export class QueryProductDto {
 
   @ApiPropertyOptional({ description: 'Filtrar por activo/inactivo' })
   @IsOptional()
-  @Type(() => Boolean)
+  @Transform(({ value }) => {
+    if (typeof value === 'boolean') return value;
+    if (value === 'true' || value === '1') return true;
+    if (value === 'false' || value === '0') return false;
+    return value;
+  })
   @IsBoolean()
   isActive?: boolean;
 
