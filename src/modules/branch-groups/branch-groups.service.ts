@@ -58,21 +58,31 @@ export class BranchGroupsService {
   }
 
   async findOne(id: string): Promise<any> {
+    // Cargamos el grupo y las reglas por separado: el `order` en relations de
+    // TypeORM (`findOne({ relations, order: { amountRules: ... } })`) no
+    // siempre se aplica cuando hay múltiples relaciones, así que pedimos las
+    // amountRules con un find explícito ordenado por sortOrder. Sin esto
+    // Postgres devolvía las reglas en orden indeterminado (todas con el mismo
+    // transaction_timestamp después del DELETE+INSERT).
     const group = await this.repo.findOne({
       where: { id },
-      relations: ['amountRules', 'amountRules.role', 'categoryRules', 'categoryRules.role'],
-      // Respeta el orden definido por el usuario (sortOrder) en lugar del
-      // orden indeterminado que asigna Postgres a filas con createdAt idéntico.
-      order: { amountRules: { sortOrder: 'ASC' } },
+      relations: ['categoryRules', 'categoryRules.role'],
     });
     if (!group) throw new NotFoundException('Grupo no encontrado');
 
-    const branches = await this.branchRepo.find({
-      where: { branchGroupId: id },
-      order: { name: 'ASC' },
-    });
+    const [amountRules, branches] = await Promise.all([
+      this.amountRuleRepo.find({
+        where: { branchGroupId: id },
+        relations: ['role'],
+        order: { sortOrder: 'ASC' },
+      }),
+      this.branchRepo.find({
+        where: { branchGroupId: id },
+        order: { name: 'ASC' },
+      }),
+    ]);
 
-    return { ...group, branches };
+    return { ...group, amountRules, branches };
   }
 
   async create(dto: CreateBranchGroupDto): Promise<BranchGroupEntity> {
