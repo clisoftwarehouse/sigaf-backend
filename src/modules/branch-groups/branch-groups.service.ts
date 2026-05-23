@@ -57,6 +57,9 @@ export class BranchGroupsService {
     const group = await this.repo.findOne({
       where: { id },
       relations: ['amountRules', 'amountRules.role', 'categoryRules', 'categoryRules.role'],
+      // Respeta el orden definido por el usuario (sortOrder) en lugar del
+      // orden indeterminado que asigna Postgres a filas con createdAt idéntico.
+      order: { amountRules: { sortOrder: 'ASC' } },
     });
     if (!group) throw new NotFoundException('Grupo no encontrado');
 
@@ -113,22 +116,25 @@ export class BranchGroupsService {
     return this.dataSource.transaction(async (manager) => {
       await manager.delete(BranchGroupAmountApprovalRuleEntity, { branchGroupId });
       if (dto.rules.length === 0) return [];
-      const entities = dto.rules.map((r) =>
+      // `sortOrder = índice del array recibido`. El frontend manda las reglas
+      // en el orden que el usuario las creó/ordenó; el backend lo respeta tal
+      // cual. No usamos `createdAt` porque dentro de una transacción todos
+      // los inserts comparten `transaction_timestamp()` y el orden no queda
+      // definido.
+      const entities = dto.rules.map((r, idx) =>
         manager.create(BranchGroupAmountApprovalRuleEntity, {
           branchGroupId,
           roleId: r.roleId,
           minUsd: r.minUsd,
           maxUsd: r.maxUsd,
+          sortOrder: idx,
         }),
       );
       await manager.save(entities);
       return manager.find(BranchGroupAmountApprovalRuleEntity, {
         where: { branchGroupId },
         relations: ['role'],
-        // Orden estable por creación: el operador espera ver las reglas en el
-        // mismo orden en que las creó, no reordenadas por valor (0-10 después
-        // de 50-100 si el de 0-10 se creó después).
-        order: { createdAt: 'ASC' },
+        order: { sortOrder: 'ASC' },
       });
     });
   }

@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuditModule } from '../audit/audit.module';
 import { ProductsService } from './products.service';
 import { ProductsController } from './products.controller';
+import { ExchangeRatesModule } from '../exchange-rates/exchange-rates.module';
 import { ProductEntity } from './infrastructure/persistence/relational/entities/product.entity';
 import { PriceEntity } from '@/modules/prices/infrastructure/persistence/relational/entities/price.entity';
 import { ProductBarcodeEntity } from './infrastructure/persistence/relational/entities/product-barcode.entity';
@@ -26,6 +27,7 @@ import { GoodsReceiptItemEntity } from '@/modules/purchases/infrastructure/persi
       PriceEntity,
     ]),
     AuditModule,
+    ExchangeRatesModule,
   ],
   controllers: [ProductsController],
   providers: [ProductsService],

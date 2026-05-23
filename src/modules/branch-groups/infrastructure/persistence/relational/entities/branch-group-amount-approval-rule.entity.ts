@@ -48,6 +48,13 @@ export class BranchGroupAmountApprovalRuleEntity extends EntityRelationalHelper 
   @Column('decimal', { name: 'max_usd', precision: 18, scale: 4, nullable: true })
   maxUsd: number | null;
 
+  // Orden explícito asignado por el frontend (índice del array recibido).
+  // Necesario porque DELETE+INSERT en una transacción asigna el mismo
+  // created_at a todas las filas y Postgres no garantiza orden entre filas
+  // con timestamp idéntico.
+  @Column('int', { name: 'sort_order', default: 0 })
+  sortOrder: number;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 

@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 
 import { AuditService } from '../audit/audit.service';
+import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
 import { ProductEntity } from './infrastructure/persistence/relational/entities/product.entity';
 import { PriceEntity } from '@/modules/prices/infrastructure/persistence/relational/entities/price.entity';
 import { ProductBarcodeEntity } from './infrastructure/persistence/relational/entities/product-barcode.entity';
@@ -37,7 +38,23 @@ export class ProductsService {
     @InjectRepository(PriceEntity)
     private readonly priceRepo: Repository<PriceEntity>,
     private readonly auditService: AuditService,
+    private readonly exchangeRatesService: ExchangeRatesService,
   ) {}
+
+  /**
+   * Factor de revaluación: REPOSICION / BCV cuando REPOSICION > BCV; 1.0 si no.
+   * Replicado aquí para evitar dependencia circular con PricesModule.
+   */
+  private async resolveRevaluationFactor(): Promise<number> {
+    const [bcv, rep] = await Promise.all([
+      this.exchangeRatesService.getLatest('USD', 'VES', 'BCV'),
+      this.exchangeRatesService.getLatest('USD', 'VES', 'REPOSICION'),
+    ]);
+    const bcvRate = bcv ? Number(bcv.rate) : null;
+    const repRate = rep ? Number(rep.rate) : null;
+    if (!bcvRate || !repRate || bcvRate <= 0 || repRate <= bcvRate) return 1.0;
+    return +(repRate / bcvRate).toFixed(6);
+  }
 
   // ─── LIST ──────────────────────────────────────────────────────────────
   async findAll(query: QueryProductDto): Promise<{ data: any[]; total: number; page: number; limit: number }> {
@@ -145,12 +162,20 @@ export class ProductsService {
       priceMap = Object.fromEntries(Object.entries(priceCandidates).map(([k, v]) => [k, v.priceUsd]));
     }
 
-    const enriched = data.map((p) => ({
-      ...p,
-      totalStock: stockMap[p.id] || 0,
-      currentPriceUsd:
-        priceMap[p.id] ?? (typeof p.pmvp === 'number' ? p.pmvp : parseFloat(p.pmvp as unknown as string) || null),
-    }));
+    const revaluationFactor = await this.resolveRevaluationFactor();
+    const enriched = data.map((p) => {
+      const currentPriceUsd =
+        priceMap[p.id] ?? (typeof p.pmvp === 'number' ? p.pmvp : parseFloat(p.pmvp as unknown as string) || null);
+      const effectivePriceUsd =
+        currentPriceUsd != null ? +(Number(currentPriceUsd) * revaluationFactor).toFixed(4) : null;
+      return {
+        ...p,
+        totalStock: stockMap[p.id] || 0,
+        currentPriceUsd,
+        effectivePriceUsd,
+        revaluationFactor,
+      };
+    });
 
     return { data: enriched, total, page, limit };
   }

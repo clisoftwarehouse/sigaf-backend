@@ -2,6 +2,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository, DataSource, EntityManager } from 'typeorm';
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 
+import { ExchangeRatesService } from '@/modules/exchange-rates/exchange-rates.service';
 import { SaleTicketEntity } from './infrastructure/persistence/relational/entities/sale-ticket.entity';
 import { KardexEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/kardex.entity';
 import { SaleTicketItemEntity } from './infrastructure/persistence/relational/entities/sale-ticket-item.entity';
@@ -71,7 +72,26 @@ export class SalesService {
     @InjectRepository(PrescriptionEntity)
     private readonly prescriptionRepo: Repository<PrescriptionEntity>,
     private readonly dataSource: DataSource,
+    private readonly exchangeRatesService: ExchangeRatesService,
   ) {}
+
+  /**
+   * Factor de revaluación vigente (REPOSICION/BCV). 1.0 si modo reposición
+   * inactivo. El POS aplica este factor al precio publicado del lote para
+   * obtener el monto que cobra al cliente; el ticket persiste el `unit_price`
+   * ya con el factor aplicado para que la contabilidad refleje la transacción
+   * real.
+   */
+  private async resolveRevaluationFactor(): Promise<number> {
+    const [bcv, rep] = await Promise.all([
+      this.exchangeRatesService.getLatest('USD', 'VES', 'BCV'),
+      this.exchangeRatesService.getLatest('USD', 'VES', 'REPOSICION'),
+    ]);
+    const bcvRate = bcv ? Number(bcv.rate) : null;
+    const repRate = rep ? Number(rep.rate) : null;
+    if (!bcvRate || !repRate || bcvRate <= 0 || repRate <= bcvRate) return 1.0;
+    return +(repRate / bcvRate).toFixed(6);
+  }
 
   // ─────────────────────────────────────────────────────────────────
   // Public API
@@ -104,11 +124,14 @@ export class SalesService {
       // 3. Validar récipes para items que requieren.
       await this.validatePrescriptions(manager, dto.items, productMap);
 
-      // 4. Calcular líneas + reservar lotes FEFO.
+      // 4. Calcular líneas + reservar lotes FEFO. El factor de reposición se
+      // resuelve UNA vez por ticket para que todas las líneas usen el mismo
+      // multiplicador, evitando inconsistencias si la tasa cambia en medio.
+      const revaluationFactor = await this.resolveRevaluationFactor();
       const itemCalcs: ItemCalc[] = [];
       for (const itemDto of dto.items) {
         const product = productMap.get(itemDto.productId)!;
-        const calc = await this.calculateAndReserveLine(manager, itemDto, product, dto.branchId);
+        const calc = await this.calculateAndReserveLine(manager, itemDto, product, dto.branchId, revaluationFactor);
         itemCalcs.push(calc);
       }
 
@@ -793,6 +816,7 @@ export class SalesService {
     itemDto: CreateSaleTicketItemDto,
     product: ProductEntity,
     branchId: string,
+    revaluationFactor: number,
   ): Promise<ItemCalc> {
     // Tomar precio del lote más viejo no vencido + cantidad disponible >= solicitada.
     // Usamos SELECT FOR UPDATE para serializar contra otras transacciones.
@@ -815,7 +839,11 @@ export class SalesService {
       );
     }
 
-    const unitPriceUsd = Number(candidateLots.salePrice);
+    // El precio publicado del lote es el "principal" (SUNDDE). Aplicamos el
+    // factor de reposición para obtener el precio que efectivamente se cobra.
+    // Si el factor es 1.0 (modo reposición OFF), unitPriceUsd == salePrice del lote.
+    const basePriceUsd = Number(candidateLots.salePrice);
+    const unitPriceUsd = +(basePriceUsd * revaluationFactor).toFixed(4);
     const vatRate = VAT_BY_TAX_TYPE[product.taxType] ?? 0.16;
     const discountPercent = itemDto.discountPercent ?? 0;
     const effectiveUnit = unitPriceUsd * (1 - discountPercent / 100);
