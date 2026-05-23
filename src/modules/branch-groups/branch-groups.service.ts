@@ -36,7 +36,11 @@ export class BranchGroupsService {
     if (query.isActive !== undefined) {
       qb.andWhere('g.is_active = :isActive', { isActive: query.isActive });
     }
-    const groups = await qb.orderBy('g.name', 'ASC').getMany();
+    // Ordenamos por fecha de creación ASC: el operador espera ver los grupos
+    // en el orden en que los creó (los más antiguos arriba). Antes ordenábamos
+    // por `name` pero la collation por defecto compara ASCII y dejaba las
+    // minúsculas al final (kjnh quedaba después de Sin asignar).
+    const groups = await qb.orderBy('g.created_at', 'ASC').getMany();
 
     // Enriquecemos con el conteo de sucursales asignadas para que el listado
     // del frontend muestre "N sucursales" sin tener que cargarlas todas.
