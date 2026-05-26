@@ -2,13 +2,17 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Get, Body, Post, Query, UseGuards, Controller } from '@nestjs/common';
 
+import { RoleEnum } from '@/modules/roles/roles.enum';
+import { Roles } from '@/modules/roles/roles.decorator';
+import { RolesGuard } from '@/modules/roles/roles.guard';
 import { OverrideRateDto, CreateExchangeRateDto } from './dto';
 import { ExchangeRatesService } from './exchange-rates.service';
+import { FINANCE_WRITERS } from '@/modules/roles/roles.constants';
 import { JwtOrTerminalApiKeyGuard } from '@/common/guards/jwt-or-terminal-api-key.guard';
 
 @ApiTags('Exchange Rates')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller({ path: 'exchange-rates', version: '1' })
 export class ExchangeRatesController {
   constructor(private readonly service: ExchangeRatesService) {}
@@ -42,19 +46,26 @@ export class ExchangeRatesController {
   }
 
   @Post()
+  @Roles(RoleEnum.admin, RoleEnum.gerente)
   @ApiOperation({ summary: 'Registrar nueva tasa de cambio' })
   create(@Body() dto: CreateExchangeRateDto) {
     return this.service.create(dto);
   }
 
   @Post('fetch-bcv')
+  @Roles(RoleEnum.admin, RoleEnum.gerente)
   @ApiOperation({ summary: 'Forzar scraping manual de la tasa oficial BCV (USD→VES)' })
   fetchBcv() {
     return this.service.fetchAndSaveBcvRate();
   }
 
   @Post('override')
-  @ApiOperation({ summary: 'Sobreescribir la tasa del día con un valor manual (is_overridden=true)' })
+  @Roles(...FINANCE_WRITERS)
+  @ApiOperation({
+    summary:
+      'Sobreescribir la tasa del día con un valor manual (is_overridden=true). ' +
+      'Solo admin — operación financiera con impacto en todo el ERP. Auditada.',
+  })
   override(@Body() dto: OverrideRateDto) {
     return this.service.overrideRate(dto);
   }

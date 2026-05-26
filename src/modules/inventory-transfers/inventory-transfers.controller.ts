@@ -14,6 +14,9 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 
+import { Roles } from '@/modules/roles/roles.decorator';
+import { RolesGuard } from '@/modules/roles/roles.guard';
+import { INVENTORY_WRITERS } from '@/modules/roles/roles.constants';
 import { InventoryTransfersService } from './inventory-transfers.service';
 import {
   CancelTransferDto,
@@ -25,12 +28,13 @@ import {
 
 @ApiTags('Inventory Transfers')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller({ path: 'inventory-transfers', version: '1' })
 export class InventoryTransfersController {
   constructor(private readonly service: InventoryTransfersService) {}
 
   @Post()
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({
     summary: 'Crear traslado (draft). Valida stock en origen pero no mueve nada hasta el dispatch.',
   })
@@ -51,12 +55,14 @@ export class InventoryTransfersController {
   }
 
   @Post(':id/items')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Agregar item al traslado (solo en draft)' })
   addItem(@Param('id', ParseUUIDPipe) id: string, @Body() dto: TransferItemInputDto) {
     return this.service.addItem(id, dto);
   }
 
   @Delete(':id/items/:itemId')
+  @Roles(...INVENTORY_WRITERS)
   @HttpCode(204)
   @ApiOperation({ summary: 'Quitar item del traslado (solo en draft)' })
   removeItem(@Param('id', ParseUUIDPipe) id: string, @Param('itemId', ParseUUIDPipe) itemId: string) {
@@ -64,6 +70,7 @@ export class InventoryTransfersController {
   }
 
   @Post(':id/dispatch')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({
     summary:
       'Despachar traslado: draft → in_transit. Descuenta stock del origen, genera kardex `transfer_out` por cada lote.',
@@ -73,6 +80,7 @@ export class InventoryTransfersController {
   }
 
   @Post(':id/receive')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({
     summary:
       'Recibir traslado: in_transit → completed. Crea/incrementa lote destino (mismo lot_number), genera kardex `transfer_in`. Admite mermas.',
@@ -86,6 +94,7 @@ export class InventoryTransfersController {
   }
 
   @Post(':id/cancel')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({
     summary: 'Cancelar traslado. Si estaba in_transit, devuelve stock al origen (kardex `transfer_cancelled`).',
   })

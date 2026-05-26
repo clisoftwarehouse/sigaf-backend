@@ -14,7 +14,10 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 
+import { Roles } from '@/modules/roles/roles.decorator';
+import { RolesGuard } from '@/modules/roles/roles.guard';
 import { PrescriptionsService } from './prescriptions.service';
+import { PRESCRIPTION_WRITERS } from '@/modules/roles/roles.constants';
 import { JwtOrTerminalApiKeyGuard } from '@/common/guards/jwt-or-terminal-api-key.guard';
 import { QueryPrescriptionDto, CreatePrescriptionDto, UpdatePrescriptionDto } from './dto';
 
@@ -44,19 +47,24 @@ export class PrescriptionsController {
   }
 
   @Post()
-  @UseGuards(JwtOrTerminalApiKeyGuard)
-  @ApiOperation({ summary: 'Registrar récipe médico (con items)' })
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(...PRESCRIPTION_WRITERS)
+  @ApiOperation({ summary: 'Registrar récipe médico (con items). Admin/gerente/farmacéutico.' })
   create(@Body() dto: CreatePrescriptionDto, @Req() req: RequestWithUser) {
     return this.prescriptionsService.create(dto, req.user?.id ?? null);
   }
 
   @Put(':id')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(...PRESCRIPTION_WRITERS)
   @ApiOperation({ summary: 'Actualizar metadatos del récipe (no items)' })
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdatePrescriptionDto) {
     return this.prescriptionsService.update(id, dto);
   }
 
   @Post(':id/cancel')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(...PRESCRIPTION_WRITERS)
   @HttpCode(200)
   @ApiOperation({ summary: 'Anular récipe (no se puede deshacer)' })
   cancel(@Param('id', ParseUUIDPipe) id: string) {

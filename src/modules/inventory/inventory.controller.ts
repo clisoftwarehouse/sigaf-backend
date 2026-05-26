@@ -3,6 +3,9 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Get, Put, Body, Post, Param, Query, Request, UseGuards, Controller, ParseUUIDPipe } from '@nestjs/common';
 
 import { InventoryService } from './inventory.service';
+import { Roles } from '@/modules/roles/roles.decorator';
+import { RolesGuard } from '@/modules/roles/roles.guard';
+import { INVENTORY_WRITERS } from '@/modules/roles/roles.constants';
 import { JwtOrTerminalApiKeyGuard } from '@/common/guards/jwt-or-terminal-api-key.guard';
 import {
   QueryStockDto,
@@ -32,7 +35,7 @@ import {
 
 @ApiTags('Inventory')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller({ path: 'inventory', version: '1' })
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
@@ -49,12 +52,14 @@ export class InventoryController {
   }
 
   @Post('lots')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Crear nuevo lote de inventario' })
   createLot(@Body() dto: CreateInventoryLotDto, @Request() req: { user: { id: string } }) {
     return this.inventoryService.createLot(dto, req.user?.id || 'system');
   }
 
   @Put('lots/:id')
+  @Roles(...INVENTORY_WRITERS)
   updateLot(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateInventoryLotDto,
@@ -64,6 +69,7 @@ export class InventoryController {
   }
 
   @Put('lots/:id/quarantine')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Establecer/quitar cuarentena de un lote' })
   setQuarantine(
     @Param('id', ParseUUIDPipe) id: string,
@@ -104,6 +110,7 @@ export class InventoryController {
   }
 
   @Post('adjustments')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({
     summary: 'Crear ajuste de inventario positivo o negativo (daño, corrección, count_difference, expiry_write_off)',
   })
@@ -135,6 +142,7 @@ export class InventoryController {
   }
 
   @Post('cost-of-sale/consume')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({
     summary:
       'Consume stock FEFO (transaccional): decrementa lotes, incrementa quantity_sold y genera kardex sale_out por cada lote. Retorna plan + COGS.',
@@ -144,6 +152,7 @@ export class InventoryController {
   }
 
   @Post('cost-of-sale/return')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({
     summary:
       'Devuelve mercancía a un lote específico (revierte un consumo previo). Genera kardex return_in con el unit_cost del lote.',
@@ -165,24 +174,28 @@ export class InventoryController {
   }
 
   @Post('counts/cyclic-schedules')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Crear programa de conteo cíclico (clases ABC / niveles de riesgo)' })
   createCyclicSchedule(@Body() dto: CreateCyclicScheduleDto, @Request() req: { user: { id: string } }) {
     return this.inventoryService.createCyclicSchedule(dto, req.user?.id || 'system');
   }
 
   @Put('counts/cyclic-schedules/:id')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Actualizar programa de conteo cíclico' })
   updateCyclicSchedule(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateCyclicScheduleDto) {
     return this.inventoryService.updateCyclicSchedule(id, dto);
   }
 
   @Post('counts')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Crear toma de inventario (full / partial / cycle)' })
   createCount(@Body() dto: CreateInventoryCountDto, @Request() req: { user: { id: string } }) {
     return this.inventoryService.createCount(dto, req.user?.id || 'system');
   }
 
   @Put('counts/:id/start')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Iniciar toma (draft → in_progress, bloquea SKUs si blocksSales)' })
   startCount(@Param('id', ParseUUIDPipe) id: string, @Request() req: { user: { id: string } }) {
     return this.inventoryService.startCount(id, req.user?.id || 'system');
@@ -201,6 +214,7 @@ export class InventoryController {
   }
 
   @Put('counts/:id/items/:itemId')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Registrar cantidad contada para un item' })
   updateCountItem(
     @Param('id', ParseUUIDPipe) id: string,
@@ -212,6 +226,7 @@ export class InventoryController {
   }
 
   @Put('counts/:id/items')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Registrar cantidades contadas en lote' })
   bulkUpdateCountItems(
     @Param('id', ParseUUIDPipe) id: string,
@@ -222,6 +237,7 @@ export class InventoryController {
   }
 
   @Put('counts/:id/items/:itemId/recount')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Marcar item para recuento (limpia conteo previo)' })
   recountCountItem(
     @Param('id', ParseUUIDPipe) id: string,
@@ -233,12 +249,14 @@ export class InventoryController {
   }
 
   @Post('counts/:id/complete')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Marcar toma como completada (todos los items contados)' })
   completeCount(@Param('id', ParseUUIDPipe) id: string, @Request() req: { user: { id: string } }) {
     return this.inventoryService.completeCount(id, req.user?.id || 'system');
   }
 
   @Post('counts/:id/approve')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Aprobar toma — genera ajustes y mueve kardex' })
   approveCount(
     @Param('id', ParseUUIDPipe) id: string,
@@ -249,6 +267,7 @@ export class InventoryController {
   }
 
   @Post('counts/:id/cancel')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Cancelar toma de inventario' })
   cancelCount(
     @Param('id', ParseUUIDPipe) id: string,

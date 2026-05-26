@@ -2,7 +2,10 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Get, Put, Body, Post, Param, Query, Request, UseGuards, Controller, ParseUUIDPipe } from '@nestjs/common';
 
+import { Roles } from '@/modules/roles/roles.decorator';
+import { RolesGuard } from '@/modules/roles/roles.guard';
 import { ConsignmentsService } from './consignments.service';
+import { INVENTORY_WRITERS } from '@/modules/roles/roles.constants';
 import {
   QueryConsignmentDto,
   CreateConsignmentEntryDto,
@@ -12,7 +15,7 @@ import {
 
 @ApiTags('Consignments')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller({ path: 'consignments', version: '1' })
 export class ConsignmentsController {
   constructor(private readonly consignmentsService: ConsignmentsService) {}
@@ -32,6 +35,7 @@ export class ConsignmentsController {
   }
 
   @Post('entries')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Crear entrada de consignación (crea lotes en inventario)' })
   createEntry(@Body() dto: CreateConsignmentEntryDto, @Request() req: { user: { id: string } }) {
     return this.consignmentsService.createEntry(dto, req.user.id);
@@ -50,6 +54,7 @@ export class ConsignmentsController {
   }
 
   @Post('returns')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Devolver ítems de consignación al proveedor' })
   createReturn(@Body() dto: CreateConsignmentReturnDto, @Request() req: { user: { id: string } }) {
     return this.consignmentsService.createReturn(dto, req.user.id);
@@ -74,12 +79,14 @@ export class ConsignmentsController {
   }
 
   @Post('liquidations')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Generar liquidación de consignación (calcula comisiones)' })
   createLiquidation(@Body() dto: CreateConsignmentLiquidationDto, @Request() req: { user: { id: string } }) {
     return this.consignmentsService.createLiquidation(dto, req.user.id);
   }
 
   @Put('liquidations/:id/approve')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Aprobar liquidación (draft → approved)' })
   approveLiquidation(@Param('id', ParseUUIDPipe) id: string, @Request() req: { user: { id: string } }) {
     return this.consignmentsService.approveLiquidation(id, req.user.id);

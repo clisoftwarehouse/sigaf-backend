@@ -3,17 +3,21 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Get, Put, Body, Post, Param, Query, Request, UseGuards, Controller, ParseUUIDPipe } from '@nestjs/common';
 
 import { PricesService } from './prices.service';
+import { Roles } from '@/modules/roles/roles.decorator';
+import { RolesGuard } from '@/modules/roles/roles.guard';
+import { CATALOG_WRITERS } from '@/modules/roles/roles.constants';
 import { JwtOrTerminalApiKeyGuard } from '@/common/guards/jwt-or-terminal-api-key.guard';
 import { CreatePriceDto, UpdatePriceDto, QueryPricesDto, QueryCurrentPriceDto } from './dto';
 
 @ApiTags('Prices')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller({ path: 'prices', version: '1' })
 export class PricesController {
   constructor(private readonly service: PricesService) {}
 
   @Post()
+  @Roles(...CATALOG_WRITERS)
   @ApiOperation({
     summary:
       'Crear precio (USD). Cierra automáticamente el precio vigente anterior del mismo scope (producto + sucursal|null).',
@@ -65,6 +69,7 @@ export class PricesController {
   }
 
   @Put(':id')
+  @Roles(...CATALOG_WRITERS)
   @ApiOperation({
     summary:
       'Corrección sobre un precio (typo/notas). No cambia vigencia ni scope. Si se modifica priceUsd se exige justification y queda registrado en audit_log.',
@@ -78,6 +83,7 @@ export class PricesController {
   }
 
   @Post(':id/expire')
+  @Roles(...CATALOG_WRITERS)
   @ApiOperation({ summary: 'Expirar manualmente un precio vigente (effective_to = now)' })
   expire(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.expire(id);

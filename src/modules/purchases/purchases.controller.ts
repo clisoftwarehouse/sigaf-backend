@@ -15,7 +15,10 @@ import {
 } from '@nestjs/common';
 
 import { PurchasesService } from './purchases.service';
+import { Roles } from '@/modules/roles/roles.decorator';
+import { RolesGuard } from '@/modules/roles/roles.guard';
 import { ApprovalEngineService } from './approval-engine.service';
+import { INVENTORY_WRITERS } from '@/modules/roles/roles.constants';
 import {
   ReapproveReceiptDto,
   CreateGoodsReceiptDto,
@@ -26,7 +29,7 @@ import {
 
 @ApiTags('Purchases')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller({ path: 'purchases', version: '1' })
 export class PurchasesController {
   constructor(
@@ -49,12 +52,14 @@ export class PurchasesController {
   }
 
   @Post('orders')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Crear orden de compra con ítems' })
   createOrder(@Body() dto: CreatePurchaseOrderDto, @Request() req: { user: { id: string } }) {
     return this.purchasesService.createOrder(dto, req.user.id);
   }
 
   @Put('orders/:id')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Actualizar orden de compra (estado, notas, fecha)' })
   updateOrder(
     @Param('id', ParseUUIDPipe) id: string,
@@ -65,12 +70,14 @@ export class PurchasesController {
   }
 
   @Delete('orders/:id')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Eliminar OC en estado borrador (hard delete)' })
   deleteOrder(@Param('id', ParseUUIDPipe) id: string, @Request() req: { user: { id: string } }) {
     return this.purchasesService.deleteOrder(id, req.user.id);
   }
 
   @Put('orders/:id/approve')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Aprobar orden de compra (draft → sent)' })
   approveOrder(@Param('id', ParseUUIDPipe) id: string, @Request() req: { user: { id: string } }) {
     return this.purchasesService.approveOrder(id, req.user.id);
@@ -115,12 +122,14 @@ export class PurchasesController {
   }
 
   @Post('receipts')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({ summary: 'Crear recepción de mercancía (crea lotes e inserta kardex)' })
   createReceipt(@Body() dto: CreateGoodsReceiptDto, @Request() req: { user: { id: string } }) {
     return this.purchasesService.createReceipt(dto, req.user.id);
   }
 
   @Put('receipts/:id/reapprove')
+  @Roles(...INVENTORY_WRITERS)
   @ApiOperation({
     summary:
       'Reaprueba una recepción bloqueada por exceso de tolerancia (PDF Política OC §5). ' +

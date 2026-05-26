@@ -2,6 +2,9 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Get, Body, Post, Param, UseGuards, Controller, ParseUUIDPipe } from '@nestjs/common';
 
+import { Roles } from '@/modules/roles/roles.decorator';
+import { RolesGuard } from '@/modules/roles/roles.guard';
+import { CATALOG_WRITERS } from '@/modules/roles/roles.constants';
 import { CommercialTaxonomiesService } from './commercial-taxonomies.service';
 import { CreateCommercialTaxonomyDto } from './dto/create-commercial-taxonomy.dto';
 import { JwtOrTerminalApiKeyGuard } from '@/common/guards/jwt-or-terminal-api-key.guard';
@@ -29,7 +32,8 @@ export class CommercialTaxonomiesController {
   }
 
   @Post('commercial-lines')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(...CATALOG_WRITERS)
   @ApiOperation({ summary: 'Crear nueva línea comercial' })
   createLine(@Body() dto: CreateCommercialTaxonomyDto) {
     return this.service.createLine(dto);
@@ -52,7 +56,8 @@ export class CommercialTaxonomiesController {
   }
 
   @Post('commercial-variants')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(...CATALOG_WRITERS)
   @ApiOperation({ summary: 'Crear nueva variante comercial' })
   createVariant(@Body() dto: CreateCommercialTaxonomyDto) {
     return this.service.createVariant(dto);

@@ -16,10 +16,13 @@ import {
 
 import { BrandsService } from './brands.service';
 import { CreateBrandDto, UpdateBrandDto } from './dto';
+import { Roles } from '@/modules/roles/roles.decorator';
+import { RolesGuard } from '@/modules/roles/roles.guard';
+import { CATALOG_WRITERS } from '@/modules/roles/roles.constants';
 
 @ApiTags('Brands')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller({ path: 'brands', version: '1' })
 export class BrandsController {
   constructor(private readonly brandsService: BrandsService) {}
@@ -44,22 +47,26 @@ export class BrandsController {
   }
 
   @Post()
+  @Roles(...CATALOG_WRITERS)
   @ApiOperation({ summary: 'Crear marca/laboratorio' })
   create(@Body() dto: CreateBrandDto) {
     return this.brandsService.create(dto);
   }
 
   @Put(':id')
+  @Roles(...CATALOG_WRITERS)
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateBrandDto) {
     return this.brandsService.update(id, dto);
   }
 
   @Delete(':id')
+  @Roles(...CATALOG_WRITERS)
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.brandsService.remove(id);
   }
 
   @Patch(':id/restore')
+  @Roles(...CATALOG_WRITERS)
   @ApiOperation({ summary: 'Reactivar marca inactiva' })
   restore(@Param('id', ParseUUIDPipe) id: string) {
     return this.brandsService.restore(id);

@@ -14,12 +14,15 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 
+import { Roles } from '@/modules/roles/roles.decorator';
 import { CategoriesService } from './categories.service';
+import { RolesGuard } from '@/modules/roles/roles.guard';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto';
+import { CATALOG_WRITERS } from '@/modules/roles/roles.constants';
 
 @ApiTags('Categories')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller({ path: 'categories', version: '1' })
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
@@ -37,12 +40,14 @@ export class CategoriesController {
   }
 
   @Post()
+  @Roles(...CATALOG_WRITERS)
   @ApiOperation({ summary: 'Crear nueva categoría' })
   create(@Body() dto: CreateCategoryDto) {
     return this.categoriesService.create(dto);
   }
 
   @Put(':id')
+  @Roles(...CATALOG_WRITERS)
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateCategoryDto) {
     return this.categoriesService.update(id, dto);
   }
@@ -58,6 +63,7 @@ export class CategoriesController {
   }
 
   @Delete(':id')
+  @Roles(...CATALOG_WRITERS)
   @ApiOperation({
     summary: 'Inactiva la categoría. Con `?cascade=true` inactiva también las subcategorías descendientes.',
   })
@@ -66,6 +72,7 @@ export class CategoriesController {
   }
 
   @Patch(':id/restore')
+  @Roles(...CATALOG_WRITERS)
   @ApiOperation({ summary: 'Reactivar categoría inactiva' })
   restore(@Param('id', ParseUUIDPipe) id: string) {
     return this.categoriesService.restore(id);

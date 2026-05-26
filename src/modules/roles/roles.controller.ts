@@ -2,12 +2,16 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Get, Put, Body, Post, Param, UseGuards, Controller, ParseUUIDPipe } from '@nestjs/common';
 
+import { RoleEnum } from './roles.enum';
+import { Roles } from './roles.decorator';
+import { RolesGuard } from './roles.guard';
 import { RolesService } from './roles.service';
 import { CreateRoleDto, UpdateRoleDto } from './dto';
 
 @ApiTags('Roles')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles(RoleEnum.admin)
 @Controller({ path: 'roles', version: '1' })
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}

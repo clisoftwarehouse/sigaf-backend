@@ -1,9 +1,13 @@
 import { AuthGuard } from '@nestjs/passport';
 import { Get, Query, UseGuards, Controller } from '@nestjs/common';
 
+import { RoleEnum } from '@/modules/roles/roles.enum';
+import { Roles } from '@/modules/roles/roles.decorator';
+import { RolesGuard } from '@/modules/roles/roles.guard';
 import { PermissionsService } from './permissions.service';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles(RoleEnum.admin)
 @Controller({ path: 'permissions', version: '1' })
 export class PermissionsController {
   constructor(private readonly service: PermissionsService) {}

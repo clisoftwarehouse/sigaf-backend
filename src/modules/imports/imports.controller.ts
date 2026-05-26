@@ -16,6 +16,9 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 
+import { RoleEnum } from '@/modules/roles/roles.enum';
+import { Roles } from '@/modules/roles/roles.decorator';
+import { RolesGuard } from '@/modules/roles/roles.guard';
 import { ImportResultDto } from './dto/import-result.dto';
 import { TemplateBuilder } from './parsers/template-builder';
 import { ImportType, ImportsService } from './imports.service';
@@ -24,7 +27,8 @@ const ALLOWED_TYPES: ImportType[] = ['products', 'stock-initial', 'prices'];
 
 @ApiTags('Imports')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles(RoleEnum.admin, RoleEnum.gerente)
 @Controller({ path: 'imports', version: '1' })
 export class ImportsController {
   constructor(private readonly importsService: ImportsService) {}

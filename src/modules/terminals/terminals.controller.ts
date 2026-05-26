@@ -17,6 +17,9 @@ import {
 } from '@nestjs/common';
 
 import { TerminalsService } from './terminals.service';
+import { Roles } from '@/modules/roles/roles.decorator';
+import { RolesGuard } from '@/modules/roles/roles.guard';
+import { ORG_WRITERS } from '@/modules/roles/roles.constants';
 import { TerminalPairingService } from './terminal-pairing.service';
 import { PairTerminalDto, CreateTerminalDto, UpdateTerminalDto } from './dto';
 import { JwtOrTerminalApiKeyGuard } from '@/common/guards/jwt-or-terminal-api-key.guard';
@@ -71,7 +74,8 @@ export class TerminalsController {
   }
 
   @Post()
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(...ORG_WRITERS)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Crear terminal POS (con config impresora fiscal)' })
   create(@Body() dto: CreateTerminalDto) {
@@ -79,14 +83,16 @@ export class TerminalsController {
   }
 
   @Put(':id')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(...ORG_WRITERS)
   @ApiBearerAuth()
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateTerminalDto) {
     return this.service.update(id, dto);
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(...ORG_WRITERS)
   @ApiBearerAuth()
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.remove(id);
@@ -95,7 +101,8 @@ export class TerminalsController {
   // ─── Pairing tokens y apiKeys (admin) ───────────────────────────────
 
   @Post(':id/pairing-codes')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(...ORG_WRITERS)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Generar código one-shot para emparejar un PC' })
   issuePairingCode(@Param('id', ParseUUIDPipe) id: string, @Req() req: RequestWithUser) {
@@ -103,7 +110,8 @@ export class TerminalsController {
   }
 
   @Get(':id/api-keys')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(...ORG_WRITERS)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Listar apiKeys del terminal (sin valor crudo, sólo metadata)' })
   listApiKeys(@Param('id', ParseUUIDPipe) id: string) {
@@ -111,7 +119,8 @@ export class TerminalsController {
   }
 
   @Post(':id/api-keys/:keyId/revoke')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(...ORG_WRITERS)
   @ApiBearerAuth()
   @HttpCode(204)
   @ApiOperation({ summary: 'Revocar apiKey de un terminal (fuerza re-pairing)' })

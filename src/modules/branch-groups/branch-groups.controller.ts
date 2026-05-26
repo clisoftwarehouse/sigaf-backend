@@ -2,7 +2,10 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Get, Put, Body, Post, Param, Query, Delete, UseGuards, Controller, ParseUUIDPipe } from '@nestjs/common';
 
+import { Roles } from '@/modules/roles/roles.decorator';
+import { RolesGuard } from '@/modules/roles/roles.guard';
 import { BranchGroupsService } from './branch-groups.service';
+import { ORG_WRITERS } from '@/modules/roles/roles.constants';
 import {
   SetAmountRulesDto,
   AssignBranchesDto,
@@ -13,7 +16,7 @@ import {
 
 @ApiTags('Branch Groups')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller({ path: 'branch-groups', version: '1' })
 export class BranchGroupsController {
   constructor(private readonly service: BranchGroupsService) {}
@@ -34,36 +37,42 @@ export class BranchGroupsController {
   }
 
   @Post()
+  @Roles(...ORG_WRITERS)
   @ApiOperation({ summary: 'Crear grupo de sucursales' })
   create(@Body() dto: CreateBranchGroupDto) {
     return this.service.create(dto);
   }
 
   @Put(':id')
+  @Roles(...ORG_WRITERS)
   @ApiOperation({ summary: 'Actualizar grupo' })
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateBranchGroupDto) {
     return this.service.update(id, dto);
   }
 
   @Delete(':id')
+  @Roles(...ORG_WRITERS)
   @ApiOperation({ summary: 'Eliminar grupo (solo si no tiene sucursales asignadas)' })
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.remove(id);
   }
 
   @Put(':id/amount-rules')
+  @Roles(...ORG_WRITERS)
   @ApiOperation({ summary: 'Reemplazar la matriz de aprobación por monto del grupo' })
   setAmountRules(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SetAmountRulesDto) {
     return this.service.setAmountRules(id, dto);
   }
 
   @Put(':id/category-rules')
+  @Roles(...ORG_WRITERS)
   @ApiOperation({ summary: 'Reemplazar la matriz de aprobación por categoría especial' })
   setCategoryRules(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SetCategoryRulesDto) {
     return this.service.setCategoryRules(id, dto);
   }
 
   @Post(':id/branches')
+  @Roles(...ORG_WRITERS)
   @ApiOperation({ summary: 'Asignar sucursales al grupo' })
   assignBranches(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AssignBranchesDto) {
     return this.service.assignBranches(id, dto);

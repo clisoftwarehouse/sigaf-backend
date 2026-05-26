@@ -2,12 +2,15 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Get, Put, Body, Post, Param, Query, Delete, UseGuards, Controller, ParseUUIDPipe } from '@nestjs/common';
 
+import { Roles } from '@/modules/roles/roles.decorator';
+import { RolesGuard } from '@/modules/roles/roles.guard';
+import { CATALOG_WRITERS } from '@/modules/roles/roles.constants';
 import { ActiveIngredientsService } from './active-ingredients.service';
 import { CreateActiveIngredientDto, UpdateActiveIngredientDto } from './dto';
 
 @ApiTags('Active Ingredients')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller({ path: 'active-ingredients', version: '1' })
 export class ActiveIngredientsController {
   constructor(private readonly service: ActiveIngredientsService) {}
@@ -43,6 +46,7 @@ export class ActiveIngredientsController {
   }
 
   @Post('vademecum-import')
+  @Roles(...CATALOG_WRITERS)
   @ApiOperation({
     summary:
       'Importar (upsert) un principio activo desde vademecum.es con su jerarquía ATC y grupo terapéutico derivado',
@@ -57,17 +61,20 @@ export class ActiveIngredientsController {
   }
 
   @Post()
+  @Roles(...CATALOG_WRITERS)
   @ApiOperation({ summary: 'Crear principio activo' })
   create(@Body() dto: CreateActiveIngredientDto) {
     return this.service.create(dto);
   }
 
   @Put(':id')
+  @Roles(...CATALOG_WRITERS)
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateActiveIngredientDto) {
     return this.service.update(id, dto);
   }
 
   @Delete(':id')
+  @Roles(...CATALOG_WRITERS)
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.remove(id);
   }

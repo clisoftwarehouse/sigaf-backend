@@ -15,7 +15,10 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 
+import { Roles } from '@/modules/roles/roles.decorator';
 import { PromotionsService } from './promotions.service';
+import { RolesGuard } from '@/modules/roles/roles.guard';
+import { CATALOG_WRITERS } from '@/modules/roles/roles.constants';
 import { JwtOrTerminalApiKeyGuard } from '@/common/guards/jwt-or-terminal-api-key.guard';
 import {
   AddScopeDto,
@@ -27,12 +30,13 @@ import {
 
 @ApiTags('Promotions')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller({ path: 'promotions', version: '1' })
 export class PromotionsController {
   constructor(private readonly service: PromotionsService) {}
 
   @Post()
+  @Roles(...CATALOG_WRITERS)
   @ApiOperation({ summary: 'Crear promoción (con scopes opcionales). Valores siempre en USD.' })
   create(@Body() dto: CreatePromotionDto, @Request() req: { user: { id: string } }) {
     return this.service.create(dto, req.user?.id || 'system');
@@ -61,24 +65,28 @@ export class PromotionsController {
   }
 
   @Put(':id')
+  @Roles(...CATALOG_WRITERS)
   @ApiOperation({ summary: 'Actualizar campos (type y scopes no se editan aquí)' })
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdatePromotionDto) {
     return this.service.update(id, dto);
   }
 
   @Post(':id/activate')
+  @Roles(...CATALOG_WRITERS)
   @ApiOperation({ summary: 'Reactivar promoción desactivada' })
   activate(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.setActive(id, true);
   }
 
   @Post(':id/deactivate')
+  @Roles(...CATALOG_WRITERS)
   @ApiOperation({ summary: 'Desactivar promoción (sin expirar — puede reactivarse)' })
   deactivate(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.setActive(id, false);
   }
 
   @Delete(':id')
+  @Roles(...CATALOG_WRITERS)
   @HttpCode(204)
   @ApiOperation({ summary: 'Eliminar promoción definitivamente (scopes cascade)' })
   remove(@Param('id', ParseUUIDPipe) id: string) {
@@ -86,12 +94,14 @@ export class PromotionsController {
   }
 
   @Post(':id/scopes')
+  @Roles(...CATALOG_WRITERS)
   @ApiOperation({ summary: 'Agregar scope (producto / categoría / sucursal) a la promoción' })
   addScope(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AddScopeDto) {
     return this.service.addScope(id, dto);
   }
 
   @Delete(':id/scopes/:scopeId')
+  @Roles(...CATALOG_WRITERS)
   @HttpCode(204)
   @ApiOperation({ summary: 'Quitar scope de la promoción' })
   removeScope(@Param('id', ParseUUIDPipe) id: string, @Param('scopeId', ParseUUIDPipe) scopeId: string) {
