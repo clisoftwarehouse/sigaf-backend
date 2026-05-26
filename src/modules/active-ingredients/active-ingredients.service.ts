@@ -21,7 +21,10 @@ export class ActiveIngredientsService {
   ) {}
 
   async findAll(query: { search?: string; atcCode?: string }): Promise<ActiveIngredientEntity[]> {
-    const qb = this.repo.createQueryBuilder('ai').leftJoinAndSelect('ai.therapeuticUse', 'tu');
+    const qb = this.repo
+      .createQueryBuilder('ai')
+      .leftJoinAndSelect('ai.therapeuticUse', 'tu')
+      .leftJoinAndSelect('ai.therapeuticUses', 'tus');
 
     if (query.search) {
       qb.andWhere('(ai.name ILIKE :search OR ai.inn_name ILIKE :search)', { search: `%${query.search}%` });
@@ -127,22 +130,66 @@ export class ActiveIngredientsService {
   }
 
   async findOne(id: string): Promise<ActiveIngredientEntity> {
-    const item = await this.repo.findOne({ where: { id }, relations: ['therapeuticUse'] });
+    const item = await this.repo.findOne({
+      where: { id },
+      relations: ['therapeuticUse', 'therapeuticUses'],
+    });
     if (!item) throw new NotFoundException('Principio activo no encontrado');
     return item;
+  }
+
+  /**
+   * Resuelve la lista de IDs de acciones terapéuticas a aplicar al PA,
+   * unificando el campo nuevo (`therapeuticUseIds`) con el legacy
+   * (`therapeuticUseId`). Si ambos vienen, gana el array. Si ninguno, []
+   * (no cambia la asignación actual en update; en create deja vacío).
+   */
+  private resolveTherapeuticUseIds(dto: {
+    therapeuticUseId?: string;
+    therapeuticUseIds?: string[];
+  }): string[] | undefined {
+    if (Array.isArray(dto.therapeuticUseIds)) return dto.therapeuticUseIds;
+    if (dto.therapeuticUseId) return [dto.therapeuticUseId];
+    return undefined;
   }
 
   async create(dto: CreateActiveIngredientDto): Promise<ActiveIngredientEntity> {
     const exists = await this.repo.findOne({ where: { name: dto.name } });
     if (exists) throw new ConflictException('Ya existe un principio activo con ese nombre');
 
-    const item = this.repo.create(dto);
+    const therapeuticUseIds = this.resolveTherapeuticUseIds(dto) ?? [];
+    const therapeuticUses = therapeuticUseIds.length
+      ? await this.therapeuticUseRepo.find({ where: therapeuticUseIds.map((id) => ({ id })) })
+      : [];
+
+    const item = this.repo.create({
+      name: dto.name,
+      atcCode: dto.atcCode,
+      innName: dto.innName,
+      // Mantenemos therapeuticUseId (deprecated) con el primer ID para
+      // queries legacy que aún lo leen. Source of truth = M2M.
+      therapeuticUseId: therapeuticUses[0]?.id ?? null,
+      therapeuticUses,
+    });
     return this.repo.save(item);
   }
 
   async update(id: string, dto: UpdateActiveIngredientDto): Promise<ActiveIngredientEntity> {
     const item = await this.findOne(id);
-    Object.assign(item, dto);
+
+    if (dto.name !== undefined) item.name = dto.name;
+    if (dto.atcCode !== undefined) item.atcCode = dto.atcCode;
+    if (dto.innName !== undefined) item.innName = dto.innName;
+
+    const incomingIds = this.resolveTherapeuticUseIds(dto);
+    if (incomingIds !== undefined) {
+      const therapeuticUses = incomingIds.length
+        ? await this.therapeuticUseRepo.find({ where: incomingIds.map((tid) => ({ id: tid })) })
+        : [];
+      item.therapeuticUses = therapeuticUses;
+      item.therapeuticUseId = therapeuticUses[0]?.id ?? null;
+    }
+
     return this.repo.save(item);
   }
 

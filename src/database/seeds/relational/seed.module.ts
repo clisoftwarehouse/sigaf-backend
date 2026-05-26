@@ -11,6 +11,7 @@ import { DemoSeedModule } from './demo/demo-seed.module';
 import databaseConfig from '../../config/database.config';
 import { ConfigSeedModule } from './config/config-seed.module';
 import { PermissionSeedModule } from './permission/permission-seed.module';
+import { StandardizationSeedModule } from './standardization/standardization-seed.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { PermissionSeedModule } from './permission/permission-seed.module';
     PermissionSeedModule,
     UserSeedModule,
     ConfigSeedModule,
+    StandardizationSeedModule,
     DemoSeedModule,
   ],
 })

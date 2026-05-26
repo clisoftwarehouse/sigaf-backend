@@ -6,6 +6,7 @@ import { UserSeedService } from './user/user-seed.service';
 import { DemoSeedService } from './demo/demo-seed.service';
 import { ConfigSeedService } from './config/config-seed.service';
 import { PermissionSeedService } from './permission/permission-seed.service';
+import { StandardizationSeedService } from './standardization/standardization-seed.service';
 
 const runSeed = async () => {
   const app = await NestFactory.create(SeedModule);
@@ -24,7 +25,14 @@ const runSeed = async () => {
   // 4. Global config
   await app.get(ConfigSeedService).run();
 
-  // 5. Demo data: catálogos + lotes (idempotente). Usa SKIP_DEMO_SEED=1 para omitir.
+  // 5. Standardization data (acciones terapéuticas + principios activos del
+  //    Excel del cliente). Idempotente — re-ejecutable sin duplicar. Usa
+  //    SKIP_STANDARDIZATION_SEED=1 para omitir.
+  if (process.env.SKIP_STANDARDIZATION_SEED !== '1') {
+    await app.get(StandardizationSeedService).run();
+  }
+
+  // 6. Demo data: catálogos + lotes (idempotente). Usa SKIP_DEMO_SEED=1 para omitir.
   if (process.env.SKIP_DEMO_SEED !== '1') {
     await app.get(DemoSeedService).run();
   }

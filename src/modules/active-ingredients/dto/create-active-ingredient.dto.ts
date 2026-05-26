@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsUUID, IsString, MaxLength, IsOptional } from 'class-validator';
+import { IsUUID, IsArray, IsString, MaxLength, IsOptional } from 'class-validator';
 
 export class CreateActiveIngredientDto {
   @ApiProperty({ example: 'Losartán Potásico', description: 'Nombre del principio activo' })
@@ -7,13 +7,29 @@ export class CreateActiveIngredientDto {
   @MaxLength(200)
   name: string;
 
+  /**
+   * @deprecated Usa `therapeuticUseIds` para soportar M2M. Este campo se
+   * mantiene para compat con clientes legacy — si viene poblado se trata
+   * como un array de un solo elemento.
+   */
   @ApiPropertyOptional({
-    description: 'ID de la acción terapéutica (FK a therapeutic_uses)',
+    deprecated: true,
+    description: 'DEPRECATED: usar therapeuticUseIds. ID único de acción terapéutica (legacy).',
     format: 'uuid',
   })
   @IsOptional()
   @IsUUID()
   therapeuticUseId?: string;
+
+  @ApiPropertyOptional({
+    description: 'IDs de acciones terapéuticas asociadas (M2M). Un PA puede tener varias.',
+    type: [String],
+    format: 'uuid',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  therapeuticUseIds?: string[];
 
   @ApiPropertyOptional({ example: 'C09CA01', description: 'Código ATC (WHO) — estándar internacional' })
   @IsOptional()
