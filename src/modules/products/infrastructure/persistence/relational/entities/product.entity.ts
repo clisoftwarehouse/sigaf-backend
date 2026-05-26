@@ -136,11 +136,26 @@ export class ProductEntity extends EntityRelationalHelper {
   @Column('varchar', { name: 'dosage_form', length: 30, nullable: true })
   dosageForm: string | null;
 
+  /**
+   * @deprecated: ahora la línea comercial es una entidad reusable
+   * (`commercial_lines`) con FK `commercialLineId`. Este string queda
+   * para compat con consumers viejos pero el form ya no lo escribe.
+   */
   @Column('varchar', { name: 'commercial_line', length: 100, nullable: true })
   commercialLine: string | null;
 
+  @Column('uuid', { name: 'commercial_line_id', nullable: true })
+  commercialLineId: string | null;
+
+  /**
+   * @deprecated: ver `commercialVariantId`. Mismo razonamiento que
+   * `commercialLine`.
+   */
   @Column('varchar', { name: 'commercial_variant', length: 100, nullable: true })
   commercialVariant: string | null;
+
+  @Column('uuid', { name: 'commercial_variant_id', nullable: true })
+  commercialVariantId: string | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

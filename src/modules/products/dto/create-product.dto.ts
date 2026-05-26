@@ -223,8 +223,8 @@ export class CreateProductDto {
   dosageForm?: string;
 
   @ApiPropertyOptional({
-    example: 'Total 12 Clean Mint',
-    description: 'Línea o sub-marca (solo productos masivos)',
+    deprecated: true,
+    description: 'DEPRECATED: usar commercialLineId. String libre legacy.',
   })
   @IsOptional()
   @IsString()
@@ -232,13 +232,29 @@ export class CreateProductDto {
   commercialLine?: string;
 
   @ApiPropertyOptional({
-    example: 'CREMA DENTAL',
-    description: 'Variante de producto masivo (categoría retail)',
+    description: 'FK a commercial_lines (QA #93)',
+    format: 'uuid',
+  })
+  @IsOptional()
+  @IsUUID()
+  commercialLineId?: string;
+
+  @ApiPropertyOptional({
+    deprecated: true,
+    description: 'DEPRECATED: usar commercialVariantId. String libre legacy.',
   })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   commercialVariant?: string;
+
+  @ApiPropertyOptional({
+    description: 'FK a commercial_variants (QA #93)',
+    format: 'uuid',
+  })
+  @IsOptional()
+  @IsUUID()
+  commercialVariantId?: string;
 
   @ApiPropertyOptional({
     type: [CreateBarcodeDto],

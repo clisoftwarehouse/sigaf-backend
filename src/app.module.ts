@@ -45,6 +45,7 @@ import { ExchangeRatesModule } from './modules/exchange-rates/exchange-rates.mod
 import { TherapeuticUsesModule } from './modules/therapeutic-uses/therapeutic-uses.module';
 import { ActiveIngredientsModule } from './modules/active-ingredients/active-ingredients.module';
 import { InventoryTransfersModule } from './modules/inventory-transfers/inventory-transfers.module';
+import { CommercialTaxonomiesModule } from './modules/commercial-taxonomies/commercial-taxonomies.module';
 
 const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
   useClass: TypeOrmConfigService,
@@ -96,6 +97,7 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     LocationsModule,
     CategoriesModule,
     BrandsModule,
+    CommercialTaxonomiesModule,
     SuppliersModule,
     ProductsModule,
     TerminalsModule,
