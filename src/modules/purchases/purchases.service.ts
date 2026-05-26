@@ -430,12 +430,21 @@ export class PurchasesService {
     }
 
     // ─── Tolerancias y validación de discrepancias por línea (PDF §5) ────────
-    const tolerances = await this.getReceiptTolerances();
-    const ocItemLookup = await this.buildOcItemLookup(orderIds);
-    const productNameById = await this.buildProductNameLookup(dto.items.map((i) => i.productId));
-    const productTracksExpirationById = await this.buildProductTracksExpirationLookup(
-      dto.items.map((i) => i.productId),
-    );
+    // Perf (QA #119): paralelizamos los 4 lookups iniciales. En Neon
+    // serverless cada query es un RTT de 50-150ms; serializarlos sumaba
+    // ~400ms gratis. Y consolidamos product fetches en una sola query
+    // (antes hacíamos 3 sobre los mismos IDs).
+    const productIdsAll = dto.items.map((i) => i.productId);
+    const [tolerances, ocItemLookup, productLookups] = await Promise.all([
+      this.getReceiptTolerances(),
+      this.buildOcItemLookup(orderIds),
+      this.buildProductLookups(productIdsAll),
+    ]);
+    const {
+      nameById: productNameById,
+      tracksExpirationById: productTracksExpirationById,
+      taxTypeById: productTaxTypeById,
+    } = productLookups;
 
     // Validamos que la suma de cantidades de discrepancias por línea cuadre con
     // |invoiced - received|. También detectamos si alguna línea excede tolerancia.
@@ -466,18 +475,10 @@ export class PurchasesService {
     try {
       const round = (n: number) => Math.round(n * 10000) / 10000;
 
-      // IVA por línea según taxType del producto. Cargamos los productos
-      // relevantes para resolver su taxType y calcular la alícuota correcta.
-      // Medicamentos exentos no pagan IVA; misceláneos pagan general; algunos
-      // pagan reducido. El dto.taxPct llega como promedio informativo desde
-      // el frontend pero NO se aplica al subtotal — la autoridad del cálculo
-      // es el taxType de cada producto.
+      // IVA por línea según taxType del producto. productTaxTypeById ya
+      // viene del lookup unificado en `buildProductLookups` arriba (un solo
+      // round-trip a Neon para los 3 maps).
       const ivaRates = await this.getIvaRates();
-      const productIds = Array.from(new Set(dto.items.map((i) => i.productId)));
-      const productsForTax = await this.productRepo.find({
-        where: productIds.map((id) => ({ id })),
-      });
-      const productTaxTypeById = new Map(productsForTax.map((p) => [p.id, p.taxType] as const));
 
       let subtotalUsd = 0;
       let totalDiscountUsd = 0;
@@ -592,6 +593,9 @@ export class PurchasesService {
               supplierId: dto.supplierId,
             },
             userId,
+            // Perf (QA #119): reusamos el queryRunner.manager para que lot y
+            // kardex se persistan en la MISMA conexión/txn de la recepción.
+            queryRunner.manager,
           );
           lotId = lot.id;
         }
@@ -672,21 +676,26 @@ export class PurchasesService {
             latestPriceByProduct.set(item.productId, item.salePrice);
           }
         }
-        for (const [productId, priceUsd] of latestPriceByProduct) {
-          try {
-            await this.pricesService.create(
-              {
-                productId,
-                branchId: dto.branchId,
-                priceUsd,
-                notes: `Publicado desde recepción ${receiptNumber}`,
-              },
-              userId,
-            );
-          } catch {
-            // No abortamos la recepción por fallos al publicar precios.
-          }
-        }
+        // Perf (QA #119): paralelizamos y reusamos la transacción del
+        // recibo. Antes cada create abría una nueva txn (4 RTTs cada uno).
+        await Promise.all(
+          Array.from(latestPriceByProduct, async ([productId, priceUsd]) => {
+            try {
+              await this.pricesService.create(
+                {
+                  productId,
+                  branchId: dto.branchId,
+                  priceUsd,
+                  notes: `Publicado desde recepción ${receiptNumber}`,
+                },
+                userId,
+                queryRunner.manager,
+              );
+            } catch {
+              // No abortamos la recepción por fallos al publicar precios.
+            }
+          }),
+        );
       }
 
       // Auto-genera reclamo al proveedor si la recepción tiene discrepancias.
@@ -767,6 +776,7 @@ export class PurchasesService {
             supplierId: receipt.supplierId,
           },
           userId,
+          queryRunner.manager,
         );
         await queryRunner.manager.update(GoodsReceiptItemEntity, item.id, { lotId: lot.id });
       }
@@ -812,21 +822,24 @@ export class PurchasesService {
         const price = Number(item.salePrice);
         if (price > 0) latestPriceByProduct.set(item.productId, price);
       }
-      for (const [productId, priceUsd] of latestPriceByProduct) {
-        try {
-          await this.pricesService.create(
-            {
-              productId,
-              branchId: receipt.branchId,
-              priceUsd,
-              notes: `Publicado tras reaprobación de recepción ${receipt.receiptNumber}`,
-            },
-            userId,
-          );
-        } catch {
-          // No abortamos por fallo de pricing.
-        }
-      }
+      // Perf (QA #119): paralelizamos.
+      await Promise.all(
+        Array.from(latestPriceByProduct, async ([productId, priceUsd]) => {
+          try {
+            await this.pricesService.create(
+              {
+                productId,
+                branchId: receipt.branchId,
+                priceUsd,
+                notes: `Publicado tras reaprobación de recepción ${receipt.receiptNumber}`,
+              },
+              userId,
+            );
+          } catch {
+            // No abortamos por fallo de pricing.
+          }
+        }),
+      );
 
       this.logger.log(
         `[receipt ${receipt.receiptNumber}] reaprobada por user ${userId}. ${
@@ -978,6 +991,31 @@ export class PurchasesService {
     if (unique.length === 0) return new Map();
     const products = await this.productRepo.find({ where: unique.map((id) => ({ id })) });
     return new Map(products.map((p) => [p.id, p.tracksExpiration ?? true] as const));
+  }
+
+  /**
+   * Perf (QA #119): consolidación de los 3 lookups de producto en UNA query.
+   * Reemplaza buildProductNameLookup + buildProductTracksExpirationLookup +
+   * el fetch productsForTax que se hacían sobre el mismo set de IDs.
+   */
+  private async buildProductLookups(productIds: string[]): Promise<{
+    nameById: Map<string, string>;
+    tracksExpirationById: Map<string, boolean>;
+    taxTypeById: Map<string, string>;
+  }> {
+    const unique = [...new Set(productIds)];
+    if (unique.length === 0) {
+      return { nameById: new Map(), tracksExpirationById: new Map(), taxTypeById: new Map() };
+    }
+    const products = await this.productRepo.find({
+      where: unique.map((id) => ({ id })),
+      select: ['id', 'shortName', 'description', 'tracksExpiration', 'taxType'],
+    });
+    return {
+      nameById: new Map(products.map((p) => [p.id, p.shortName ?? p.description] as const)),
+      tracksExpirationById: new Map(products.map((p) => [p.id, p.tracksExpiration ?? true] as const)),
+      taxTypeById: new Map(products.map((p) => [p.id, p.taxType] as const)),
+    };
   }
 
   /**

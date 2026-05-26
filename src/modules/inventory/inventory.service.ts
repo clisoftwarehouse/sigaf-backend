@@ -1,5 +1,5 @@
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, DataSource, Repository } from 'typeorm';
+import { IsNull, DataSource, Repository, EntityManager } from 'typeorm';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 
 import { AuditService } from '../audit/audit.service';
@@ -211,10 +211,18 @@ export class InventoryService {
     return this.addExpirySignal(lot);
   }
 
-  async createLot(dto: CreateInventoryLotDto, userId: string): Promise<InventoryLotEntity> {
+  /**
+   * @param manager opcional: si se pasa, el lote y el kardex se persisten
+   * dentro de esa misma transacción. Importante para `purchases.createReceipt`
+   * que abre un queryRunner — sin esto cada `createLot` adquiría una conexión
+   * Neon fresca (50-150ms cada una) y se acumulaban N×3 round-trips por
+   * recepción (QA #119).
+   */
+  async createLot(dto: CreateInventoryLotDto, userId: string, manager?: EntityManager): Promise<InventoryLotEntity> {
     const marginPct = dto.salePrice > 0 && dto.costUsd > 0 ? ((dto.salePrice - dto.costUsd) / dto.costUsd) * 100 : null;
+    const lotRepo = manager ? manager.getRepository(InventoryLotEntity) : this.lotRepo;
 
-    const lot = this.lotRepo.create({
+    const lot = lotRepo.create({
       ...dto,
       expirationDate: new Date(dto.expirationDate),
       manufactureDate: dto.manufactureDate ? new Date(dto.manufactureDate) : null,
@@ -222,19 +230,22 @@ export class InventoryService {
       marginPct,
     });
 
-    const saved = await this.lotRepo.save(lot);
+    const saved = await lotRepo.save(lot);
 
-    await this.createKardexEntry({
-      productId: saved.productId,
-      branchId: saved.branchId,
-      lotId: saved.id,
-      movementType: dto.acquisitionType === 'consignment' ? 'consignment_entry' : 'purchase_entry',
-      quantity: dto.quantityReceived,
-      unitCostUsd: dto.costUsd,
-      referenceType: 'inventory_lot',
-      referenceId: saved.id,
-      userId,
-    });
+    await this.createKardexEntry(
+      {
+        productId: saved.productId,
+        branchId: saved.branchId,
+        lotId: saved.id,
+        movementType: dto.acquisitionType === 'consignment' ? 'consignment_entry' : 'purchase_entry',
+        quantity: dto.quantityReceived,
+        unitCostUsd: dto.costUsd,
+        referenceType: 'inventory_lot',
+        referenceId: saved.id,
+        userId,
+      },
+      manager,
+    );
 
     return saved;
   }
@@ -1409,20 +1420,26 @@ export class InventoryService {
    * Si se llama sin haber persistido aún el cambio, `balance_after` quedará
    * una unidad "atrasada".
    */
-  private async createKardexEntry(data: {
-    productId: string;
-    branchId: string;
-    lotId?: string;
-    movementType: string;
-    quantity: number;
-    unitCostUsd?: number;
-    referenceType?: string;
-    referenceId?: string;
-    notes?: string;
-    userId: string;
-    terminalId?: string;
-  }): Promise<KardexEntity> {
-    const currentStock = await this.lotRepo
+  private async createKardexEntry(
+    data: {
+      productId: string;
+      branchId: string;
+      lotId?: string;
+      movementType: string;
+      quantity: number;
+      unitCostUsd?: number;
+      referenceType?: string;
+      referenceId?: string;
+      notes?: string;
+      userId: string;
+      terminalId?: string;
+    },
+    manager?: EntityManager,
+  ): Promise<KardexEntity> {
+    const lotRepo = manager ? manager.getRepository(InventoryLotEntity) : this.lotRepo;
+    const kardexRepo = manager ? manager.getRepository(KardexEntity) : this.kardexRepo;
+
+    const currentStock = await lotRepo
       .createQueryBuilder('lot')
       .select('COALESCE(SUM(lot.quantityAvailable), 0)', 'total')
       .where('lot.productId = :productId', { productId: data.productId })
@@ -1431,13 +1448,13 @@ export class InventoryService {
 
     const balanceAfter = parseFloat(currentStock?.total ?? '0') || 0;
 
-    const kardex = this.kardexRepo.create({
+    const kardex = kardexRepo.create({
       ...data,
       lotId: data.lotId || null,
       balanceAfter,
     });
 
-    return this.kardexRepo.save(kardex);
+    return kardexRepo.save(kardex);
   }
 
   /**

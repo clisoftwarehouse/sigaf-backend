@@ -1,6 +1,6 @@
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, MoreThan, Repository, DataSource, LessThanOrEqual } from 'typeorm';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { IsNull, MoreThan, Repository, DataSource, EntityManager, LessThanOrEqual } from 'typeorm';
 
 import { AuditService } from '../audit/audit.service';
 import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
@@ -125,8 +125,14 @@ export class PricesService {
    * pueda haber dos precios vigentes simultáneos para el mismo scope
    * aunque dos requests lleguen en paralelo (el segundo falla con conflict).
    */
-  async create(dto: CreatePriceDto, userId: string): Promise<PriceEntity> {
-    return this.dataSource.transaction(async (manager) => {
+  /**
+   * @param externalManager opcional: si se pasa, reutilizamos esa transacción
+   * en lugar de abrir una nueva. Crítico para flujos batch (purchases.createReceipt
+   * publica N precios — sin esto cada uno abría una conexión Neon nueva,
+   * QA #119).
+   */
+  async create(dto: CreatePriceDto, userId: string, externalManager?: EntityManager): Promise<PriceEntity> {
+    const runner = async (manager: EntityManager) => {
       const effectiveFrom = dto.effectiveFrom ? new Date(dto.effectiveFrom) : new Date();
 
       // Cerrar vigencia abierta del mismo scope (si existe).
@@ -150,7 +156,8 @@ export class PricesService {
       });
 
       return manager.save(price);
-    });
+    };
+    return externalManager ? runner(externalManager) : this.dataSource.transaction(runner);
   }
 
   async findAll(query: QueryPricesDto): Promise<{ data: PriceEntity[]; total: number; page: number; limit: number }> {
