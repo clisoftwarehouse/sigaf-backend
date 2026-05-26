@@ -23,7 +23,7 @@ import { ProductEntity } from '@/modules/products/infrastructure/persistence/rel
  */
 export interface ResolvedPrice {
   priceUsd: number;
-  source: 'branch_override' | 'global' | 'pmvp_fallback';
+  source: 'branch_override' | 'global' | 'any_branch_fallback' | 'pmvp_fallback';
   priceId: string;
   effectiveFrom: Date;
   notes: string | null;
@@ -312,7 +312,42 @@ export class PricesService {
       };
     }
 
-    // 3. Fallback al `product.pmvp` — mismo comportamiento que `/v1/products`
+    // 3. Fallback any-branch: cuando la consulta NO pasó branchId (típica
+    // de vistas administrativas que no están scoped a una sucursal) y no
+    // hay precio global, devolvemos el precio vigente más reciente de
+    // cualquier sucursal. Evita "Sin precio publicado" en el detalle de
+    // producto cuando sí hay precios pero solo por sucursal.
+    if (!query.branchId) {
+      const anyBranch = await this.repo.findOne({
+        where: [
+          {
+            productId: query.productId,
+            effectiveFrom: LessThanOrEqual(at),
+            effectiveTo: IsNull(),
+          },
+          {
+            productId: query.productId,
+            effectiveFrom: LessThanOrEqual(at),
+            effectiveTo: MoreThan(at),
+          },
+        ],
+        order: { effectiveFrom: 'DESC' },
+      });
+      if (anyBranch) {
+        return {
+          priceUsd: Number(anyBranch.priceUsd),
+          source: 'any_branch_fallback',
+          priceId: anyBranch.id,
+          effectiveFrom: anyBranch.effectiveFrom,
+          notes: anyBranch.notes,
+          productId: query.productId,
+          branchId: anyBranch.branchId,
+          resolvedAt: at,
+        };
+      }
+    }
+
+    // 4. Fallback al `product.pmvp` — mismo comportamiento que `/v1/products`
     // usa para enriquecer el catálogo del POS. Sin esto el admin veía "Sin
     // precio publicado" en stock detail aunque el POS sí mostraba precio
     // (vía pmvp), creando confusión.

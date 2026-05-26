@@ -211,23 +211,64 @@ export class PurchasesService {
       throw new BadRequestException('No se puede modificar una orden completada o cancelada');
     }
 
+    // Reemplazo de items SOLO en draft: en otros estados pudo haber
+    // recepciones contra la OC y borrar items causaría inconsistencias en
+    // kardex y reportes. Para esos casos usar cancelOrder + crear nueva.
+    if (dto.items != null) {
+      if (order.status !== 'draft') {
+        throw new BadRequestException(
+          'Solo se pueden modificar los ítems de una OC en estado borrador. Para órdenes enviadas o parciales, cancela y crea una nueva.',
+        );
+      }
+      if (dto.items.length === 0) {
+        throw new BadRequestException('La orden debe tener al menos un ítem');
+      }
+    }
+
     const oldValues = { ...order };
-    Object.assign(order, {
-      ...dto,
-      expectedDate: dto.expectedDate ? new Date(dto.expectedDate) : order.expectedDate,
-    });
-    const updated = await this.orderRepo.save(order);
 
-    await this.auditService.log({
-      tableName: 'purchase_orders',
-      recordId: id,
-      action: 'UPDATE',
-      oldValues,
-      newValues: updated,
-      userId,
-    });
+    return this.dataSource.transaction(async (manager) => {
+      // Header (status / expectedDate / notes)
+      Object.assign(order, {
+        ...(dto.status !== undefined && { status: dto.status }),
+        ...(dto.notes !== undefined && { notes: dto.notes }),
+        expectedDate: dto.expectedDate ? new Date(dto.expectedDate) : order.expectedDate,
+      });
+      await manager.save(order);
 
-    return this.findOneOrder(id);
+      // Items (reemplazo total). unitCostUsd y subtotalUsd quedan en 0: la
+      // OC ya no carga costos (Tier A) — el costo real se captura en la
+      // recepción contra la factura del proveedor.
+      if (dto.items != null) {
+        await manager.delete(PurchaseOrderItemEntity, { orderId: id });
+        const newItems = dto.items.map((it) =>
+          manager.create(PurchaseOrderItemEntity, {
+            orderId: id,
+            productId: it.productId,
+            quantity: it.quantity,
+            unitCostUsd: 0,
+            discountPct: 0,
+            subtotalUsd: 0,
+          }),
+        );
+        await manager.save(newItems);
+        order.subtotalUsd = 0;
+        order.taxUsd = 0;
+        order.totalUsd = 0;
+        await manager.save(order);
+      }
+
+      await this.auditService.log({
+        tableName: 'purchase_orders',
+        recordId: id,
+        action: 'UPDATE',
+        oldValues,
+        newValues: order,
+        userId,
+      });
+
+      return this.findOneOrder(id);
+    });
   }
 
   /**
