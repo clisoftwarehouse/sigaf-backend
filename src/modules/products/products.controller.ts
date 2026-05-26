@@ -16,6 +16,8 @@ import {
 } from '@nestjs/common';
 
 import { ProductsService } from './products.service';
+import { PermissionsGuard } from '@/modules/permissions/permissions.guard';
+import { RequirePermissions } from '@/modules/permissions/permissions.decorator';
 import { JwtOrTerminalApiKeyGuard } from '@/common/guards/jwt-or-terminal-api-key.guard';
 import {
   AddBarcodeDto,
@@ -28,7 +30,7 @@ import {
 
 @ApiTags('Products')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), PermissionsGuard)
 @Controller({ path: 'products', version: '1' })
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
@@ -55,12 +57,14 @@ export class ProductsController {
   }
 
   @Post()
+  @RequirePermissions('products.create')
   @ApiOperation({ summary: 'Crear producto con barcodes e ingredientes opcionales' })
   create(@Body() dto: CreateProductDto, @Request() req: { user?: { id: string } }) {
     return this.productsService.create(dto, req.user?.id);
   }
 
   @Put(':id')
+  @RequirePermissions('products.edit')
   @ApiOperation({ summary: 'Actualizar producto (registra en audit_log)' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -71,12 +75,14 @@ export class ProductsController {
   }
 
   @Delete(':id')
+  @RequirePermissions('products.delete')
   @ApiOperation({ summary: 'Soft-delete producto (solo si stock=0)' })
   remove(@Param('id', ParseUUIDPipe) id: string, @Request() req: { user?: { id: string } }) {
     return this.productsService.remove(id, req.user?.id);
   }
 
   @Patch(':id/restore')
+  @RequirePermissions('products.edit')
   @ApiOperation({ summary: 'Reactivar producto inactivo' })
   restore(@Param('id', ParseUUIDPipe) id: string, @Request() req: { user?: { id: string } }) {
     return this.productsService.restore(id, req.user?.id);
@@ -85,12 +91,14 @@ export class ProductsController {
   // ─── INGREDIENTS ───────────────────────────────────────────────────────
 
   @Post(':id/ingredients')
+  @RequirePermissions('products.edit')
   @ApiOperation({ summary: 'Agregar principio activo a producto' })
   addIngredient(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AddIngredientDto) {
     return this.productsService.addIngredient(id, dto);
   }
 
   @Delete(':id/ingredients/:ingredientId')
+  @RequirePermissions('products.edit')
   @ApiOperation({ summary: 'Eliminar principio activo de producto' })
   removeIngredient(@Param('id', ParseUUIDPipe) id: string, @Param('ingredientId', ParseUUIDPipe) ingredientId: string) {
     return this.productsService.removeIngredient(id, ingredientId);
@@ -126,18 +134,21 @@ export class ProductsController {
   }
 
   @Post(':id/barcodes')
+  @RequirePermissions('products.edit')
   @ApiOperation({ summary: 'Agregar código de barras a producto' })
   addBarcode(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AddBarcodeDto) {
     return this.productsService.addBarcode(id, dto);
   }
 
   @Delete(':id/barcodes/:barcodeId')
+  @RequirePermissions('products.edit')
   @ApiOperation({ summary: 'Eliminar código de barras de producto' })
   removeBarcode(@Param('id', ParseUUIDPipe) id: string, @Param('barcodeId', ParseUUIDPipe) barcodeId: string) {
     return this.productsService.removeBarcode(id, barcodeId);
   }
 
   @Put(':id/barcodes/:barcodeId')
+  @RequirePermissions('products.edit')
   @ApiOperation({ summary: 'Actualizar código de barras existente (valor, tipo, isPrimary)' })
   updateBarcode(
     @Param('id', ParseUUIDPipe) id: string,

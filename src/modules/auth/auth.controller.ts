@@ -41,10 +41,12 @@ export class AuthController {
   @SerializeOptions({ groups: ['me'] })
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
-  @ApiOperation({ summary: 'Obtener usuario actual' })
+  @ApiOperation({
+    summary: 'Obtener usuario actual con sus permission codes para gating de UI',
+  })
   @ApiOkResponse({ type: User })
   @HttpCode(HttpStatus.OK)
-  public me(@Request() request): Promise<NullableType<User>> {
+  public me(@Request() request): Promise<NullableType<User & { permissions: string[] }>> {
     return this.service.me(request.user);
   }
 

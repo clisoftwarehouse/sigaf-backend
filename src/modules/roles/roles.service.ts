@@ -3,6 +3,7 @@ import { In, DataSource, Repository } from 'typeorm';
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 
 import { CreateRoleDto, UpdateRoleDto } from './dto';
+import { PermissionsService } from '@/modules/permissions/permissions.service';
 import { RoleEntity } from './infrastructure/persistence/relational/entities/role.entity';
 import { PermissionEntity } from '@/modules/permissions/infrastructure/persistence/relational/entities/permission.entity';
 import { RolePermissionEntity } from '@/modules/permissions/infrastructure/persistence/relational/entities/role-permission.entity';
@@ -19,6 +20,7 @@ export class RolesService {
     @InjectRepository(PermissionEntity)
     private readonly permissionRepository: Repository<PermissionEntity>,
     private readonly dataSource: DataSource,
+    private readonly permissionsService: PermissionsService,
   ) {}
 
   async findAll(): Promise<RoleWithPermissions[]> {
@@ -88,6 +90,9 @@ export class RolesService {
           );
           await manager.save(links);
         }
+        // Invalida cache de permisos del rol: el próximo request del usuario
+        // verá los nuevos permisos inmediatamente sin esperar el TTL ni re-login.
+        this.permissionsService.invalidateRoleCache(id);
       }
 
       return this.attachPermissions(role);

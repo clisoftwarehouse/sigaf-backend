@@ -4,9 +4,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PermissionSeedService } from './permission-seed.service';
 import { RoleEntity } from '@/modules/roles/infrastructure/persistence/relational/entities/role.entity';
 import { PermissionEntity } from '@/modules/permissions/infrastructure/persistence/relational/entities/permission.entity';
+import { RolePermissionEntity } from '@/modules/permissions/infrastructure/persistence/relational/entities/role-permission.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([PermissionEntity, RoleEntity])],
+  imports: [TypeOrmModule.forFeature([PermissionEntity, RoleEntity, RolePermissionEntity])],
   providers: [PermissionSeedService],
   exports: [PermissionSeedService],
 })

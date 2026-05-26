@@ -20,6 +20,7 @@ import { AllConfigType } from '@/config/config.type';
 import { UsersService } from '../users/users.service';
 import { SessionService } from '../session/session.service';
 import { NullableType } from '@/common/utils/types/nullable.type';
+import { PermissionsService } from '../permissions/permissions.service';
 import { JwtPayloadType, JwtRefreshPayloadType } from './strategies/types';
 import { AuthUpdateDto, LoginResponseDto, AuthEmailLoginDto } from './dto';
 import { UserEntity } from '../users/infrastructure/persistence/relational/entities/user.entity';
@@ -34,6 +35,7 @@ export class AuthService {
     private usersService: UsersService,
     private sessionService: SessionService,
     private configService: ConfigService<AllConfigType>,
+    private permissionsService: PermissionsService,
     @InjectRepository(UserEntity)
     private readonly userRepo: Repository<UserEntity>,
   ) {}
@@ -53,16 +55,29 @@ export class AuthService {
     await this.userRepo.save(user);
   }
 
-  async verifySupervisorPin(args: { userId: string; pin: string }): Promise<{ valid: boolean; userId: string }> {
+  async verifySupervisorPin(args: {
+    userId: string;
+    pin: string;
+  }): Promise<{ valid: boolean; userId: string; permissions: string[] }> {
     if (!PIN_REGEX.test(args.pin)) {
-      return { valid: false, userId: args.userId };
+      return { valid: false, userId: args.userId, permissions: [] };
     }
-    const user = await this.userRepo.findOne({ where: { id: args.userId, isActive: true } });
+    const user = await this.userRepo.findOne({
+      where: { id: args.userId, isActive: true },
+      relations: ['role'],
+    });
     if (!user || !user.supervisorPinHash) {
-      return { valid: false, userId: args.userId };
+      return { valid: false, userId: args.userId, permissions: [] };
     }
     const ok = await bcrypt.compare(args.pin, user.supervisorPinHash);
-    return { valid: ok, userId: args.userId };
+    // Adjuntamos los permisos del supervisor incluso si PIN inválido (vacío).
+    // Cuando es válido, el POS los usa para decidir si esa persona puede
+    // autorizar la operación (ej. anular ticket requiere `pos.void`).
+    if (!ok) return { valid: false, userId: args.userId, permissions: [] };
+    const codes = user.role?.id
+      ? Array.from(await this.permissionsService.getPermissionCodesByRoleId(user.role.id))
+      : [];
+    return { valid: true, userId: args.userId, permissions: codes };
   }
 
   /**
@@ -75,18 +90,30 @@ export class AuthService {
    * NO devuelve datos sensibles adicionales (email, role, etc.) — solo lo
    * mínimo para autorizar acciones de supervisor.
    */
-  async listSupervisorsWithPin(): Promise<Array<{ id: string; fullName: string; pinHash: string }>> {
+  async listSupervisorsWithPin(): Promise<
+    Array<{ id: string; fullName: string; pinHash: string; permissions: string[] }>
+  > {
     const users = await this.userRepo
       .createQueryBuilder('u')
+      .leftJoinAndSelect('u.role', 'role')
       .where('u.is_active = true')
       .andWhere('u.supervisor_pin_hash IS NOT NULL')
-      .select(['u.id', 'u.fullName', 'u.supervisorPinHash'])
       .getMany();
-    return users.map((u) => ({
-      id: u.id,
-      fullName: u.fullName,
-      pinHash: u.supervisorPinHash as string,
-    }));
+    // Adjuntamos permisos a cada supervisor para que el POS offline pueda
+    // decidir si esa persona puede autorizar la operación sin pegar al backend.
+    // Ej: anular ticket requiere `pos.void` — si el supervisor cacheado no lo
+    // tiene, el POS rechaza incluso si el PIN es correcto.
+    const result = [] as Array<{ id: string; fullName: string; pinHash: string; permissions: string[] }>;
+    for (const u of users) {
+      const codes = u.role?.id ? Array.from(await this.permissionsService.getPermissionCodesByRoleId(u.role.id)) : [];
+      result.push({
+        id: u.id,
+        fullName: u.fullName,
+        pinHash: u.supervisorPinHash as string,
+        permissions: codes,
+      });
+    }
+    return result;
   }
 
   /**
@@ -179,8 +206,16 @@ export class AuthService {
     };
   }
 
-  async me(userJwtPayload: JwtPayloadType): Promise<NullableType<User>> {
-    return this.usersService.findById(userJwtPayload.id);
+  async me(userJwtPayload: JwtPayloadType): Promise<NullableType<User & { permissions: string[] }>> {
+    const user = await this.usersService.findById(userJwtPayload.id);
+    if (!user) return null;
+    // Adjuntamos los permission codes del rol para que el frontend (admin
+    // y POS) los use para gating de UI sin tener que hacer una request
+    // adicional. El POS los cachea junto al user para que `usePermissions()`
+    // funcione 100% offline.
+    const roleId = user.role?.id;
+    const codes = roleId ? Array.from(await this.permissionsService.getPermissionCodesByRoleId(roleId)) : [];
+    return Object.assign(user, { permissions: codes });
   }
 
   async update(userJwtPayload: JwtPayloadType, userDto: AuthUpdateDto): Promise<NullableType<User>> {

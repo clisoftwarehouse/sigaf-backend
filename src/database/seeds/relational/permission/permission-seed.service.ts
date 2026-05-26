@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { RoleEntity } from '@/modules/roles/infrastructure/persistence/relational/entities/role.entity';
 import { PermissionEntity } from '@/modules/permissions/infrastructure/persistence/relational/entities/permission.entity';
+import { RolePermissionEntity } from '@/modules/permissions/infrastructure/persistence/relational/entities/role-permission.entity';
 
 const PERMISSIONS = [
   // Auth
@@ -53,23 +54,43 @@ const PERMISSIONS = [
   { code: 'admin.config', description: 'Configuración global', module: 'admin' },
 ];
 
-// Role permissions mapping (for reference, to be used when role_permissions table is seeded)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// Mapping rol → permisos. Fuente de verdad para la asignación inicial.
+// Cuando agregues permisos nuevos o cambien las reglas operativas, edita
+// PERMISSIONS arriba y este mapping; el seed es idempotente y reconcilia.
+//
+// Diseño:
+//   - `administrador` siempre tiene TODO (espejo del array completo).
+//   - `farmaceutico_regente`: catálogo (view), inventario y récipes.
+//     Puede registrar récipes médicos y consultar dispensaciones.
+//   - `cajero`: opera el POS — vende, devuelve, abre/cierra caja, busca clientes.
+//     NO puede anular tickets (eso requiere supervisor con `pos.void`).
+//   - `gerente_inventario`: catálogo full, inventario, compras, proveedores,
+//     traslados. NO toca usuarios ni configuración global.
 const ROLE_PERMISSIONS: Record<string, string[]> = {
   administrador: PERMISSIONS.map((p) => p.code),
   farmaceutico_regente: [
     'auth.login',
     'products.view',
-    'products.create',
-    'products.edit',
-    'products.delete',
     'inventory.view',
-    'inventory.adjust',
-    'inventory.transfer',
-    'inventory.count',
+    'prescriptions.view',
+    'prescriptions.manage',
+    'customers.view',
     'audit.view',
   ],
-  cajero: ['auth.login', 'products.view', 'inventory.view', 'pos.sell', 'pos.void', 'pos.return', 'pos.cash_session'],
+  cajero: [
+    'auth.login',
+    'products.view',
+    'inventory.view',
+    'pos.sell',
+    'pos.return',
+    'pos.cash_session',
+    'cash.open',
+    'cash.close',
+    'cash.view',
+    'customers.view',
+    'customers.manage',
+    'prescriptions.view',
+  ],
   gerente_inventario: [
     'auth.login',
     'products.view',
@@ -85,7 +106,15 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'purchases.receive',
     'suppliers.view',
     'suppliers.manage',
+    'cash.view',
+    'cash.adjust',
     'audit.view',
+    // Operaciones de supervisión en caja: el gerente es quien físicamente
+    // autoriza anulaciones y devoluciones cuando un cajero las requiere.
+    // Sin estos permisos, no podría usar su PIN para autorizar en el POS.
+    'pos.void',
+    'pos.return',
+    'pos.discount.override',
   ],
 };
 
@@ -96,21 +125,68 @@ export class PermissionSeedService {
     private permissionRepository: Repository<PermissionEntity>,
     @InjectRepository(RoleEntity)
     private roleRepository: Repository<RoleEntity>,
+    @InjectRepository(RolePermissionEntity)
+    private rolePermissionRepository: Repository<RolePermissionEntity>,
   ) {}
 
   async run() {
-    // Create permissions
+    // 1) Upsert de permisos. Si agregaste códigos nuevos al PERMISSIONS array,
+    // se crean acá; los existentes mantienen su descripción salvo que cambie.
     for (const perm of PERMISSIONS) {
-      const exists = await this.permissionRepository.count({ where: { code: perm.code } });
-      if (!exists) {
+      const existing = await this.permissionRepository.findOne({ where: { code: perm.code } });
+      if (!existing) {
         await this.permissionRepository.save(this.permissionRepository.create(perm));
         console.log(`Permission '${perm.code}' created`);
+        continue;
+      }
+      if (existing.description !== perm.description || existing.module !== perm.module) {
+        existing.description = perm.description;
+        existing.module = perm.module;
+        await this.permissionRepository.save(existing);
+        console.log(`Permission '${perm.code}' updated`);
       }
     }
 
-    // Assign permissions to roles (via role_permissions table)
-    // Note: This requires a many-to-many relationship setup
-    // For now, we'll log the assignments that should be made
-    console.log('Permission assignments configured. Run role_permissions seed separately if needed.');
+    // 2) Sincronizar role_permissions. La estrategia es reconciliar (no purgar):
+    // borramos las asignaciones del rol que ya no estén en el mapping y agregamos
+    // las nuevas. Esto permite que el admin agregue permisos extra a un rol
+    // desde la UI sin que el seed se los quite, MIENTRAS QUE el seed asegura
+    // un piso mínimo (los del mapping). Para esto:
+    //   - Iteramos cada rol del mapping.
+    //   - Calculamos qué permisos faltan y los insertamos.
+    //   - NO borramos los que el admin agregó manualmente.
+    for (const [roleName, codes] of Object.entries(ROLE_PERMISSIONS)) {
+      const role = await this.roleRepository.findOne({ where: { name: roleName } });
+      if (!role) {
+        console.warn(`Role '${roleName}' not found — saltando asignación de permisos`);
+        continue;
+      }
+      // Guard defensivo: TypeORM `IN ()` con array vacío fallaría con sintaxis
+      // SQL inválida. El mapping nunca tiene listas vacías, pero el guard
+      // protege contra cambios futuros que las introduzcan.
+      if (codes.length === 0) continue;
+      const permissionEntities = await this.permissionRepository
+        .createQueryBuilder('p')
+        .where('p.code IN (:...codes)', { codes })
+        .getMany();
+      if (permissionEntities.length === 0) continue;
+
+      const existingLinks = await this.rolePermissionRepository.find({
+        where: { roleId: role.id },
+      });
+      const existingPermIds = new Set(existingLinks.map((l) => l.permissionId));
+
+      const toAdd = permissionEntities.filter((p) => !existingPermIds.has(p.id));
+      if (toAdd.length === 0) continue;
+      for (const perm of toAdd) {
+        await this.rolePermissionRepository.save(
+          this.rolePermissionRepository.create({
+            roleId: role.id,
+            permissionId: perm.id,
+          }),
+        );
+      }
+      console.log(`Role '${roleName}' +${toAdd.length} permission(s)`);
+    }
   }
 }
