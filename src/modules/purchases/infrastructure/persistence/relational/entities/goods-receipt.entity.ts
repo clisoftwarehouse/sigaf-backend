@@ -35,6 +35,31 @@ export class GoodsReceiptEntity extends EntityRelationalHelper {
   @Column('decimal', { name: 'total_discount_usd', precision: 18, scale: 4, default: 0 })
   totalDiscountUsd: number;
 
+  // ─── Descuentos comerciales por documento (QA #104) ───────────────────
+  // Capturados en cada recepción para reflejar lo que dice la factura del
+  // proveedor (puede diferir del % típico del maestro). Aplicación:
+  //  - header: sobre el subtotal lineal
+  //  - volume: sobre el subtotal lineal (independiente de header)
+  //  - prompt_payment: sobre (netSubtotal + IVA), después de header/volume
+
+  @Column('decimal', { name: 'header_discount_pct', precision: 5, scale: 2, default: 0 })
+  headerDiscountPct: number;
+
+  @Column('decimal', { name: 'header_discount_usd', precision: 18, scale: 4, default: 0 })
+  headerDiscountUsd: number;
+
+  @Column('decimal', { name: 'prompt_payment_discount_pct', precision: 5, scale: 2, default: 0 })
+  promptPaymentDiscountPct: number;
+
+  @Column('decimal', { name: 'prompt_payment_discount_usd', precision: 18, scale: 4, default: 0 })
+  promptPaymentDiscountUsd: number;
+
+  @Column('decimal', { name: 'volume_discount_pct', precision: 5, scale: 2, default: 0 })
+  volumeDiscountPct: number;
+
+  @Column('decimal', { name: 'volume_discount_usd', precision: 18, scale: 4, default: 0 })
+  volumeDiscountUsd: number;
+
   @Column('decimal', { name: 'tax_pct', precision: 5, scale: 2, default: 0 })
   taxPct: number;
 

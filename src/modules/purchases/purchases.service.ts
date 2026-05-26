@@ -500,14 +500,35 @@ export class PurchasesService {
         return { item, discountPct, itemSubtotal: round(itemSubtotal) };
       });
 
+      // QA #104: descuentos comerciales a nivel documento. Orden de aplicación:
+      //   1. Lineal (ya aplicado por línea en el loop de arriba) → subtotalUsd
+      //   2. Header + Volume sobre subtotalUsd → netSubtotal
+      //   3. IVA recalculado sobre netSubtotal (proporción del taxUsd original)
+      //   4. Prompt-payment sobre (netSubtotal + tax)
+      //   5. IGTF sobre (netSubtotal + tax - promptPay), solo si moneda USD
+      const headerDiscPct = dto.headerDiscountPct || 0;
+      const volumeDiscPct = dto.volumeDiscountPct || 0;
+      const promptPayDiscPct = dto.promptPaymentDiscountPct || 0;
+      const headerDiscountUsd = subtotalUsd * (headerDiscPct / 100);
+      const volumeDiscountUsd = subtotalUsd * (volumeDiscPct / 100);
+      const netSubtotalUsd = subtotalUsd - headerDiscountUsd - volumeDiscountUsd;
+      // El IVA se calcula sobre el net del descuento (es lo que cobra el
+      // proveedor en factura). Como el taxUsd original estaba sobre subtotal
+      // bruto, lo escalamos proporcionalmente para mantener la composición
+      // per-producto correcta.
+      const taxScale = subtotalUsd > 0 ? netSubtotalUsd / subtotalUsd : 0;
+      const adjustedTaxUsd = taxUsd * taxScale;
+      const promptPaymentDiscountUsd = (netSubtotalUsd + adjustedTaxUsd) * (promptPayDiscPct / 100);
+
       // Promedio ponderado para registrar en el receipt (informativo).
-      const taxPct = subtotalUsd > 0 ? (taxUsd / subtotalUsd) * 100 : 0;
+      const taxPct = netSubtotalUsd > 0 ? (adjustedTaxUsd / netSubtotalUsd) * 100 : 0;
       // IGTF (3% Venezuela) sólo aplica a pagos en divisas. Si la factura
       // del proveedor está en Bs., no aplica IGTF — sin importar lo que
       // venga configurado globalmente.
       const igtfPct = nativeContext.currency === 'VES' ? 0 : dto.igtfPct || 0;
-      const igtfUsd = (subtotalUsd + taxUsd) * (igtfPct / 100);
-      const totalUsd = subtotalUsd + taxUsd + igtfUsd;
+      const igtfBase = netSubtotalUsd + adjustedTaxUsd - promptPaymentDiscountUsd;
+      const igtfUsd = igtfBase * (igtfPct / 100);
+      const totalUsd = netSubtotalUsd + adjustedTaxUsd - promptPaymentDiscountUsd + igtfUsd;
 
       const receipt = this.receiptRepo.create({
         branchId: dto.branchId,
@@ -518,8 +539,14 @@ export class PurchasesService {
         notes: dto.notes || null,
         subtotalUsd: round(subtotalUsd),
         totalDiscountUsd: round(totalDiscountUsd),
+        headerDiscountPct: headerDiscPct,
+        headerDiscountUsd: round(headerDiscountUsd),
+        volumeDiscountPct: volumeDiscPct,
+        volumeDiscountUsd: round(volumeDiscountUsd),
+        promptPaymentDiscountPct: promptPayDiscPct,
+        promptPaymentDiscountUsd: round(promptPaymentDiscountUsd),
         taxPct,
-        taxUsd: round(taxUsd),
+        taxUsd: round(adjustedTaxUsd),
         igtfPct,
         igtfUsd: round(igtfUsd),
         totalUsd: round(totalUsd),

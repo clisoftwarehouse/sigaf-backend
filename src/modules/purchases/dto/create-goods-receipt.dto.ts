@@ -162,6 +162,37 @@ export class CreateGoodsReceiptDto {
   @Max(100)
   igtfPct?: number;
 
+  // QA #104: descuentos comerciales a nivel documento.
+  @ApiPropertyOptional({
+    example: 5,
+    description: 'Descuento de cabecera (% sobre subtotal).',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  headerDiscountPct?: number;
+
+  @ApiPropertyOptional({
+    example: 2,
+    description: 'Descuento por pronto pago (% sobre subtotal + IVA).',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  promptPaymentDiscountPct?: number;
+
+  @ApiPropertyOptional({
+    example: 3,
+    description: 'Descuento por volumen (% sobre subtotal).',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  volumeDiscountPct?: number;
+
   @ApiPropertyOptional({ description: 'Notas' })
   @IsOptional()
   @IsString()
