@@ -114,6 +114,14 @@ export class CreateProductDto {
   @IsBoolean()
   isAntibiotic?: boolean;
 
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Producto importado — puede activar aprobación especial en OCs',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isImported?: boolean;
+
   @ApiPropertyOptional({ example: false, description: 'Requiere récipe médico' })
   @IsOptional()
   @IsBoolean()
