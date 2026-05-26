@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { SalesService } from './sales.service';
 import { SalesController } from './sales.controller';
+import { PricesModule } from '../prices/prices.module';
+import { TerminalsModule } from '../terminals/terminals.module';
 import { ExchangeRatesModule } from '../exchange-rates/exchange-rates.module';
 import { SaleTicketEntity } from './infrastructure/persistence/relational/entities/sale-ticket.entity';
 import { KardexEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/kardex.entity';
@@ -32,6 +34,8 @@ import { PrescriptionItemEntity } from '@/modules/prescriptions/infrastructure/p
       PrescriptionItemEntity,
     ]),
     ExchangeRatesModule,
+    PricesModule,
+    TerminalsModule,
   ],
   controllers: [SalesController],
   providers: [SalesService],

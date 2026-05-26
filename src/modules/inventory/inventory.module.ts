@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuditModule } from '../audit/audit.module';
 import { InventoryService } from './inventory.service';
 import { InventoryController } from './inventory.controller';
+import { TerminalsModule } from '../terminals/terminals.module';
 import { InventoryJobsService } from './inventory-jobs.service';
 import { KardexEntity } from './infrastructure/persistence/relational/entities/kardex.entity';
 import { ProductEntity } from '../products/infrastructure/persistence/relational/entities/product.entity';
@@ -25,6 +26,7 @@ import { InventoryCyclicScheduleEntity } from './infrastructure/persistence/rela
       ProductEntity,
     ]),
     AuditModule,
+    TerminalsModule,
   ],
   controllers: [InventoryController],
   providers: [InventoryService, InventoryJobsService],

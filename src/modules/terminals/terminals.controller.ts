@@ -19,6 +19,7 @@ import {
 import { TerminalsService } from './terminals.service';
 import { TerminalPairingService } from './terminal-pairing.service';
 import { PairTerminalDto, CreateTerminalDto, UpdateTerminalDto } from './dto';
+import { JwtOrTerminalApiKeyGuard } from '@/common/guards/jwt-or-terminal-api-key.guard';
 
 interface RequestWithUser {
   user?: { id?: string };
@@ -55,7 +56,7 @@ export class TerminalsController {
   // ─── Resto de endpoints (admin con JWT) ─────────────────────────────
 
   @Get()
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Listar terminales POS por sucursal' })
   findAll(@Query('branchId') branchId?: string) {
@@ -63,7 +64,7 @@ export class TerminalsController {
   }
 
   @Get(':id')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiBearerAuth()
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.findOne(id);

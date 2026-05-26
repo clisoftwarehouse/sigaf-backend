@@ -156,12 +156,16 @@ export class PurchasesService {
 
     const orderNumber = await this.generateOrderNumber();
 
+    // QA: la OC solo solicita unidades. Si el frontend manda costo (legacy),
+    // lo respetamos; si no, dejamos 0 — el costo real se captura en la
+    // recepción cuando llega la factura del proveedor.
     let subtotalUsd = 0;
     const itemsData = dto.items.map((item) => {
+      const unitCost = item.unitCostUsd ?? 0;
       const discount = item.discountPct || 0;
-      const itemSubtotal = item.quantity * item.unitCostUsd * (1 - discount / 100);
+      const itemSubtotal = item.quantity * unitCost * (1 - discount / 100);
       subtotalUsd += itemSubtotal;
-      return { ...item, subtotalUsd: itemSubtotal, discountPct: discount };
+      return { ...item, unitCostUsd: unitCost, subtotalUsd: itemSubtotal, discountPct: discount };
     });
 
     const taxUsd = 0;
@@ -224,6 +228,33 @@ export class PurchasesService {
     });
 
     return this.findOneOrder(id);
+  }
+
+  /**
+   * Elimina físicamente una OC en estado borrador. Solo se permite en draft:
+   * en cualquier otro estado la OC pudo ser referenciada por recepciones, así
+   * que se debe usar cancelOrder (status='cancelled') para preservar auditoría.
+   */
+  async deleteOrder(id: string, userId: string): Promise<void> {
+    const order = await this.orderRepo.findOne({ where: { id } });
+    if (!order) throw new NotFoundException('Orden de compra no encontrada');
+    if (order.status !== 'draft') {
+      throw new BadRequestException('Solo se pueden eliminar órdenes en borrador. Para otros estados usa cancelar.');
+    }
+
+    const oldValues = { ...order };
+    // Eliminamos primero los ítems para no dejar registros huérfanos.
+    await this.orderItemRepo.delete({ orderId: id });
+    await this.orderRepo.delete({ id });
+
+    await this.auditService.log({
+      tableName: 'purchase_orders',
+      recordId: id,
+      action: 'DELETE',
+      oldValues,
+      newValues: null,
+      userId,
+    });
   }
 
   async approveOrder(id: string, userId: string): Promise<PurchaseOrderEntity> {
@@ -361,13 +392,16 @@ export class PurchasesService {
     const tolerances = await this.getReceiptTolerances();
     const ocItemLookup = await this.buildOcItemLookup(orderIds);
     const productNameById = await this.buildProductNameLookup(dto.items.map((i) => i.productId));
+    const productTracksExpirationById = await this.buildProductTracksExpirationLookup(
+      dto.items.map((i) => i.productId),
+    );
 
     // Validamos que la suma de cantidades de discrepancias por línea cuadre con
     // |invoiced - received|. También detectamos si alguna línea excede tolerancia.
     let toleranceExceeded = false;
     const toleranceDetails: string[] = [];
     for (const item of dto.items) {
-      this.validateLineDiscrepancies(item, productNameById);
+      this.validateLineDiscrepancies(item, productNameById, productTracksExpirationById);
       const exceptions = this.evaluateLineTolerances(item, ocItemLookup, tolerances, productNameById);
       if (exceptions.length > 0) {
         toleranceExceeded = true;
@@ -391,21 +425,46 @@ export class PurchasesService {
     try {
       const round = (n: number) => Math.round(n * 10000) / 10000;
 
+      // IVA por línea según taxType del producto. Cargamos los productos
+      // relevantes para resolver su taxType y calcular la alícuota correcta.
+      // Medicamentos exentos no pagan IVA; misceláneos pagan general; algunos
+      // pagan reducido. El dto.taxPct llega como promedio informativo desde
+      // el frontend pero NO se aplica al subtotal — la autoridad del cálculo
+      // es el taxType de cada producto.
+      const ivaRates = await this.getIvaRates();
+      const productIds = Array.from(new Set(dto.items.map((i) => i.productId)));
+      const productsForTax = await this.productRepo.find({
+        where: productIds.map((id) => ({ id })),
+      });
+      const productTaxTypeById = new Map(productsForTax.map((p) => [p.id, p.taxType] as const));
+
       let subtotalUsd = 0;
       let totalDiscountUsd = 0;
+      let taxUsd = 0;
       const itemsComputed = dto.items.map((item) => {
         const discountPct = item.discountPct || 0;
-        const gross = item.quantity * item.unitCostUsd;
+        // Subtotal usa cantidad FACTURADA (lo que cobra el proveedor),
+        // no la recibida. La diferencia se rastrea como discrepancia y se
+        // reclama por nota de crédito; pero la factura original cobra lo
+        // facturado.
+        const invoicedQty = item.invoicedQuantity ?? item.quantity;
+        const gross = invoicedQty * item.unitCostUsd;
         const discountAmount = gross * (discountPct / 100);
         const itemSubtotal = gross - discountAmount;
+        const lineTaxPct = this.resolveProductTaxPct(productTaxTypeById.get(item.productId), ivaRates);
+        const itemTax = itemSubtotal * (lineTaxPct / 100);
         subtotalUsd += itemSubtotal;
         totalDiscountUsd += discountAmount;
+        taxUsd += itemTax;
         return { item, discountPct, itemSubtotal: round(itemSubtotal) };
       });
 
-      const taxPct = dto.taxPct || 0;
-      const igtfPct = dto.igtfPct || 0;
-      const taxUsd = subtotalUsd * (taxPct / 100);
+      // Promedio ponderado para registrar en el receipt (informativo).
+      const taxPct = subtotalUsd > 0 ? (taxUsd / subtotalUsd) * 100 : 0;
+      // IGTF (3% Venezuela) sólo aplica a pagos en divisas. Si la factura
+      // del proveedor está en Bs., no aplica IGTF — sin importar lo que
+      // venga configurado globalmente.
+      const igtfPct = nativeContext.currency === 'VES' ? 0 : dto.igtfPct || 0;
       const igtfUsd = (subtotalUsd + taxUsd) * (igtfPct / 100);
       const totalUsd = subtotalUsd + taxUsd + igtfUsd;
 
@@ -444,13 +503,18 @@ export class PurchasesService {
         let lotId: string | null = null;
         if (!toleranceExceeded && item.quantity > 0) {
           // lotNumber/expirationDate ya validados como obligatorios en
-          // validateLineDiscrepancies cuando quantity > 0.
+          // validateLineDiscrepancies cuando quantity > 0. Si el producto
+          // no trackea vencimiento (consumo masivo), usamos un sentinel
+          // far-future para que FEFO lo ordene al final sin necesidad de
+          // hacer nullable la columna.
+          const tracks = productTracksExpirationById.get(item.productId) ?? true;
+          const expDate = item.expirationDate || (tracks ? '' : '2099-12-31');
           const lot = await this.inventoryService.createLot(
             {
               productId: item.productId,
               branchId: dto.branchId,
               lotNumber: item.lotNumber!,
-              expirationDate: item.expirationDate!,
+              expirationDate: expDate,
               quantityReceived: item.quantity,
               costUsd: item.unitCostUsd,
               // salePrice opcional (Fase E): si no viene, el lote se crea con 0 y la
@@ -791,6 +855,34 @@ export class PurchasesService {
   }
 
   /**
+   * Lee las alícuotas de IVA configuradas (SUNDDE). Default seguro: 16/8
+   * si las keys aún no fueron sembradas en BD.
+   */
+  private async getIvaRates(): Promise<{ generalPct: number; reducedPct: number }> {
+    const rows = await this.globalConfigRepo.find({
+      where: [{ key: 'iva_general_pct' }, { key: 'iva_reduced_pct' }],
+    });
+    const byKey = new Map(rows.map((r) => [r.key, Number(r.value)]));
+    return {
+      generalPct: byKey.get('iva_general_pct') ?? 16,
+      reducedPct: byKey.get('iva_reduced_pct') ?? 8,
+    };
+  }
+
+  /**
+   * Resuelve el % de IVA aplicable a un producto según su taxType.
+   * exempt → 0; reduced → alícuota reducida; general (default) → alícuota general.
+   */
+  private resolveProductTaxPct(
+    taxType: string | null | undefined,
+    rates: { generalPct: number; reducedPct: number },
+  ): number {
+    if (!taxType || taxType === 'exempt') return 0;
+    if (taxType === 'reduced') return rates.reducedPct;
+    return rates.generalPct;
+  }
+
+  /**
    * Construye un mapa `${orderId}:${productId}` → ítem de OC para que el
    * evaluador de tolerancias compare contra la cantidad y costo originales.
    */
@@ -813,6 +905,14 @@ export class PurchasesService {
     return new Map(products.map((p) => [p.id, p.shortName ?? p.description] as const));
   }
 
+  /** Mapa productId → tracksExpiration. Default true para legacy. */
+  private async buildProductTracksExpirationLookup(productIds: string[]): Promise<Map<string, boolean>> {
+    const unique = [...new Set(productIds)];
+    if (unique.length === 0) return new Map();
+    const products = await this.productRepo.find({ where: unique.map((id) => ({ id })) });
+    return new Map(products.map((p) => [p.id, p.tracksExpiration ?? true] as const));
+  }
+
   /**
    * Valida que la suma de cantidades de discrepancias por línea cuadre con
    * la diferencia entre lo facturado y lo recibido (|invoicedQty - quantity|).
@@ -824,23 +924,27 @@ export class PurchasesService {
   private validateLineDiscrepancies(
     item: CreateGoodsReceiptDto['items'][number],
     productNameById: Map<string, string>,
+    productTracksExpiration: Map<string, boolean>,
   ): void {
     const invoiced = item.invoicedQuantity ?? item.quantity;
     const received = item.quantity;
     const diff = Math.abs(invoiced - received);
     const totalDiscrepancyQty = (item.discrepancies ?? []).reduce((s, d) => s + Number(d.quantity), 0);
     const productLabel = productNameById.get(item.productId) ?? item.productId.slice(0, 8);
+    // Default true: si por alguna razón no encontramos el producto en el
+    // mapa, exigimos vencimiento (comportamiento legacy seguro).
+    const tracksExpiration = productTracksExpiration.get(item.productId) ?? true;
 
-    // Si la línea recibió stock físico, lote y vencimiento son obligatorios
-    // (van al lote en inventario). Si recibió 0 (todo discrepancia), no exigimos
-    // estos campos — el receipt_item queda como ancla del reclamo sin lote.
+    // Si la línea recibió stock físico, lote es obligatorio. El vencimiento
+    // se exige solo si el producto lo trackea (consumo masivo sin caducidad
+    // queda exento — QA #109).
     if (received > 0) {
       if (!item.lotNumber?.trim()) {
         throw new BadRequestException(
           `Producto "${productLabel}": número de lote es obligatorio cuando se recibe stock (quantity > 0).`,
         );
       }
-      if (!item.expirationDate) {
+      if (tracksExpiration && !item.expirationDate) {
         throw new BadRequestException(
           `Producto "${productLabel}": fecha de vencimiento es obligatoria cuando se recibe stock (quantity > 0).`,
         );

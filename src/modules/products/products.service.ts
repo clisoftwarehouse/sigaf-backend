@@ -95,6 +95,21 @@ export class ProductsService {
       qb.andWhere('p.is_active = true');
     }
 
+    if (query.updatedSince) {
+      // Delta sync: trae productos modificados desde `updatedSince`, donde
+      // "modificado" significa: el producto en sí cambió O alguno de sus
+      // precios publicados cambió. Stock no entra (los lotes se sincronizan
+      // por separado en /v1/inventory/stock-fefo).
+      qb.andWhere(
+        `(p.updated_at > :updatedSince
+          OR EXISTS (
+            SELECT 1 FROM prices px
+            WHERE px.product_id = p.id AND px.updated_at > :updatedSince
+          ))`,
+        { updatedSince: query.updatedSince },
+      );
+    }
+
     if (query.stockStatus) {
       const stockSub = `(SELECT COALESCE(SUM(sl.quantity_available), 0) FROM inventory_lots sl WHERE sl.product_id = p.id AND sl.status = 'available')`;
       if (query.stockStatus === 'out') {
@@ -116,14 +131,20 @@ export class ProductsService {
     let stockMap: Record<string, number> = {};
     let priceMap: Record<string, number> = {};
     if (productIds.length) {
-      // Stock disponible global (todas las sucursales).
-      const stocks = await this.lotRepo
+      // Stock disponible: si el cliente pasó `branchId` filtramos por esa
+      // sucursal (caso típico del POS, que solo puede vender lo que tiene
+      // físicamente en su sucursal). Sin `branchId` agregamos todas para
+      // contextos administrativos donde interesa el stock total.
+      const stocksQb = this.lotRepo
         .createQueryBuilder('lot')
         .select('lot.product_id', 'productId')
         .addSelect('COALESCE(SUM(lot.quantity_available), 0)', 'totalStock')
         .where("lot.product_id IN (:...ids) AND lot.status = 'available'", { ids: productIds })
-        .groupBy('lot.product_id')
-        .getRawMany();
+        .groupBy('lot.product_id');
+      if (query.branchId) {
+        stocksQb.andWhere('lot.branch_id = :branchId', { branchId: query.branchId });
+      }
+      const stocks = await stocksQb.getRawMany();
       stockMap = stocks.reduce(
         (acc, r) => {
           acc[r.productId] = parseFloat(r.totalStock) || 0;
@@ -132,11 +153,14 @@ export class ProductsService {
         {} as Record<string, number>,
       );
 
-      // Precio vigente: prefiere override por sucursal si se pasa branchId,
-      // si no o si no existe override, usa el precio global.
+      // Precio vigente HOY: prefiere override por sucursal si se pasa
+      // branchId, si no usa el global. Filtramos por effective_from <= NOW
+      // para no devolver precios programados a futuro como si fueran
+      // vigentes (el POS los cobraría antes de su fecha de activación).
       const priceQb = this.priceRepo
         .createQueryBuilder('p')
         .where('p.product_id IN (:...ids)', { ids: productIds })
+        .andWhere('p.effective_from <= NOW()')
         .andWhere('p.effective_to IS NULL');
       if (query.branchId) {
         priceQb.andWhere('(p.branch_id = :branchId OR p.branch_id IS NULL)', {

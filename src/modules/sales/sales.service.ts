@@ -2,6 +2,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository, DataSource, EntityManager } from 'typeorm';
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 
+import { PricesService } from '@/modules/prices/prices.service';
 import { ExchangeRatesService } from '@/modules/exchange-rates/exchange-rates.service';
 import { SaleTicketEntity } from './infrastructure/persistence/relational/entities/sale-ticket.entity';
 import { KardexEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/kardex.entity';
@@ -73,6 +74,7 @@ export class SalesService {
     private readonly prescriptionRepo: Repository<PrescriptionEntity>,
     private readonly dataSource: DataSource,
     private readonly exchangeRatesService: ExchangeRatesService,
+    private readonly pricesService: PricesService,
   ) {}
 
   /**
@@ -96,7 +98,11 @@ export class SalesService {
   // ─────────────────────────────────────────────────────────────────
   // Public API
 
-  async create(dto: CreateSaleTicketDto, userId: string, idempotencyKey?: string | null): Promise<SaleTicketEntity> {
+  async create(
+    dto: CreateSaleTicketDto,
+    userIdInput: string | null,
+    idempotencyKey?: string | null,
+  ): Promise<SaleTicketEntity> {
     return this.dataSource.transaction(async (manager) => {
       // 1. Validar cash_session abierta y match con terminal/branch.
       const cashSession = await manager.getRepository(CashSessionEntity).findOne({ where: { id: dto.cashSessionId } });
@@ -110,6 +116,9 @@ export class SalesService {
       if (cashSession.branchId !== dto.branchId) {
         throw new BadRequestException('La sucursal no coincide con la sesión');
       }
+      // Retro-compat: si el payload viejo no traía cashierUserId, atribuimos
+      // la venta al opener de la sesión (cajero del turno).
+      const userId = userIdInput ?? cashSession.openedByUserId;
 
       // 2. Cargar y validar productos.
       const productIds = dto.items.map((i) => i.productId);
@@ -162,6 +171,7 @@ export class SalesService {
         clientUuid: dto.clientUuid,
         idempotencyKey: idempotencyKey ?? null,
         ticketNumber,
+        provisionalNumber: dto.provisionalNumber ?? null,
         cashSessionId: dto.cashSessionId,
         terminalId: dto.terminalId,
         branchId: dto.branchId,
@@ -264,7 +274,7 @@ export class SalesService {
     });
   }
 
-  async void(id: string, dto: VoidSaleTicketDto, userId: string): Promise<SaleTicketEntity> {
+  async void(id: string, dto: VoidSaleTicketDto, userIdInput: string | null): Promise<SaleTicketEntity> {
     return this.dataSource.transaction(async (manager) => {
       const ticket = await manager.findOne(SaleTicketEntity, {
         where: { id },
@@ -274,6 +284,9 @@ export class SalesService {
       if (ticket.status === 'voided') {
         throw new ConflictException('El ticket ya está anulado');
       }
+      // Retro-compat: si el payload no trae cashierUserId, atribuimos la
+      // anulación al salesperson del ticket original.
+      const userId = userIdInput ?? ticket.salespersonUserId;
 
       // Reversar stock por cada item con lot.
       for (const item of ticket.items) {
@@ -363,6 +376,44 @@ export class SalesService {
     return ticket;
   }
 
+  /**
+   * Lookup global por `provisional_number`. No filtra por terminalId: el
+   * cliente puede traer un ticket impreso en T1 a otra caja (T2), y ese
+   * número provisional sigue siendo globalmente único por el prefijo del
+   * terminal.
+   */
+  async findByProvisionalNumber(provisionalNumber: string): Promise<SaleTicketEntity> {
+    const ticket = await this.ticketRepo.findOne({
+      where: { provisionalNumber },
+      relations: ['items', 'items.product', 'payments', 'customer'],
+    });
+    if (!ticket) throw new NotFoundException(`Ticket provisional ${provisionalNumber} no encontrado`);
+    return ticket;
+  }
+
+  /**
+   * Lookup por (branchId, ticketNumber) cuando no se conoce la terminal de
+   * origen. Real-world: el cajero solo tiene el número impreso (#4) y el
+   * ticket fue emitido en otra terminal de la misma sucursal — típicamente
+   * una caja que ya no existe (soft-deleted) o cross-terminal sin provisional.
+   *
+   * Como `ticket_number` es único por terminal pero no por branch, puede
+   * haber colisiones. Devolvemos el más reciente para que el cajero vea los
+   * items en pantalla y decida si es el que el cliente busca; si no, puede
+   * cancelar y pedir más datos.
+   */
+  async findByBranchAndNumber(branchId: string, ticketNumber: number): Promise<SaleTicketEntity> {
+    const ticket = await this.ticketRepo.findOne({
+      where: { branchId, ticketNumber },
+      relations: ['items', 'items.product', 'payments', 'customer'],
+      order: { createdAt: 'DESC' },
+    });
+    if (!ticket) {
+      throw new NotFoundException(`No se encontró ticket #${ticketNumber} en ninguna caja de esta sucursal.`);
+    }
+    return ticket;
+  }
+
   async findAll(query: QuerySaleTicketDto): Promise<{
     data: SaleTicketEntity[];
     total: number;
@@ -383,9 +434,12 @@ export class SalesService {
       where.createdAt = Between(new Date(query.from), new Date(query.to));
     }
 
+    const baseRelations = ['customer', 'terminal', 'branch'];
+    const relations = query.withDetails ? [...baseRelations, 'items', 'items.product', 'payments'] : baseRelations;
+
     const [data, total] = await this.ticketRepo.findAndCount({
       where,
-      relations: ['customer', 'terminal', 'branch'],
+      relations,
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
@@ -542,21 +596,49 @@ export class SalesService {
    */
   async createReturn(
     dto: CreateSaleReturnDto,
-    userId: string,
+    userIdInput: string | null,
     idempotencyKey?: string | null,
   ): Promise<SaleTicketEntity> {
     return this.dataSource.transaction(async (manager) => {
-      // 1. Cargar ticket original (con items + payments) y validar estado.
+      // 1. Resolver el ticket original: el caller debe enviar `referenceTicketId`
+      // (UUID que ya existe en backend) O `referenceClientUuid` (cuando la
+      // devolución es offline contra un ticket cerrado offline que aún no
+      // sincronizó). Si recibimos solo el clientUuid, buscamos por ahí.
+      // El sync engine garantiza orden FIFO (la venta sube antes que la
+      // devolución), así que el ticket original siempre existe en este punto.
+      if (!dto.referenceTicketId && !dto.referenceClientUuid) {
+        throw new BadRequestException('Debe proveer referenceTicketId o referenceClientUuid del ticket original');
+      }
       const original = await manager.findOne(SaleTicketEntity, {
-        where: { id: dto.referenceTicketId },
+        where: dto.referenceTicketId ? { id: dto.referenceTicketId } : { clientUuid: dto.referenceClientUuid },
         relations: ['items', 'items.lot', 'items.product', 'payments'],
       });
       if (!original) throw new NotFoundException('Ticket original no encontrado');
+      // Retro-compat: si el payload no trae cashierUserId, atribuimos la
+      // devolución al salesperson del ticket original (suele ser el mismo).
+      const userId = userIdInput ?? original.salespersonUserId;
       if (original.status !== 'finalized') {
         throw new BadRequestException(`El ticket original no es facturable (status=${original.status})`);
       }
       if (original.type !== 'sale') {
         throw new BadRequestException('Sólo se puede devolver sobre un ticket de venta');
+      }
+
+      // 1.5 Validar métodos de reembolso contra los pagos del original.
+      // Regla operativa: si el cliente NO pagó con divisas (USD/Zelle), no
+      // podemos devolverle USD efectivo — ese USD nunca salió de la caja.
+      // El POS ya filtra los botones en UI; el backend lo refuerza para
+      // evitar clientes maliciosos o requests fuera de UI.
+      const originalMethods = new Set((original.payments ?? []).map((p) => p.paymentMethod));
+      const originalHadFx = [...originalMethods].some((m) => FX_METHODS.has(m));
+      if (!originalHadFx) {
+        for (const r of dto.refunds) {
+          if (FX_METHODS.has(r.paymentMethod)) {
+            throw new BadRequestException(
+              `No se puede reembolsar en ${r.paymentMethod}: el ticket original se pagó solo en Bs.`,
+            );
+          }
+        }
       }
 
       // 2. Validar sesión de caja abierta para el terminal/sucursal.
@@ -600,9 +682,17 @@ export class SalesService {
 
       const calcs: ReturnItemCalc[] = [];
       for (const it of dto.items) {
-        const originalItem = original.items.find((oi) => oi.id === it.saleTicketItemId);
+        // Match por saleTicketItemId si viene; sino por productId. Esto
+        // segundo aplica a devoluciones offline que se encolaron antes de
+        // conocer los UUIDs reales de los items del backend.
+        const originalItem = it.saleTicketItemId
+          ? original.items.find((oi) => oi.id === it.saleTicketItemId)
+          : it.productId
+            ? original.items.find((oi) => oi.productId === it.productId)
+            : undefined;
         if (!originalItem) {
-          throw new BadRequestException(`Item ${it.saleTicketItemId} no pertenece al ticket original`);
+          const ref = it.saleTicketItemId ?? it.productId ?? '?';
+          throw new BadRequestException(`Item ${ref} no pertenece al ticket original`);
         }
         const key = `${originalItem.productId}|${originalItem.lotId ?? 'no-lot'}`;
         const alreadyQty = alreadyReturned[key] ?? 0;
@@ -675,18 +765,26 @@ export class SalesService {
       const vatAmount = round4(calcs.reduce((s, c) => s + c.lineVat, 0));
       const subtotalUsd = round4(subtotalExempt + subtotalTaxable + vatAmount);
 
-      // 6. IGTF de los refunds en divisas (se reembolsa también el IGTF).
-      const fxRefunded = dto.refunds
-        .filter((r) => FX_METHODS.has(r.paymentMethod))
-        .reduce((s, r) => s + Number(r.amountUsd), 0);
-      const igtfAmount = round4(fxRefunded * IGTF_RATE);
+      // 6. IGTF de la devolución: SE PRORRATEA DEL ORIGINAL, no se recalcula
+      // a partir del método de pago del refund. Razón: el IGTF se cobra al
+      // momento de la venta según cómo pagó el cliente. Si pagó con tarjeta
+      // o Pago Móvil (sin FX), no hubo IGTF y por lo tanto no hay nada que
+      // devolver — aunque el cajero elija reembolsar en USD efectivo ahora.
+      // Recíprocamente, si pagó en USD efectivo y se le devuelve en BS por
+      // POS, igual se reembolsa la fracción de IGTF que pagó originalmente.
+      const originalNet = round4(
+        Number(original.subtotalExemptUsd) + Number(original.subtotalTaxableUsd) + Number(original.vatAmountUsd),
+      );
+      const portion = originalNet > 0 ? subtotalUsd / originalNet : 0;
+      const igtfAmount = round4(Number(original.igtfAmountUsd) * portion);
       const totalUsd = round4(subtotalUsd + igtfAmount);
       const totalRefunded = round4(dto.refunds.reduce((s, r) => s + Number(r.amountUsd), 0));
 
       // Permitimos pequeña tolerancia para diferencias por redondeo.
       if (Math.abs(totalRefunded - totalUsd) > 0.01) {
         throw new BadRequestException(
-          `Refund total (${totalRefunded}) no coincide con el valor devuelto (${totalUsd})`,
+          `Refund total (${totalRefunded}) no coincide con el valor devuelto (${totalUsd}). ` +
+            `Subtotal ítems: ${subtotalUsd}, IGTF pro-rateado del original: ${igtfAmount}.`,
         );
       }
 
@@ -839,10 +937,34 @@ export class SalesService {
       );
     }
 
-    // El precio publicado del lote es el "principal" (SUNDDE). Aplicamos el
-    // factor de reposición para obtener el precio que efectivamente se cobra.
-    // Si el factor es 1.0 (modo reposición OFF), unitPriceUsd == salePrice del lote.
-    const basePriceUsd = Number(candidateLots.salePrice);
+    // Resolvemos el precio desde el módulo de Precios (override por sucursal
+    // → global) en vez de leer `lot.sale_price`. El campo del lote puede
+    // estar en 0 o desactualizado: el lote se crea al recibir mercancía y
+    // su precio NO se rehidrata cuando el módulo de Precios actualiza el
+    // precio del producto. Tomar el precio del lote producía tickets en $0
+    // cuando el lote era legacy o la recepción no publicó precio.
+    //
+    // `getCurrentPrice` devuelve el precio principal (SUNDDE) sin factor.
+    // El factor de reposición se aplica abajo como antes.
+    let basePriceUsd: number;
+    try {
+      const resolved = await this.pricesService.getCurrentPrice({
+        productId: product.id,
+        branchId,
+      });
+      basePriceUsd = Number(resolved.priceUsd);
+    } catch {
+      throw new BadRequestException(
+        `Producto "${product.shortName ?? product.description}" sin precio publicado. ` +
+          `Publica un precio desde el módulo de Precios antes de vender.`,
+      );
+    }
+    if (!Number.isFinite(basePriceUsd) || basePriceUsd <= 0) {
+      throw new BadRequestException(
+        `Producto "${product.shortName ?? product.description}" tiene precio publicado en 0. ` +
+          `Revisa el módulo de Precios.`,
+      );
+    }
     const unitPriceUsd = +(basePriceUsd * revaluationFactor).toFixed(4);
     const vatRate = VAT_BY_TAX_TYPE[product.taxType] ?? 0.16;
     const discountPercent = itemDto.discountPercent ?? 0;

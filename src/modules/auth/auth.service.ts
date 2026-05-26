@@ -65,6 +65,64 @@ export class AuthService {
     return { valid: ok, userId: args.userId };
   }
 
+  /**
+   * Devuelve la lista de usuarios activos con PIN seteado. Incluye el hash
+   * bcrypt para que el POS pueda verificar offline con `bcryptjs`. El hash
+   * sale solo a clientes autenticados (JWT válido) y se cachea en SQLite
+   * local del terminal pairing-ed — protección por restricción de acceso
+   * físico al PC, no por ocultar el hash (que es bcrypt rounds=10).
+   *
+   * NO devuelve datos sensibles adicionales (email, role, etc.) — solo lo
+   * mínimo para autorizar acciones de supervisor.
+   */
+  async listSupervisorsWithPin(): Promise<Array<{ id: string; fullName: string; pinHash: string }>> {
+    const users = await this.userRepo
+      .createQueryBuilder('u')
+      .where('u.is_active = true')
+      .andWhere('u.supervisor_pin_hash IS NOT NULL')
+      .select(['u.id', 'u.fullName', 'u.supervisorPinHash'])
+      .getMany();
+    return users.map((u) => ({
+      id: u.id,
+      fullName: u.fullName,
+      pinHash: u.supervisorPinHash as string,
+    }));
+  }
+
+  /**
+   * Lista de cajeros activos con su hash bcrypt para login offline en el POS.
+   * El bootstrap del POS cachea este snapshot en SQLite. Cualquier cajero del
+   * sistema puede así iniciar sesión sin internet — el control de acceso real
+   * sigue siendo la apiKey del terminal (revocable server-side).
+   *
+   * Devuelve sólo lo necesario para reconstruir el SigafUser en el AuthContext.
+   */
+  async listCashiersWithPassword(): Promise<
+    Array<{
+      id: string;
+      email: string | null;
+      username: string;
+      fullName: string;
+      passwordHash: string;
+      role: unknown;
+    }>
+  > {
+    const users = await this.userRepo
+      .createQueryBuilder('u')
+      .leftJoinAndSelect('u.role', 'role')
+      .where('u.is_active = true')
+      .andWhere('u.password IS NOT NULL')
+      .getMany();
+    return users.map((u) => ({
+      id: u.id,
+      email: u.email,
+      username: u.username,
+      fullName: u.fullName,
+      passwordHash: u.password,
+      role: u.role ? { id: u.role.id, name: u.role.name } : null,
+    }));
+  }
+
   async validateLogin(loginDto: AuthEmailLoginDto): Promise<LoginResponseDto> {
     const user = await this.usersService.findByEmailOrUsername(loginDto.email);
 

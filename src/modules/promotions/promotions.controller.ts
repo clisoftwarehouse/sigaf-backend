@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 
 import { PromotionsService } from './promotions.service';
+import { JwtOrTerminalApiKeyGuard } from '@/common/guards/jwt-or-terminal-api-key.guard';
 import {
   AddScopeDto,
   CreatePromotionDto,
@@ -44,6 +45,7 @@ export class PromotionsController {
   }
 
   @Get('applicable')
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({
     summary:
       'Promociones aplicables a un producto (opcional: sucursal, cantidad, priceUsd). Si se pasa priceUsd y quantity, cada promo viene con discountUsd y finalTotalUsd calculados.',

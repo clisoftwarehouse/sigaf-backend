@@ -4,6 +4,7 @@ import { Get, Body, Post, Query, UseGuards, Controller } from '@nestjs/common';
 
 import { OverrideRateDto, CreateExchangeRateDto } from './dto';
 import { ExchangeRatesService } from './exchange-rates.service';
+import { JwtOrTerminalApiKeyGuard } from '@/common/guards/jwt-or-terminal-api-key.guard';
 
 @ApiTags('Exchange Rates')
 @ApiBearerAuth()
@@ -13,6 +14,7 @@ export class ExchangeRatesController {
   constructor(private readonly service: ExchangeRatesService) {}
 
   @Get()
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({ summary: 'Listar tasas de cambio (filtrar por fuente: BCV, REPOSICION, manual)' })
   findAll(
     @Query('currencyFrom') currencyFrom?: string,
@@ -29,6 +31,7 @@ export class ExchangeRatesController {
   }
 
   @Get('latest')
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({ summary: 'Obtener tasa de cambio más reciente (opcionalmente por fuente)' })
   getLatest(
     @Query('currencyFrom') currencyFrom?: string,

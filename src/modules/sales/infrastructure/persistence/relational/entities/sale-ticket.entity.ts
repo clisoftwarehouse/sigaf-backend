@@ -39,6 +39,15 @@ export class SaleTicketEntity extends EntityRelationalHelper {
   @Column('int', { name: 'ticket_number' })
   ticketNumber: number;
 
+  /**
+   * Número provisional asignado por el POS al cerrar la venta sin conexión
+   * (`T1-001`, `T2-005`, etc.). Único globalmente por el prefijo del
+   * terminal. Permite búsqueda cross-terminal cuando el cliente vuelve a
+   * devolver con un ticket impreso offline.
+   */
+  @Column('varchar', { name: 'provisional_number', length: 30, nullable: true, unique: true })
+  provisionalNumber: string | null;
+
   @Column('varchar', { name: 'control_number', length: 50, nullable: true })
   controlNumber: string | null;
 

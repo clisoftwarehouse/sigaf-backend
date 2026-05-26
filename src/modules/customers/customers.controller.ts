@@ -17,6 +17,7 @@ import {
 
 import { CustomersService } from './customers.service';
 import { QueryCustomerDto, CreateCustomerDto, UpdateCustomerDto } from './dto';
+import { JwtOrTerminalApiKeyGuard } from '@/common/guards/jwt-or-terminal-api-key.guard';
 
 interface RequestWithUser {
   user?: { id?: string };
@@ -30,24 +31,28 @@ export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
   @Get()
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({ summary: 'Listar clientes (paginado)' })
   findAll(@Query() query: QueryCustomerDto) {
     return this.customersService.findAll(query);
   }
 
   @Get('by-document/:type/:number')
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({ summary: 'Buscar cliente por tipo + número de documento' })
   findByDocument(@Param('type') type: string, @Param('number') number: string) {
     return this.customersService.findByDocument(type, number);
   }
 
   @Get(':id')
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({ summary: 'Obtener cliente por id' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.customersService.findOne(id);
   }
 
   @Post()
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({ summary: 'Crear cliente' })
   create(@Body() dto: CreateCustomerDto, @Req() req: RequestWithUser) {
     return this.customersService.create(dto, req.user?.id ?? null);

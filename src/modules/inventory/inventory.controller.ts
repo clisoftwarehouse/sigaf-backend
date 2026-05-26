@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Get, Put, Body, Post, Param, Query, Request, UseGuards, Controller, ParseUUIDPipe } from '@nestjs/common';
 
 import { InventoryService } from './inventory.service';
+import { JwtOrTerminalApiKeyGuard } from '@/common/guards/jwt-or-terminal-api-key.guard';
 import {
   QueryStockDto,
   ConsumeFefoDto,
@@ -73,6 +74,7 @@ export class InventoryController {
   }
 
   @Get('stock-fefo')
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({ summary: 'Obtener stock ordenado por FEFO (First Expire First Out)' })
   getStockFefo(@Query('productId') productId?: string, @Query('branchId') branchId?: string) {
     return this.inventoryService.getStockFefo({ productId, branchId });

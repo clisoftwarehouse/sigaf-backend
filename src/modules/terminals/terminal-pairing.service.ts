@@ -111,6 +111,18 @@ export class TerminalPairingService {
       throw new BadRequestException('El terminal asociado está inactivo');
     }
 
+    // Revocar TODAS las apiKeys activas previas del mismo terminal: un
+    // terminal puede estar emparejado con UN solo PC físico a la vez. Si
+    // alguien redime un código nuevo, asumimos que el PC anterior se perdió/
+    // cambió y revocamos el viejo apiKey. El operador admin ve ambos en
+    // historial (activa vs revocada).
+    await this.apiKeyRepo
+      .createQueryBuilder()
+      .update()
+      .set({ revokedAt: () => 'now()', revokedByUserId: record.createdByUserId })
+      .where('terminal_id = :tid AND revoked_at IS NULL', { tid: record.terminalId })
+      .execute();
+
     const { full, prefix } = generateApiKey();
     const hash = await bcrypt.hash(full, BCRYPT_ROUNDS);
 

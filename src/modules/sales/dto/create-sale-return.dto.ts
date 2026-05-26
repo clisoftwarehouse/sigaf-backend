@@ -16,9 +16,21 @@ import {
 const PAYMENT_METHODS = ['EFECTIVO_USD', 'EFECTIVO_BS', 'PAGO_MOVIL', 'TDD', 'TDC', 'ZELLE', 'OTRO'] as const;
 
 export class CreateSaleReturnItemDto {
-  @ApiProperty({ description: 'ID del sale_ticket_item original que se devuelve.' })
+  @ApiPropertyOptional({
+    description:
+      'ID del sale_ticket_item original. Obligatorio cuando `referenceTicketId` está; opcional cuando la devolución es offline contra un ticket aún no sincronizado (en cuyo caso el backend resuelve los items por `productId` al recibir el sale original).',
+  })
+  @IsOptional()
   @IsUUID()
-  saleTicketItemId: string;
+  saleTicketItemId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'ID del producto. Útil cuando el ticket original aún no se sincronizó y no hay sale_ticket_item_id real. El backend resuelve el item por (productId, ticket).',
+  })
+  @IsOptional()
+  @IsUUID()
+  productId?: string;
 
   @ApiProperty({ example: 1, description: 'Cantidad a devolver (≤ cantidad pendiente).' })
   @Type(() => Number)
@@ -55,9 +67,29 @@ export class CreateSaleReturnDto {
   @IsUUID()
   clientUuid: string;
 
-  @ApiProperty({ description: 'Ticket original que se devuelve (parcial o total).' })
+  @ApiPropertyOptional({
+    description:
+      'UUID del usuario cajero que procesó la devolución. Ver CreateSaleTicketDto.cashierUserId. Opcional para compatibilidad con payloads viejos.',
+  })
+  @IsOptional()
   @IsUUID()
-  referenceTicketId: string;
+  cashierUserId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Ticket original (UUID). Provee este O `referenceClientUuid`. Para devoluciones offline contra tickets pending, usar `referenceClientUuid`.',
+  })
+  @IsOptional()
+  @IsUUID()
+  referenceTicketId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      '`client_uuid` del ticket original. Lo usa el sync engine del POS cuando sube una devolución contra un ticket cerrado offline: el backend resuelve el ticket por client_uuid (idempotency key) en lugar del id UUID que aún no existía cuando el POS encoló la devolución.',
+  })
+  @IsOptional()
+  @IsUUID()
+  referenceClientUuid?: string;
 
   @ApiProperty()
   @IsUUID()

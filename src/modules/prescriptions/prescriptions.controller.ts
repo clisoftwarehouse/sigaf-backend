@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 
 import { PrescriptionsService } from './prescriptions.service';
+import { JwtOrTerminalApiKeyGuard } from '@/common/guards/jwt-or-terminal-api-key.guard';
 import { QueryPrescriptionDto, CreatePrescriptionDto, UpdatePrescriptionDto } from './dto';
 
 interface RequestWithUser {
@@ -29,18 +30,21 @@ export class PrescriptionsController {
   constructor(private readonly prescriptionsService: PrescriptionsService) {}
 
   @Get()
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({ summary: 'Listar récipes (paginado)' })
   findAll(@Query() query: QueryPrescriptionDto) {
     return this.prescriptionsService.findAll(query);
   }
 
   @Get(':id')
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({ summary: 'Obtener récipe por id (con items)' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.prescriptionsService.findOne(id);
   }
 
   @Post()
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({ summary: 'Registrar récipe médico (con items)' })
   create(@Body() dto: CreatePrescriptionDto, @Req() req: RequestWithUser) {
     return this.prescriptionsService.create(dto, req.user?.id ?? null);

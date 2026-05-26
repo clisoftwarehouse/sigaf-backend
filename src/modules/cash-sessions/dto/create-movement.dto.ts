@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsString, IsOptional } from 'class-validator';
+import { IsEnum, IsUUID, IsNumber, IsString, IsOptional } from 'class-validator';
 
 const MANUAL_TYPES = ['payout', 'deposit', 'adjustment'] as const;
 
@@ -12,6 +12,14 @@ const METHODS = ['EFECTIVO_USD', 'EFECTIVO_BS', 'PAGO_MOVIL', 'TDD', 'TDC', 'ZEL
  * Las ventas y devoluciones generan sus propios movements automáticamente.
  */
 export class CreateManualMovementDto {
+  @ApiPropertyOptional({
+    description:
+      'UUID del cajero que registra el movimiento. Opcional para compatibilidad; si falta, se atribuye al openedByUserId de la sesión.',
+  })
+  @IsOptional()
+  @IsUUID()
+  cashierUserId?: string;
+
   @ApiProperty({ enum: MANUAL_TYPES })
   @IsEnum(MANUAL_TYPES)
   type: (typeof MANUAL_TYPES)[number];

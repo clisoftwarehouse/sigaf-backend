@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 
 import { ProductsService } from './products.service';
+import { JwtOrTerminalApiKeyGuard } from '@/common/guards/jwt-or-terminal-api-key.guard';
 import {
   AddBarcodeDto,
   QueryProductDto,
@@ -33,18 +34,21 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({ summary: 'Listar productos con filtros y paginación' })
   findAll(@Query() query: QueryProductDto) {
     return this.productsService.findAll(query);
   }
 
   @Get('search')
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({ summary: 'Buscar productos por nombre, EAN, principio activo o genérico' })
   search(@Query('q') q: string, @Query('type') type?: string) {
     return this.productsService.search(q, type);
   }
 
   @Get(':id')
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({ summary: 'Obtener producto con ingredientes activos, sustitutos y códigos de barra' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.productsService.findOne(id);

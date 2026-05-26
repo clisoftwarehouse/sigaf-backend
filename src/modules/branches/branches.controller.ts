@@ -4,6 +4,7 @@ import { Get, Put, Body, Post, Param, Query, Delete, UseGuards, Controller, Pars
 
 import { BranchesService } from './branches.service';
 import { CreateBranchDto, UpdateBranchDto } from './dto';
+import { JwtOrTerminalApiKeyGuard } from '@/common/guards/jwt-or-terminal-api-key.guard';
 
 @ApiTags('Branches')
 @ApiBearerAuth()
@@ -13,6 +14,7 @@ export class BranchesController {
   constructor(private readonly branchesService: BranchesService) {}
 
   @Get()
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({
     summary: 'Listar sucursales (por default todas; ?isActive=true para solo activas)',
   })
@@ -23,6 +25,7 @@ export class BranchesController {
   }
 
   @Get(':id')
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.branchesService.findOne(id);
   }

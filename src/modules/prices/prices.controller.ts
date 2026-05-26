@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Get, Put, Body, Post, Param, Query, Request, UseGuards, Controller, ParseUUIDPipe } from '@nestjs/common';
 
 import { PricesService } from './prices.service';
+import { JwtOrTerminalApiKeyGuard } from '@/common/guards/jwt-or-terminal-api-key.guard';
 import { CreatePriceDto, UpdatePriceDto, QueryPricesDto, QueryCurrentPriceDto } from './dto';
 
 @ApiTags('Prices')
@@ -22,12 +23,14 @@ export class PricesController {
   }
 
   @Get()
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({ summary: 'Listar precios (por defecto solo vigentes — pasar includeHistory=true para histórico)' })
   findAll(@Query() query: QueryPricesDto) {
     return this.service.findAll(query);
   }
 
   @Get('current')
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({
     summary:
       'Resolver precio vigente: override por sucursal → global → fallback al sale_price del lote. Retorna source y priceUsd.',
@@ -37,6 +40,7 @@ export class PricesController {
   }
 
   @Get('effective')
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({
     summary:
       'Precio efectivo: precio principal × factor de revaluación (modo reposición). Incluye conversión a Bs a tasa BCV.',
@@ -46,6 +50,7 @@ export class PricesController {
   }
 
   @Get('revaluation-factor')
+  @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({
     summary: 'Factor de revaluación vigente (tasa REPOSICION / tasa BCV). 1.0 si modo reposición inactivo.',
   })

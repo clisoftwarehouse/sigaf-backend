@@ -36,7 +36,15 @@ export class CashSessionsService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async open(dto: OpenCashSessionDto, userId: string): Promise<CashSessionEntity> {
+  async open(dto: OpenCashSessionDto, userId: string | null): Promise<CashSessionEntity> {
+    // El controller pasa dto.cashierUserId; si el payload era antiguo (sin
+    // este campo), `userId` viene null. Fallamos claro porque la apertura
+    // necesita identificar al operador para el audit del turno.
+    if (!userId) {
+      throw new BadRequestException(
+        'Falta cashierUserId en el payload de apertura. Si esta operación quedó en cola desde una versión vieja del POS, descártala y reabre caja.',
+      );
+    }
     const terminal = await this.terminalRepo.findOne({
       where: { id: dto.terminalId, isActive: true },
     });
@@ -49,12 +57,18 @@ export class CashSessionsService {
       throw new ConflictException(`Ya existe una sesión abierta para este terminal (id ${existingOpen.id})`);
     }
 
+    // Si el POS mandó `clientOpenedAt` (apertura offline que sube luego), lo
+    // usamos como timestamp real del turno. Sin esto el reporte mostraría el
+    // turno empezando cuando se sincronizó (hora del backend), no cuando el
+    // cajero efectivamente abrió la caja.
+    const openedAt = dto.clientOpenedAt ? new Date(dto.clientOpenedAt) : new Date();
+
     return this.dataSource.transaction(async (manager) => {
       const session = manager.create(CashSessionEntity, {
         terminalId: dto.terminalId,
         branchId: terminal.branchId,
         openedByUserId: userId,
-        openedAt: new Date(),
+        openedAt,
         openingAmountUsd: dto.openingAmountUsd,
         openingAmountBs: dto.openingAmountBs ?? 0,
         status: 'open',
@@ -97,11 +111,16 @@ export class CashSessionsService {
     });
   }
 
-  async close(id: string, dto: CloseCashSessionDto, userId: string): Promise<CashSessionEntity> {
+  async close(id: string, dto: CloseCashSessionDto, userId: string | null): Promise<CashSessionEntity> {
     const session = await this.findOne(id);
     if (session.status !== 'open') {
       throw new BadRequestException('La sesión no está abierta');
     }
+
+    // Fallback retro-compat: si el payload es viejo (sin cashierUserId),
+    // atribuimos el cierre al mismo operador que abrió. En la práctica suele
+    // ser la misma persona; el comentario en la sesión queda con esta nota.
+    const closerId = userId ?? session.openedByUserId;
 
     const totals = await this.computeXReport(id);
     const calcUsd = totals.totals.expectedUsd;
@@ -109,11 +128,16 @@ export class CashSessionsService {
     const declaredUsd = dto.closingDeclaredUsd;
     const declaredBs = dto.closingDeclaredBs ?? 0;
 
+    // Igual que en open: si el POS mandó `clientClosedAt` (cierre offline que
+    // subió después), usamos esa hora como real. Sin esto el reporte mostraría
+    // que el cajero cerró cuando se sincronizó la operación.
+    const closedAt = dto.clientClosedAt ? new Date(dto.clientClosedAt) : new Date();
+
     return this.dataSource.transaction(async (manager) => {
       const closed = await manager.findOneOrFail(CashSessionEntity, { where: { id } });
       closed.status = 'closed';
-      closed.closedAt = new Date();
-      closed.closedByUserId = userId;
+      closed.closedAt = closedAt;
+      closed.closedByUserId = closerId;
       closed.closingDeclaredUsd = declaredUsd;
       closed.closingDeclaredBs = declaredBs;
       closed.closingCalculatedUsd = calcUsd;
@@ -177,12 +201,16 @@ export class CashSessionsService {
   async addManualMovement(
     sessionId: string,
     dto: CreateManualMovementDto,
-    userId: string,
+    userId: string | null,
   ): Promise<CashMovementEntity> {
     const session = await this.findOne(sessionId);
     if (session.status !== 'open') {
       throw new BadRequestException('No se puede agregar movimientos a una sesión cerrada');
     }
+
+    // Fallback retro-compat: si cashierUserId no viene en el payload, lo
+    // atribuimos al operador que abrió la sesión.
+    const moverId = userId ?? session.openedByUserId;
 
     const movement = this.movementRepo.create({
       cashSessionId: sessionId,
@@ -192,7 +220,7 @@ export class CashSessionsService {
       amountBs: dto.amountBs ?? 0,
       exchangeRateUsed: dto.exchangeRateUsed ?? null,
       notes: dto.notes,
-      createdByUserId: userId,
+      createdByUserId: moverId,
     });
     return this.movementRepo.save(movement);
   }

@@ -17,6 +17,7 @@ import {
 import { User } from '../users/domain/user';
 import { AuthService } from './auth.service';
 import { NullableType } from '../../common/utils/types/nullable.type';
+import { JwtOrTerminalApiKeyGuard } from '@/common/guards/jwt-or-terminal-api-key.guard';
 import { SetPinDto, VerifyPinDto, AuthUpdateDto, LoginResponseDto, AuthEmailLoginDto, RefreshResponseDto } from './dto';
 
 @ApiTags('Auth')
@@ -106,5 +107,40 @@ export class AuthController {
   })
   public verifyPin(@Body() dto: VerifyPinDto): Promise<{ valid: boolean; userId: string }> {
     return this.service.verifySupervisorPin({ userId: dto.userId, pin: dto.pin });
+  }
+
+  @ApiBearerAuth()
+  @Get('supervisors')
+  @UseGuards(JwtOrTerminalApiKeyGuard)
+  @ApiOperation({
+    summary:
+      'Lista de supervisors con su hash de PIN para cache local del POS (verify offline). ' +
+      'Acepta JWT del admin O apiKey del terminal — el hash NO sale del flujo autenticado y se almacena ' +
+      'en el SQLite local del POS bound al PC físico vía terminal pairing.',
+  })
+  public async listSupervisors(): Promise<Array<{ id: string; fullName: string; pinHash: string }>> {
+    return this.service.listSupervisorsWithPin();
+  }
+
+  @ApiBearerAuth()
+  @Get('cashiers')
+  @UseGuards(JwtOrTerminalApiKeyGuard)
+  @ApiOperation({
+    summary:
+      'Lista de cajeros activos con su hash de password para login offline del POS. ' +
+      'Requiere JWT válido. El hash bcrypt se cachea en SQLite local junto al terminal ' +
+      'pairing-ed para que cualquier cajero del sistema pueda iniciar sesión sin internet.',
+  })
+  public async listCashiers(): Promise<
+    Array<{
+      id: string;
+      email: string | null;
+      username: string;
+      fullName: string;
+      passwordHash: string;
+      role: unknown;
+    }>
+  > {
+    return this.service.listCashiersWithPassword();
   }
 }

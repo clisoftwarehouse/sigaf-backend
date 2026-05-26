@@ -119,6 +119,15 @@ export class CreateProductDto {
   @IsBoolean()
   requiresRecipe?: boolean;
 
+  @ApiPropertyOptional({
+    example: true,
+    description:
+      'Si el producto tiene fecha de vencimiento. False para consumo masivo sin caducidad (jabón, papel). Default true.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  tracksExpiration?: boolean;
+
   @ApiPropertyOptional({ example: false, description: 'Producto pesable' })
   @IsOptional()
   @IsBoolean()

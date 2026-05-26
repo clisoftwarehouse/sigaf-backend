@@ -116,6 +116,16 @@ export class ProductEntity extends EntityRelationalHelper {
   @Column('boolean', { name: 'is_active', default: true })
   isActive: boolean;
 
+  /**
+   * Marca productos que no tienen fecha de vencimiento (consumo masivo
+   * típicamente — jabón, peines, papel, etc.). Cuando es `true`:
+   *   - la recepción no exige `expirationDate` por línea
+   *   - el lote se crea sin fecha (NULL) y los reportes FEFO lo ignoran
+   * Por default es `false` (medicamentos y mayoría de productos sí caducan).
+   */
+  @Column('boolean', { name: 'tracks_expiration', default: true })
+  tracksExpiration: boolean;
+
   @Column('boolean', { name: 'inventory_blocked', default: false })
   inventoryBlocked: boolean;
 

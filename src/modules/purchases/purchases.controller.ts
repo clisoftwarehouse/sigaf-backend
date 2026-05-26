@@ -1,6 +1,18 @@
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { Get, Put, Body, Post, Param, Query, Request, UseGuards, Controller, ParseUUIDPipe } from '@nestjs/common';
+import {
+  Get,
+  Put,
+  Body,
+  Post,
+  Param,
+  Query,
+  Delete,
+  Request,
+  UseGuards,
+  Controller,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 
 import { PurchasesService } from './purchases.service';
 import { ApprovalEngineService } from './approval-engine.service';
@@ -50,6 +62,12 @@ export class PurchasesController {
     @Request() req: { user: { id: string } },
   ) {
     return this.purchasesService.updateOrder(id, dto, req.user.id);
+  }
+
+  @Delete('orders/:id')
+  @ApiOperation({ summary: 'Eliminar OC en estado borrador (hard delete)' })
+  deleteOrder(@Param('id', ParseUUIDPipe) id: string, @Request() req: { user: { id: string } }) {
+    return this.purchasesService.deleteOrder(id, req.user.id);
   }
 
   @Put('orders/:id/approve')

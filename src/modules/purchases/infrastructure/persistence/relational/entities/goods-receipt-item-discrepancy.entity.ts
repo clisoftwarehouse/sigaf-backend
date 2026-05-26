@@ -17,6 +17,12 @@ export type DiscrepancyReason =
   | 'missing'
   | 'excess'
   | 'quality_failure'
+  // Categorías para productos ADICIONALES (llegaron sin estar en la OC,
+  // típicamente con facturada=0). Permiten clasificar de qué tipo es la
+  // entrega no solicitada para reportes y conciliación con el proveedor.
+  | 'sample' // muestras gratis (sin costo, lote nuevo)
+  | 'substitute' // sustituto enviado por el proveedor (producto distinto al pedido)
+  | 'commercial_gift' // regalo comercial / bonificación promocional
   | 'other';
 
 export const DISCREPANCY_REASONS: DiscrepancyReason[] = [
@@ -28,6 +34,9 @@ export const DISCREPANCY_REASONS: DiscrepancyReason[] = [
   'missing',
   'excess',
   'quality_failure',
+  'sample',
+  'substitute',
+  'commercial_gift',
   'other',
 ];
 

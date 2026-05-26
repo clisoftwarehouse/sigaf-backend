@@ -8,6 +8,7 @@ import { MailModule } from '../mail/mail.module';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { SessionModule } from '../session/session.module';
+import { TerminalsModule } from '../terminals/terminals.module';
 import { JwtStrategy, AnonymousStrategy, JwtRefreshStrategy } from './strategies';
 import { UserEntity } from '../users/infrastructure/persistence/relational/entities/user.entity';
 
@@ -19,6 +20,7 @@ import { UserEntity } from '../users/infrastructure/persistence/relational/entit
     MailModule,
     JwtModule.register({}),
     TypeOrmModule.forFeature([UserEntity]),
+    TerminalsModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, JwtRefreshStrategy, AnonymousStrategy],

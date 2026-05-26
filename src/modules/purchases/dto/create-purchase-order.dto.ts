@@ -22,12 +22,21 @@ export class CreatePurchaseOrderItemDto {
   @Min(0.001)
   quantity: number;
 
-  @ApiProperty({ example: 2.5, description: 'Costo unitario USD' })
+  @ApiPropertyOptional({
+    example: 0,
+    description:
+      'Costo unitario USD. Opcional — la OC solo solicita unidades; el costo real se captura en la recepción cuando llega la factura del proveedor.',
+  })
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  unitCostUsd: number;
+  unitCostUsd?: number;
 
-  @ApiPropertyOptional({ example: 5, description: 'Porcentaje de descuento' })
+  @ApiPropertyOptional({
+    example: 5,
+    description:
+      'Porcentaje de descuento. Opcional — los descuentos comerciales se aplican en la recepción, no en la OC.',
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)

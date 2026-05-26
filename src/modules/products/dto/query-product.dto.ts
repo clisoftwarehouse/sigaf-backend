@@ -1,6 +1,6 @@
 import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Min, IsInt, IsEnum, IsUUID, IsString, IsBoolean, IsOptional } from 'class-validator';
+import { Min, IsInt, IsEnum, IsUUID, IsString, IsBoolean, IsISO8601, IsOptional } from 'class-validator';
 
 export class QueryProductDto {
   @ApiPropertyOptional({ description: 'Búsqueda por descripción, código interno o código de barras' })
@@ -73,4 +73,12 @@ export class QueryProductDto {
   @IsInt()
   @Min(1)
   limit?: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Delta sync: solo productos cuyo `updated_at` (o el de cualquier relación cargada — precio, lote) sea posterior. ISO 8601. El POS lo usa para descargar solo cambios desde el último bootstrap exitoso.',
+  })
+  @IsOptional()
+  @IsISO8601()
+  updatedSince?: string;
 }

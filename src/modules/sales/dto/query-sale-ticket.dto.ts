@@ -1,6 +1,6 @@
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Min, IsInt, IsEnum, IsUUID, IsOptional, IsDateString } from 'class-validator';
+import { Min, IsInt, IsEnum, IsUUID, IsBoolean, IsOptional, IsDateString } from 'class-validator';
 
 const STATUSES = ['finalized', 'voided'] as const;
 const TYPES = ['sale', 'return'] as const;
@@ -59,4 +59,18 @@ export class QuerySaleTicketDto {
   @IsInt()
   @Min(1)
   limit?: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Si true, cada ticket incluye items + payments + customer cargados (relations). Usar para llenar cache offline del POS. Default false (solo headers para listados livianos).',
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'boolean') return value;
+    if (value === 'true' || value === '1') return true;
+    if (value === 'false' || value === '0') return false;
+    return value;
+  })
+  @IsBoolean()
+  withDetails?: boolean;
 }

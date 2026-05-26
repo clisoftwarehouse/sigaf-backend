@@ -6,11 +6,16 @@ import { AuditService } from '../audit/audit.service';
 import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
 import { PriceEntity } from './infrastructure/persistence/relational/entities/price.entity';
 import { CreatePriceDto, UpdatePriceDto, QueryPricesDto, QueryCurrentPriceDto } from './dto';
+import { ProductEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product.entity';
 
 /**
  * Resolución de precio vigente.
  * - `source='branch_override'`: precio específico para una sucursal.
  * - `source='global'`         : precio sin `branchId` (aplica a todas).
+ * - `source='pmvp_fallback'`  : sin row en `prices`, cae al `product.pmvp`
+ *   (precio máximo de venta al público). Necesario para que el admin vea el
+ *   mismo precio que el POS, que ya usa este fallback en el listado de
+ *   `/v1/products`.
  *
  * El módulo de precios es la única fuente de verdad. Las recepciones publican
  * el precio de venta aquí automáticamente, y la migración 1777300000000 sembró
@@ -18,7 +23,7 @@ import { CreatePriceDto, UpdatePriceDto, QueryPricesDto, QueryCurrentPriceDto } 
  */
 export interface ResolvedPrice {
   priceUsd: number;
-  source: 'branch_override' | 'global';
+  source: 'branch_override' | 'global' | 'pmvp_fallback';
   priceId: string;
   effectiveFrom: Date;
   notes: string | null;
@@ -63,6 +68,8 @@ export class PricesService {
   constructor(
     @InjectRepository(PriceEntity)
     private readonly repo: Repository<PriceEntity>,
+    @InjectRepository(ProductEntity)
+    private readonly productRepo: Repository<ProductEntity>,
     private readonly dataSource: DataSource,
     private readonly auditService: AuditService,
     private readonly exchangeRatesService: ExchangeRatesService,
@@ -156,8 +163,13 @@ export class PricesService {
     if (query.branchId) qb.andWhere('p.branchId = :branchId', { branchId: query.branchId });
 
     if (!query.includeHistory) {
+      // "No histórico" = precios todavía válidos en `at` (vigentes hoy o
+      // programados para fecha futura). Sólo se excluyen los EXPIRADOS, no
+      // los futuros: si un operador programó un precio para mañana, debe
+      // verlo en el listado o se vuelve invisible hasta que se active solo.
+      // Se permite `activeAt` para inspeccionar el estado en otra fecha.
       const at = query.activeAt ? new Date(query.activeAt) : new Date();
-      qb.andWhere('p.effectiveFrom <= :at', { at }).andWhere('(p.effectiveTo IS NULL OR p.effectiveTo > :at)', { at });
+      qb.andWhere('(p.effectiveTo IS NULL OR p.effectiveTo > :at)', { at });
     }
 
     const [data, total] = await qb
@@ -298,6 +310,30 @@ export class PricesService {
         branchId: query.branchId ?? null,
         resolvedAt: at,
       };
+    }
+
+    // 3. Fallback al `product.pmvp` — mismo comportamiento que `/v1/products`
+    // usa para enriquecer el catálogo del POS. Sin esto el admin veía "Sin
+    // precio publicado" en stock detail aunque el POS sí mostraba precio
+    // (vía pmvp), creando confusión.
+    const product = await this.productRepo.findOne({
+      where: { id: query.productId },
+      select: ['id', 'pmvp'],
+    });
+    if (product && product.pmvp != null) {
+      const pmvp = Number(product.pmvp);
+      if (Number.isFinite(pmvp) && pmvp > 0) {
+        return {
+          priceUsd: pmvp,
+          source: 'pmvp_fallback',
+          priceId: product.id,
+          effectiveFrom: at,
+          notes: null,
+          productId: query.productId,
+          branchId: query.branchId ?? null,
+          resolvedAt: at,
+        };
+      }
     }
 
     throw new NotFoundException(

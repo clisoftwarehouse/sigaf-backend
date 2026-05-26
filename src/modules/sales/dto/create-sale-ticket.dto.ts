@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsUUID,
   IsArray,
+  Matches,
   IsNumber,
   IsString,
   IsOptional,
@@ -78,6 +79,16 @@ export class CreateSaleTicketDto {
   @IsUUID()
   clientUuid: string;
 
+  @ApiPropertyOptional({
+    description:
+      'UUID del usuario cajero que cerró la venta. Lo manda el POS porque, en modo offline, ' +
+      'el JWT del backend puede no estar disponible — la apiKey del terminal autentica el equipo y este campo identifica al operador. ' +
+      'Opcional para compatibilidad con payloads antiguos encolados antes del schema change.',
+  })
+  @IsOptional()
+  @IsUUID()
+  cashierUserId?: string;
+
   @ApiProperty()
   @IsUUID()
   cashSessionId: string;
@@ -107,6 +118,18 @@ export class CreateSaleTicketDto {
   @IsOptional()
   @IsDateString()
   clientCreatedAt?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Número provisional asignado por el POS al cerrar offline (`T1-001`). Único globalmente. Si se omite, el ticket no tiene número visible para el cliente además del ticket_number del backend.',
+    example: 'T1-001',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^T[A-Z0-9]{1,3}-\d{1,6}$/, {
+    message: 'provisionalNumber debe seguir el formato T{code}-{n} (ej. T1-001)',
+  })
+  provisionalNumber?: string;
 
   @ApiProperty({ type: [CreateSaleTicketItemDto] })
   @IsArray()
