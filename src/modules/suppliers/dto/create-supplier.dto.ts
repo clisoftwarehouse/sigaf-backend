@@ -138,4 +138,22 @@ export class CreateSupplierDto {
   @Min(0)
   @Max(100)
   volumeDiscountPct?: number;
+
+  @ApiPropertyOptional({
+    example: 100,
+    description:
+      'Umbral a partir del cual el descuento por volumen aplica. Tipo definido en volumeDiscountThresholdType.',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  volumeDiscountThreshold?: number;
+
+  @ApiPropertyOptional({
+    enum: ['quantity', 'amount'],
+    description: 'quantity = suma de cantidades; amount = subtotal en USD',
+  })
+  @IsOptional()
+  @IsEnum(['quantity', 'amount'])
+  volumeDiscountThresholdType?: 'quantity' | 'amount';
 }

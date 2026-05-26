@@ -174,16 +174,6 @@ export class CreateGoodsReceiptDto {
   headerDiscountPct?: number;
 
   @ApiPropertyOptional({
-    example: 2,
-    description: 'Descuento por pronto pago (% sobre subtotal + IVA).',
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(100)
-  promptPaymentDiscountPct?: number;
-
-  @ApiPropertyOptional({
     example: 3,
     description: 'Descuento por volumen (% sobre subtotal).',
   })

@@ -504,11 +504,11 @@ export class PurchasesService {
       //   1. Lineal (ya aplicado por línea en el loop de arriba) → subtotalUsd
       //   2. Header + Volume sobre subtotalUsd → netSubtotal
       //   3. IVA recalculado sobre netSubtotal (proporción del taxUsd original)
-      //   4. Prompt-payment sobre (netSubtotal + tax)
-      //   5. IGTF sobre (netSubtotal + tax - promptPay), solo si moneda USD
+      //   4. IGTF sobre (netSubtotal + tax), solo si moneda USD
+      // Pronto pago NO se aplica acá — se aplica en el módulo de Pagos
+      // (Cuentas por Pagar) cuando se concrete el pago dentro del plazo.
       const headerDiscPct = dto.headerDiscountPct || 0;
       const volumeDiscPct = dto.volumeDiscountPct || 0;
-      const promptPayDiscPct = dto.promptPaymentDiscountPct || 0;
       const headerDiscountUsd = subtotalUsd * (headerDiscPct / 100);
       const volumeDiscountUsd = subtotalUsd * (volumeDiscPct / 100);
       const netSubtotalUsd = subtotalUsd - headerDiscountUsd - volumeDiscountUsd;
@@ -518,7 +518,6 @@ export class PurchasesService {
       // per-producto correcta.
       const taxScale = subtotalUsd > 0 ? netSubtotalUsd / subtotalUsd : 0;
       const adjustedTaxUsd = taxUsd * taxScale;
-      const promptPaymentDiscountUsd = (netSubtotalUsd + adjustedTaxUsd) * (promptPayDiscPct / 100);
 
       // Promedio ponderado para registrar en el receipt (informativo).
       const taxPct = netSubtotalUsd > 0 ? (adjustedTaxUsd / netSubtotalUsd) * 100 : 0;
@@ -526,9 +525,8 @@ export class PurchasesService {
       // del proveedor está en Bs., no aplica IGTF — sin importar lo que
       // venga configurado globalmente.
       const igtfPct = nativeContext.currency === 'VES' ? 0 : dto.igtfPct || 0;
-      const igtfBase = netSubtotalUsd + adjustedTaxUsd - promptPaymentDiscountUsd;
-      const igtfUsd = igtfBase * (igtfPct / 100);
-      const totalUsd = netSubtotalUsd + adjustedTaxUsd - promptPaymentDiscountUsd + igtfUsd;
+      const igtfUsd = (netSubtotalUsd + adjustedTaxUsd) * (igtfPct / 100);
+      const totalUsd = netSubtotalUsd + adjustedTaxUsd + igtfUsd;
 
       const receipt = this.receiptRepo.create({
         branchId: dto.branchId,
@@ -543,8 +541,9 @@ export class PurchasesService {
         headerDiscountUsd: round(headerDiscountUsd),
         volumeDiscountPct: volumeDiscPct,
         volumeDiscountUsd: round(volumeDiscountUsd),
-        promptPaymentDiscountPct: promptPayDiscPct,
-        promptPaymentDiscountUsd: round(promptPaymentDiscountUsd),
+        // Pronto pago siempre 0 en recepción; se actualiza desde Pagos.
+        promptPaymentDiscountPct: 0,
+        promptPaymentDiscountUsd: 0,
         taxPct,
         taxUsd: round(adjustedTaxUsd),
         igtfPct,

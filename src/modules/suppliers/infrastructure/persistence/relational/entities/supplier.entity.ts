@@ -84,6 +84,23 @@ export class SupplierEntity extends EntityRelationalHelper {
   @Column('decimal', { name: 'volume_discount_pct', precision: 5, scale: 2, nullable: true })
   volumeDiscountPct: number | null;
 
+  /**
+   * QA #104: umbral a partir del cual el descuento por volumen aplica.
+   * `quantity` → suma de cantidades facturadas del documento.
+   * `amount`   → subtotal en USD.
+   * NULL → no se autocalcula (operador decide manualmente).
+   */
+  @Column('decimal', {
+    name: 'volume_discount_threshold',
+    precision: 18,
+    scale: 4,
+    nullable: true,
+  })
+  volumeDiscountThreshold: number | null;
+
+  @Column('varchar', { name: 'volume_discount_threshold_type', length: 20, nullable: true })
+  volumeDiscountThresholdType: 'quantity' | 'amount' | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
