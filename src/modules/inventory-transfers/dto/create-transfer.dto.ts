@@ -3,6 +3,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   Min,
   IsUUID,
+  IsEnum,
   IsArray,
   IsString,
   IsNumber,
@@ -28,13 +29,40 @@ export class TransferItemInputDto {
 }
 
 export class CreateTransferDto {
+  @ApiPropertyOptional({
+    enum: ['inter_branch', 'intra_branch'],
+    default: 'inter_branch',
+    description:
+      'inter_branch: traslado entre sucursales (flujo draft → in_transit → completed). intra_branch: traslado entre almacenes del mismo branch (instantáneo).',
+  })
+  @IsOptional()
+  @IsEnum(['inter_branch', 'intra_branch'])
+  transferType?: 'inter_branch' | 'intra_branch' = 'inter_branch';
+
   @ApiProperty({ description: 'Sucursal origen' })
   @IsUUID()
   fromBranchId: string;
 
-  @ApiProperty({ description: 'Sucursal destino (distinta del origen)' })
+  @ApiProperty({
+    description: 'Sucursal destino. Para intra_branch debe coincidir con fromBranchId; para inter_branch debe diferir.',
+  })
   @IsUUID()
   toBranchId: string;
+
+  @ApiPropertyOptional({ description: 'Almacén origen (requerido para intra_branch)' })
+  @IsOptional()
+  @IsUUID()
+  fromLocationId?: string;
+
+  @ApiPropertyOptional({ description: 'Almacén destino (requerido para intra_branch)' })
+  @IsOptional()
+  @IsUUID()
+  toLocationId?: string;
+
+  @ApiPropertyOptional({ description: 'ID de la recepción origen (cuando se clona desde un goods_receipt)' })
+  @IsOptional()
+  @IsUUID()
+  sourceReceiptId?: string;
 
   @ApiPropertyOptional({ description: 'Fecha programada del traslado (default: hoy)' })
   @IsOptional()

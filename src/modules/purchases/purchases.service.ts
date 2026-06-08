@@ -452,6 +452,13 @@ export class PurchasesService {
     const toleranceDetails: string[] = [];
     for (const item of dto.items) {
       this.validateLineDiscrepancies(item, productNameById, productTracksExpirationById);
+      // Productos adicionales (sin OC) deben declarar su causa.
+      if (!item.purchaseOrderId && item.quantity > 0 && !item.additionReason) {
+        const productName = productNameById.get(item.productId) ?? item.productId;
+        throw new BadRequestException(
+          `El producto adicional "${productName}" requiere declarar una causa (muestra, sustituto, regalo, sobrante u otro).`,
+        );
+      }
       const exceptions = this.evaluateLineTolerances(item, ocItemLookup, tolerances, productNameById);
       if (exceptions.length > 0) {
         toleranceExceeded = true;
@@ -467,6 +474,23 @@ export class PurchasesService {
     // BCV registrada. El snapshot queda inmutable en el receipt para auditar
     // contra la factura física aunque la tasa cambie después.
     const nativeContext = await this.resolveNativeCurrency(dto);
+
+    // ─── Costos por línea en moneda nativa (VES) ──────────────────────────
+    // Cuando la factura está en VES, cada item puede traer `unitCostNative`
+    // (Bs.). El backend RECOMPUTA `unitCostUsd = native / tasa` para que el
+    // monto USD sea consistente con la factura física. Si la factura es USD,
+    // ignoramos `unitCostNative` aunque venga y persistimos NULL.
+    if (nativeContext.currency === 'VES' && nativeContext.rate && nativeContext.rate > 0) {
+      for (const item of dto.items) {
+        if (item.unitCostNative != null && item.unitCostNative > 0) {
+          item.unitCostUsd = Math.round((item.unitCostNative / nativeContext.rate) * 10000) / 10000;
+        }
+      }
+    } else {
+      for (const item of dto.items) {
+        item.unitCostNative = undefined;
+      }
+    }
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -591,6 +615,7 @@ export class PurchasesService {
               salePrice: item.salePrice ?? 0,
               acquisitionType: dto.receiptType === 'consignment' ? 'consignment' : 'purchase',
               supplierId: dto.supplierId,
+              locationId: item.locationId,
             },
             userId,
             // Perf (QA #119): reusamos el queryRunner.manager para que lot y
@@ -616,11 +641,17 @@ export class PurchasesService {
           quantity: item.quantity,
           invoicedQuantity: item.invoicedQuantity ?? item.quantity,
           unitCostUsd: item.unitCostUsd,
+          unitCostNative: item.unitCostNative ?? null,
           discountPct,
           subtotalUsd: itemSubtotal,
           salePrice: item.salePrice ?? 0,
           lotNumber: lotNumberToStore,
           expirationDate: expirationDateToStore,
+          locationId: item.locationId ?? null,
+          // additionReason solo aplica a productos adicionales (sin OC).
+          // Si vino enviado pero hay purchaseOrderId, lo ignoramos para no
+          // pisar la trazabilidad de "este item venía de la OC X".
+          additionReason: item.purchaseOrderId ? null : (item.additionReason ?? null),
         });
         const savedItem = await queryRunner.manager.save(receiptItem);
 
@@ -774,6 +805,7 @@ export class PurchasesService {
             salePrice: Number(item.salePrice),
             acquisitionType: receipt.receiptType === 'consignment' ? 'consignment' : 'purchase',
             supplierId: receipt.supplierId,
+            locationId: item.locationId ?? undefined,
           },
           userId,
           queryRunner.manager,

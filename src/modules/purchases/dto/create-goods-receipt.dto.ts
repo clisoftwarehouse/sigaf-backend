@@ -95,10 +95,27 @@ export class CreateGoodsReceiptItemDto {
   @Type(() => DiscrepancyInputDto)
   discrepancies?: DiscrepancyInputDto[];
 
-  @ApiProperty({ example: 2.5, description: 'Costo unitario USD' })
+  @ApiProperty({
+    example: 2.5,
+    description:
+      'Costo unitario USD. Si la factura está en VES y se envía `unitCostNative`, el backend ' +
+      'recomputa este valor desde el nativo / tasa BCV (ignora lo enviado).',
+  })
   @IsNumber()
   @Min(0)
   unitCostUsd: number;
+
+  @ApiPropertyOptional({
+    example: 1400,
+    description:
+      'Costo unitario en moneda nativa (Bs.) cuando la factura está en VES. Si se envía, el ' +
+      'backend recomputa `unitCostUsd = unitCostNative / exchangeRateUsed` para mantener ' +
+      'consistencia con la factura física del proveedor.',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  unitCostNative?: number;
 
   @ApiPropertyOptional({
     example: 5.0,
@@ -122,6 +139,16 @@ export class CreateGoodsReceiptItemDto {
   @IsOptional()
   @IsUUID()
   locationId?: string;
+
+  @ApiPropertyOptional({
+    enum: ['sample', 'commercial_gift', 'substitute', 'excess', 'other'],
+    description:
+      'Razón por la que este ítem se incluyó sin estar en una OC. Obligatorio cuando ' +
+      '`purchaseOrderId` está vacío. NULL para ítems de OC.',
+  })
+  @IsOptional()
+  @IsEnum(['sample', 'commercial_gift', 'substitute', 'excess', 'other'])
+  additionReason?: 'sample' | 'commercial_gift' | 'substitute' | 'excess' | 'other';
 }
 
 export class CreateGoodsReceiptDto {

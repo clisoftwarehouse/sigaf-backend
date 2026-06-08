@@ -1,29 +1,14 @@
 import { Transform } from 'class-transformer';
-import { Min, IsUUID, Matches, IsNumber, IsString, IsBoolean, MaxLength, IsOptional } from 'class-validator';
+import { IsUUID, Matches, IsString, IsBoolean, MaxLength, IsOptional } from 'class-validator';
 
-export class CreateLocationDto {
+export class CreateWarehouseDto {
   @IsUUID()
   branchId: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(10)
-  aisle?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(10)
-  shelf?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(10)
-  section?: string;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  capacity?: number;
+  @MaxLength(100)
+  name?: string;
 
   @IsString()
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
@@ -34,4 +19,12 @@ export class CreateLocationDto {
   @IsOptional()
   @IsBoolean()
   isQuarantine?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isForSale?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isForPurchase?: boolean;
 }

@@ -27,11 +27,11 @@ import { BranchesModule } from './modules/branches/branches.module';
 import { ProductsModule } from './modules/products/products.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
-import { LocationsModule } from './modules/locations/locations.module';
 import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { TerminalsModule } from './modules/terminals/terminals.module';
 import { PurchasesModule } from './modules/purchases/purchases.module';
 import { TypeOrmConfigService } from './database/typeorm-config.service';
+import { WarehousesModule } from './modules/warehouses/warehouses.module';
 import { PromotionsModule } from './modules/promotions/promotions.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
@@ -94,7 +94,7 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     AuditModule,
     InventoryModule,
     BranchesModule,
-    LocationsModule,
+    WarehousesModule,
     CategoriesModule,
     BrandsModule,
     CommercialTaxonomiesModule,

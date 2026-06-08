@@ -1,39 +1,40 @@
-import { Column, Entity, CreateDateColumn, UpdateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
+import { Index, Column, Entity, CreateDateColumn, UpdateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
 
 import { EntityRelationalHelper } from '@/common/utils/relational-entity-helper';
 
+@Index('terminals_branch_id_code_key', ['branchId', 'code'], { unique: true })
 @Entity('terminals')
 export class TerminalEntity extends EntityRelationalHelper {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column('uuid', { name: 'branch_id' })
-  branchId: string;
+  branchId!: string;
 
-  @Column('varchar', { length: 20, unique: true })
-  code: string;
+  @Column('varchar', { length: 20 })
+  code!: string;
 
   @Column('varchar', { length: 100, nullable: true })
-  name: string | null;
+  name!: string | null;
 
   @Column('jsonb', { name: 'fiscal_printer_config', nullable: true })
-  fiscalPrinterConfig: Record<string, unknown> | null;
+  fiscalPrinterConfig!: Record<string, unknown> | null;
 
   @Column('jsonb', { name: 'scale_config', nullable: true })
-  scaleConfig: Record<string, unknown> | null;
+  scaleConfig!: Record<string, unknown> | null;
 
   @Column('jsonb', { name: 'cash_drawer_config', nullable: true })
-  cashDrawerConfig: Record<string, unknown> | null;
+  cashDrawerConfig!: Record<string, unknown> | null;
 
   @Column('timestamptz', { name: 'last_sync_at', nullable: true })
-  lastSyncAt: Date | null;
+  lastSyncAt!: Date | null;
 
   @Column('boolean', { name: 'is_active', default: true })
-  isActive: boolean;
+  isActive!: boolean;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }

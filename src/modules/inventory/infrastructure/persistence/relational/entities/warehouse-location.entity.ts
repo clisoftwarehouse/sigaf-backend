@@ -11,6 +11,12 @@ export class WarehouseLocationEntity extends EntityRelationalHelper {
   @Column('uuid', { name: 'branch_id' })
   branchId: string;
 
+  @Column('varchar', { name: 'name', nullable: true, length: 100 })
+  name: string | null;
+
+  @Column('varchar', { name: 'location_code', length: 30 })
+  locationCode: string;
+
   @Column('varchar', { name: 'aisle', nullable: true, length: 10 })
   aisle: string | null;
 
@@ -23,11 +29,14 @@ export class WarehouseLocationEntity extends EntityRelationalHelper {
   @Column('decimal', { name: 'capacity', nullable: true, precision: 12, scale: 3 })
   capacity: number | null;
 
-  @Column('varchar', { name: 'location_code', length: 30 })
-  locationCode: string;
-
   @Column('boolean', { name: 'is_quarantine', default: false })
   isQuarantine: boolean;
+
+  @Column('boolean', { name: 'is_for_sale', default: true })
+  isForSale: boolean;
+
+  @Column('boolean', { name: 'is_for_purchase', default: true })
+  isForPurchase: boolean;
 
   @Column('boolean', { name: 'is_active', default: true })
   isActive: boolean;

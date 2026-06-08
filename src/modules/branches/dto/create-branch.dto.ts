@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, Matches, IsString, MaxLength, IsOptional } from 'class-validator';
+import { IsUUID, IsEmail, Matches, IsString, MaxLength, IsOptional } from 'class-validator';
 
 import {
   PHONE_HINT,
@@ -38,4 +38,8 @@ export class CreateBranchDto {
   @IsEmail()
   @MaxLength(150)
   email?: string;
+
+  @IsOptional()
+  @IsUUID()
+  branchGroupId?: string;
 }

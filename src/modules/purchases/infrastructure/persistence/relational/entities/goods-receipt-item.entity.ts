@@ -43,6 +43,17 @@ export class GoodsReceiptItemEntity extends EntityRelationalHelper {
   @Column('decimal', { name: 'unit_cost_usd', precision: 18, scale: 4 })
   unitCostUsd: number;
 
+  /**
+   * Costo unitario en la moneda nativa de la factura (solo cuando
+   * `goods_receipts.native_currency = 'VES'`). El `unit_cost_usd` se computa
+   * dividiendo este valor entre `exchange_rate_used` para auditoría:
+   * si el operador discute la conversión, este es el número que dice la
+   * factura física del proveedor en Bs.
+   * NULL cuando la factura está en USD (no aplica conversión).
+   */
+  @Column('decimal', { name: 'unit_cost_native', nullable: true, precision: 18, scale: 4 })
+  unitCostNative: number | null;
+
   @Column('decimal', { name: 'discount_pct', precision: 5, scale: 2, default: 0 })
   discountPct: number;
 
@@ -57,6 +68,18 @@ export class GoodsReceiptItemEntity extends EntityRelationalHelper {
 
   @Column('date', { name: 'expiration_date' })
   expirationDate: Date;
+
+  @Column('uuid', { name: 'location_id', nullable: true })
+  locationId: string | null;
+
+  /**
+   * Razón por la que este ítem está en la recepción sin estar en ninguna
+   * orden de compra (productos "adicionales"). Valores típicos: 'sample',
+   * 'commercial_gift', 'substitute', 'excess', 'other'.
+   * NULL cuando el ítem proviene de una OC (`purchase_order_id` no es null).
+   */
+  @Column('varchar', { name: 'addition_reason', length: 30, nullable: true })
+  additionReason: string | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

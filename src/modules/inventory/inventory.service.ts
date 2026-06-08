@@ -32,6 +32,8 @@ import {
   CreateInventoryCountDto,
   CreateCyclicScheduleDto,
   UpdateCyclicScheduleDto,
+  ADJUSTMENT_TYPES_IN_ONLY,
+  ADJUSTMENT_TYPES_OUT_ONLY,
   QueryCostOfSalePreviewDto,
 } from './dto';
 
@@ -506,6 +508,19 @@ export class InventoryService {
   async createAdjustment(dto: CreateAdjustmentDto, userId: string): Promise<KardexEntity> {
     if (dto.quantity === 0) {
       throw new BadRequestException('La cantidad del ajuste no puede ser cero');
+    }
+
+    // Validar que el tipo coincida con la dirección. p.ej. no se puede dar
+    // de alta stock con tipo "damage", ni dar de baja con tipo "return".
+    if (dto.quantity > 0 && ADJUSTMENT_TYPES_OUT_ONLY.includes(dto.adjustmentType)) {
+      throw new BadRequestException(
+        `El tipo "${dto.adjustmentType}" solo aplica a ajustes de salida (cantidad negativa).`,
+      );
+    }
+    if (dto.quantity < 0 && ADJUSTMENT_TYPES_IN_ONLY.includes(dto.adjustmentType)) {
+      throw new BadRequestException(
+        `El tipo "${dto.adjustmentType}" solo aplica a ajustes de entrada (cantidad positiva).`,
+      );
     }
 
     const lot = await this.findOneLot(dto.lotId);

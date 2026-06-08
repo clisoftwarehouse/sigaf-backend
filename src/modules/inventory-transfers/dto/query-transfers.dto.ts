@@ -5,6 +5,11 @@ import { Min, IsUUID, IsEnum, IsNumber, IsOptional, IsDateString } from 'class-v
 export type TransferStatus = 'draft' | 'in_transit' | 'completed' | 'cancelled';
 
 export class QueryTransfersDto {
+  @ApiPropertyOptional({ enum: ['inter_branch', 'intra_branch'] })
+  @IsOptional()
+  @IsEnum(['inter_branch', 'intra_branch'])
+  transferType?: 'inter_branch' | 'intra_branch';
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsUUID()
@@ -14,6 +19,16 @@ export class QueryTransfersDto {
   @IsOptional()
   @IsUUID()
   toBranchId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  fromLocationId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  toLocationId?: string;
 
   @ApiPropertyOptional({ enum: ['draft', 'in_transit', 'completed', 'cancelled'] })
   @IsOptional()

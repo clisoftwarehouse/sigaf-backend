@@ -24,6 +24,7 @@ import {
   QueryTransfersDto,
   ReceiveTransferDto,
   TransferItemInputDto,
+  CreateFromReceiptDto,
 } from './dto';
 
 @ApiTags('Inventory Transfers')
@@ -36,14 +37,29 @@ export class InventoryTransfersController {
   @Post()
   @Roles(...INVENTORY_WRITERS)
   @ApiOperation({
-    summary: 'Crear traslado (draft). Valida stock en origen pero no mueve nada hasta el dispatch.',
+    summary:
+      'Crear traslado. inter_branch queda en draft; intra_branch se completa al instante (mueve location_id de los lotes).',
   })
   create(@Body() dto: CreateTransferDto, @Request() req: { user: { id: string } }) {
     return this.service.create(dto, req.user?.id || 'system');
   }
 
+  @Post('from-receipt/:receiptId')
+  @Roles(...INVENTORY_WRITERS)
+  @ApiOperation({
+    summary:
+      'Clonar items de un goods_receipt en un nuevo traslado. Caso típico: mover todo lo recibido a Sala de ventas.',
+  })
+  createFromReceipt(
+    @Param('receiptId', ParseUUIDPipe) receiptId: string,
+    @Body() dto: CreateFromReceiptDto,
+    @Request() req: { user: { id: string } },
+  ) {
+    return this.service.createFromReceipt(receiptId, dto, req.user?.id || 'system');
+  }
+
   @Get()
-  @ApiOperation({ summary: 'Listar traslados con filtros (sucursal, estado, rango de fechas)' })
+  @ApiOperation({ summary: 'Listar traslados con filtros (tipo, sucursal, almacén, estado, fechas)' })
   findAll(@Query() query: QueryTransfersDto) {
     return this.service.findAll(query);
   }
@@ -56,7 +72,7 @@ export class InventoryTransfersController {
 
   @Post(':id/items')
   @Roles(...INVENTORY_WRITERS)
-  @ApiOperation({ summary: 'Agregar item al traslado (solo en draft)' })
+  @ApiOperation({ summary: 'Agregar item al traslado (solo inter_branch en draft)' })
   addItem(@Param('id', ParseUUIDPipe) id: string, @Body() dto: TransferItemInputDto) {
     return this.service.addItem(id, dto);
   }
@@ -64,7 +80,7 @@ export class InventoryTransfersController {
   @Delete(':id/items/:itemId')
   @Roles(...INVENTORY_WRITERS)
   @HttpCode(204)
-  @ApiOperation({ summary: 'Quitar item del traslado (solo en draft)' })
+  @ApiOperation({ summary: 'Quitar item del traslado (solo inter_branch en draft)' })
   removeItem(@Param('id', ParseUUIDPipe) id: string, @Param('itemId', ParseUUIDPipe) itemId: string) {
     return this.service.removeItem(id, itemId);
   }
@@ -72,8 +88,7 @@ export class InventoryTransfersController {
   @Post(':id/dispatch')
   @Roles(...INVENTORY_WRITERS)
   @ApiOperation({
-    summary:
-      'Despachar traslado: draft → in_transit. Descuenta stock del origen, genera kardex `transfer_out` por cada lote.',
+    summary: 'Despachar traslado inter_branch: draft → in_transit. Descuenta stock del origen, kardex `transfer_out`.',
   })
   dispatch(@Param('id', ParseUUIDPipe) id: string, @Request() req: { user: { id: string } }) {
     return this.service.dispatch(id, req.user?.id || 'system');
@@ -83,7 +98,7 @@ export class InventoryTransfersController {
   @Roles(...INVENTORY_WRITERS)
   @ApiOperation({
     summary:
-      'Recibir traslado: in_transit → completed. Crea/incrementa lote destino (mismo lot_number), genera kardex `transfer_in`. Admite mermas.',
+      'Recibir traslado inter_branch: in_transit → completed. Crea/incrementa lote destino, kardex `transfer_in`. Admite mermas.',
   })
   receive(
     @Param('id', ParseUUIDPipe) id: string,
@@ -96,7 +111,7 @@ export class InventoryTransfersController {
   @Post(':id/cancel')
   @Roles(...INVENTORY_WRITERS)
   @ApiOperation({
-    summary: 'Cancelar traslado. Si estaba in_transit, devuelve stock al origen (kardex `transfer_cancelled`).',
+    summary: 'Cancelar traslado inter_branch. Si in_transit, devuelve stock al origen (kardex `transfer_cancelled`).',
   })
   cancel(
     @Param('id', ParseUUIDPipe) id: string,

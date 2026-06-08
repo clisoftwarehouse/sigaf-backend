@@ -738,16 +738,32 @@ export class DemoSeedService {
         .toUpperCase();
       const specs: Array<{
         code: string;
-        aisle: string;
-        shelf: string;
-        section: string | null;
+        name: string;
         isQuarantine: boolean;
+        isForSale: boolean;
+        isForPurchase: boolean;
       }> = [
-        { code: `${prefix}-A-01-A`, aisle: 'A', shelf: '01', section: 'A', isQuarantine: false },
-        { code: `${prefix}-A-01-B`, aisle: 'A', shelf: '01', section: 'B', isQuarantine: false },
-        { code: `${prefix}-A-02-A`, aisle: 'A', shelf: '02', section: 'A', isQuarantine: false },
-        { code: `${prefix}-B-01-A`, aisle: 'B', shelf: '01', section: 'A', isQuarantine: false },
-        { code: `${prefix}-QRT`, aisle: 'Q', shelf: '00', section: null, isQuarantine: true },
+        {
+          code: `${prefix}-VTA`,
+          name: 'Sala de ventas',
+          isQuarantine: false,
+          isForSale: true,
+          isForPurchase: false,
+        },
+        {
+          code: `${prefix}-REC`,
+          name: 'Recepción',
+          isQuarantine: false,
+          isForSale: false,
+          isForPurchase: true,
+        },
+        {
+          code: `${prefix}-QRT`,
+          name: 'Cuarentena',
+          isQuarantine: true,
+          isForSale: false,
+          isForPurchase: false,
+        },
       ];
       for (const spec of specs) {
         const existing = await this.locationRepo.findOne({ where: { locationCode: spec.code } });
@@ -756,11 +772,10 @@ export class DemoSeedService {
             this.locationRepo.create({
               branchId: branch.id,
               locationCode: spec.code,
-              aisle: spec.aisle,
-              shelf: spec.shelf,
-              section: spec.section,
-              capacity: 500,
+              name: spec.name,
               isQuarantine: spec.isQuarantine,
+              isForSale: spec.isForSale,
+              isForPurchase: spec.isForPurchase,
               isActive: true,
             }),
           );
