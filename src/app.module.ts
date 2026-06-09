@@ -47,6 +47,7 @@ import { ActiveIngredientsModule } from './modules/active-ingredients/active-ing
 import { InventoryTransfersModule } from './modules/inventory-transfers/inventory-transfers.module';
 import { PurchasesComparatorModule } from './modules/purchases-comparator/purchases-comparator.module';
 import { CommercialTaxonomiesModule } from './modules/commercial-taxonomies/commercial-taxonomies.module';
+import { PurchasesIntelligenceModule } from './modules/purchases-intelligence/purchases-intelligence.module';
 
 const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
   useClass: TypeOrmConfigService,
@@ -109,6 +110,7 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     ConfigGlobalModule,
     PurchasesModule,
     PurchasesComparatorModule,
+    PurchasesIntelligenceModule,
     ClaimsModule,
     ConsignmentsModule,
     ActiveIngredientsModule,

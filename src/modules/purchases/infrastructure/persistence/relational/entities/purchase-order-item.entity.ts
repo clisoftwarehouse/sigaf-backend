@@ -29,6 +29,20 @@ export class PurchaseOrderItemEntity extends EntityRelationalHelper {
   @Column('decimal', { name: 'quantity_received', precision: 12, scale: 3, default: 0 })
   quantityReceived: number;
 
+  // ─── Snapshot del sugerido al crear OC (Compras Intelligence) ─────────
+  // Cuando una OC se genera desde el sugerido, persistimos qué decisión
+  // tomó el motor y a qué costo neto, para auditar después si el operador
+  // ajustó. Todos nullable para no romper OCs creadas manualmente.
+
+  @Column('varchar', { name: 'decision_at_creation', length: 30, nullable: true })
+  decisionAtCreation: string | null;
+
+  @Column('text', { name: 'reason_at_creation', nullable: true })
+  reasonAtCreation: string | null;
+
+  @Column('decimal', { name: 'net_cost_usd_snapshot', precision: 18, scale: 4, nullable: true })
+  netCostUsdSnapshot: number | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
