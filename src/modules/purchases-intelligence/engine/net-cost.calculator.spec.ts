@@ -13,12 +13,33 @@ describe('calculateNetCost', () => {
     expect(r.commercial).toBe(100);
     expect(r.financial).toBe(100);
     expect(r.appliedDiscounts).toMatchObject({
+      supplierProductPct: 0,
       cabeceraPct: 0,
       linealPct: 0,
       volumenPct: 0,
       escalaPct: 0,
       prontoPagoPct: 0,
     });
+  });
+
+  it('should apply supplier-specific discount as the first layer before framework conditions', () => {
+    // 100 base * 0.90 (sp 10%) * 0.95 (cabecera 5%) * 0.96 (lineal 4%) = 82.08
+    const r = calculateNetCost({
+      basePriceUsd: 100,
+      supplierProductDiscountPct: 10,
+      drugstoreCondition: {
+        cabeceraPct: 5,
+        volumenPct: 0,
+        prontoPagoPct: 0,
+        volumenMinUsd: null,
+        volumenMinUnits: null,
+      },
+      labCondition: { linealPct: 4, escalaPct: 0, escalaMinUnits: null },
+      totalPurchaseUsd: 0,
+      totalUnits: 0,
+    });
+    expect(r.appliedDiscounts.supplierProductPct).toBe(10);
+    expect(r.conservative).toBe(82.08);
   });
 
   it('should apply cabecera and lineal multiplicatively (not additively) in conservative', () => {

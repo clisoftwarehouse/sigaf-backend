@@ -97,6 +97,7 @@ export class ComparatorService {
 
       const breakdown = calculateNetCost({
         basePriceUsd: Number(sp.costUsd) || 0,
+        supplierProductDiscountPct: Number(sp.discountPct) || 0,
         drugstoreCondition: dc
           ? {
               cabeceraPct: Number(dc.cabeceraPct) || 0,
@@ -119,6 +120,9 @@ export class ComparatorService {
       });
 
       const reasons: string[] = [];
+      if (breakdown.appliedDiscounts.supplierProductPct > 0) {
+        reasons.push(`Descuento producto-proveedor ${breakdown.appliedDiscounts.supplierProductPct}%`);
+      }
       if (breakdown.appliedDiscounts.cabeceraPct > 0) {
         reasons.push(`Cabecera droguería ${breakdown.appliedDiscounts.cabeceraPct}%`);
       }
@@ -175,6 +179,7 @@ export class ComparatorService {
           netCostBreakdown: extra?.netCostBreakdown ?? {
             basePriceUsd: s.netCostUsd,
             appliedDiscounts: {
+              supplierProductPct: 0,
               cabeceraPct: 0,
               linealPct: 0,
               volumenPct: 0,

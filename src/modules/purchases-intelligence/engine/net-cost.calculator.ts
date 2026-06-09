@@ -24,6 +24,13 @@ export type NetCostInput = {
   /** Precio base USD del proveedor antes de aplicar descuentos. */
   basePriceUsd: number;
 
+  /**
+   * Descuento específico pactado para este SKU con este proveedor
+   * (`supplier_products.discount_pct`). Aplica como primera capa, antes
+   * de los descuentos framework. 0 o null si no hay.
+   */
+  supplierProductDiscountPct?: number | null;
+
   /** Condición de droguería activa (cabecera, volumen, pronto pago). */
   drugstoreCondition?: {
     cabeceraPct: number;
@@ -58,6 +65,7 @@ export type NetCostBreakdown = {
   basePriceUsd: number;
   /** % de descuento aplicado por cada capa (0 si no aplicó). */
   appliedDiscounts: {
+    supplierProductPct: number;
     cabeceraPct: number;
     linealPct: number;
     volumenPct: number;
@@ -86,6 +94,9 @@ export function calculateNetCost(input: NetCostInput): NetCostBreakdown {
   const base = Number(input.basePriceUsd) || 0;
   const dc = input.drugstoreCondition;
   const lc = input.labCondition;
+
+  // Capa 0: descuento específico por SKU pactado en supplier_products.
+  const supplierProductPct = Number(input.supplierProductDiscountPct) || 0;
 
   // Capa 1: cabecera (siempre aplica si existe)
   const cabeceraPct = Number(dc?.cabeceraPct) || 0;
@@ -120,7 +131,8 @@ export function calculateNetCost(input: NetCostInput): NetCostBreakdown {
   const prontoPagoPct = Number(dc?.prontoPagoPct) || 0;
 
   // Aplicación multiplicativa en cascada.
-  const afterCabecera = applyLayer(base, cabeceraPct);
+  const afterSupplierProduct = applyLayer(base, supplierProductPct);
+  const afterCabecera = applyLayer(afterSupplierProduct, cabeceraPct);
   const afterLineal = applyLayer(afterCabecera, linealPct);
   const conservative = round4(afterLineal);
 
@@ -134,6 +146,7 @@ export function calculateNetCost(input: NetCostInput): NetCostBreakdown {
   return {
     basePriceUsd: round4(base),
     appliedDiscounts: {
+      supplierProductPct,
       cabeceraPct,
       linealPct,
       volumenPct,

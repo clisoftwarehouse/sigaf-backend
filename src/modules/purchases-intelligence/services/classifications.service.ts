@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable, NotFoundException } from '@nestjs/common';
 
@@ -290,16 +290,30 @@ export class ClassificationsService {
 
   /**
    * Lista las clasificaciones vigentes del portafolio para una sucursal.
-   * Filtra por clase si se indica.
+   * Filtra por clase si se indica. Hidrata productName + sku usando un
+   * join en memoria (más simple que un querybuilder cross-entity).
    */
   async findByBranch(
     branchId: string,
     filters?: { abcd?: 'A' | 'B' | 'C' | 'D'; isPareto?: boolean },
-  ): Promise<ProductClassificationEntity[]> {
+  ): Promise<Array<ProductClassificationEntity & { productName: string; productSku: string | null }>> {
     const where: Record<string, unknown> = { branchId };
     if (filters?.abcd) where.abcdClass = filters.abcd;
     if (filters?.isPareto !== undefined) where.isPareto = filters.isPareto;
-    return this.classRepo.find({ where, order: { score: 'DESC' } });
+    const rows = await this.classRepo.find({ where, order: { score: 'DESC' } });
+    if (rows.length === 0) return [];
+
+    const ids = Array.from(new Set(rows.map((r) => r.productId)));
+    const products = await this.productRepo.findBy({ id: In(ids) });
+    const byId = new Map(products.map((p) => [p.id, p]));
+
+    return rows.map((r) => {
+      const p = byId.get(r.productId);
+      return Object.assign(r, {
+        productName: p?.description ?? r.productId,
+        productSku: p?.internalCode ?? p?.ean ?? null,
+      });
+    });
   }
 
   async findOne(productId: string, branchId: string): Promise<ProductClassificationEntity | null> {
