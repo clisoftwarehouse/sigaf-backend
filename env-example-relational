@@ -58,3 +58,10 @@ GOOGLE_CLIENT_SECRET=
 APPLE_APP_AUDIENCE=[]
 
 WORKER_HOST=redis://redis:6379/1
+
+# Comparador de precios — proxy al servicio externo product-api-ic.
+# La key NO debe llegar al browser: el backend la inyecta server-side al
+# pegarle a product-api-ic. Si falta, los endpoints /v1/purchases/comparator/*
+# devuelven 503 con mensaje claro, pero el resto del backend sigue funcionando.
+PRODUCT_API_IC_URL=https://product-api-ic.onrender.com
+PRODUCT_API_IC_KEY=
