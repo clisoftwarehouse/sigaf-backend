@@ -36,6 +36,7 @@ import { PromotionsModule } from './modules/promotions/promotions.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { IdempotencyModule } from './modules/idempotency/idempotency.module';
+import { PrescribersModule } from './modules/prescribers/prescribers.module';
 import { ConsignmentsModule } from './modules/consignments/consignments.module';
 import { BranchGroupsModule } from './modules/branch-groups/branch-groups.module';
 import { ConfigGlobalModule } from './modules/config-global/config-global.module';
@@ -113,6 +114,7 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     PurchasesComparatorModule,
     PurchasesIntelligenceModule,
     AccountsPayableModule,
+    PrescribersModule,
     ClaimsModule,
     ConsignmentsModule,
     ActiveIngredientsModule,
