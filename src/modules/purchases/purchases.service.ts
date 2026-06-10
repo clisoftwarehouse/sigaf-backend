@@ -561,6 +561,7 @@ export class PurchasesService {
         receiptNumber,
         receiptType: dto.receiptType || 'purchase',
         supplierInvoiceNumber: dto.supplierInvoiceNumber || null,
+        supplierControlNumber: dto.supplierControlNumber || null,
         notes: dto.notes || null,
         subtotalUsd: round(subtotalUsd),
         totalDiscountUsd: round(totalDiscountUsd),

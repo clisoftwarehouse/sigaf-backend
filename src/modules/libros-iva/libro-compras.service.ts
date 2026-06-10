@@ -1,13 +1,14 @@
-import { In, Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { In, Repository, LessThanOrEqual } from 'typeorm';
 
 import { SupplierEntity } from '@/modules/suppliers/infrastructure/persistence/relational/entities/supplier.entity';
 import { GoodsReceiptEntity } from '@/modules/purchases/infrastructure/persistence/relational/entities/goods-receipt.entity';
+import { ExchangeRateEntity } from '@/modules/exchange-rates/infrastructure/persistence/relational/entities/exchange-rate.entity';
 import {
   monthRange,
   periodLabel,
-  type LibroResumen,
+  summarizeRows,
   type LibroComprasRow,
   type LibroComprasResult,
 } from './libros-iva.types';
@@ -30,7 +31,30 @@ export class LibroComprasService {
     private readonly receiptRepo: Repository<GoodsReceiptEntity>,
     @InjectRepository(SupplierEntity)
     private readonly supplierRepo: Repository<SupplierEntity>,
+    @InjectRepository(ExchangeRateEntity)
+    private readonly rateRepo: Repository<ExchangeRateEntity>,
   ) {}
+
+  /**
+   * Resuelve la tasa BCV USD→VES vigente en una fecha. Busca la tasa BCV
+   * con effective_date más reciente en o antes de la fecha dada. Devuelve
+   * null si no hay ninguna (no se puede convertir → libro lo deja en 0).
+   *
+   * IMPORTANTE: solo tasas source='BCV'. El SENIAT exige la tasa oficial
+   * del BCV, no tasas paralelas ni de reposición.
+   */
+  private async bcvRateForDate(dateStr: string): Promise<number | null> {
+    const row = await this.rateRepo.findOne({
+      where: {
+        source: 'BCV',
+        currencyFrom: 'USD',
+        currencyTo: 'VES',
+        effectiveDate: LessThanOrEqual(dateStr as unknown as Date),
+      },
+      order: { effectiveDate: 'DESC' },
+    });
+    return row ? Number(row.rate) || null : null;
+  }
 
   async generate(year: number, month: number, branchId?: string): Promise<LibroComprasResult> {
     const { start, end } = monthRange(year, month);
@@ -65,9 +89,25 @@ export class LibroComprasService {
       // exento para que el libro cuadre fila por fila.
       const exemptUsd = Math.max(0, round2(totalUsd - taxableBaseUsd - vatUsd));
 
+      const dateStr = toDateStr(r.receiptDate);
       const isVes = r.nativeCurrency === 'VES';
-      const totalBs = isVes ? Number(r.nativeTotal) || 0 : 0;
-      const exchangeRate = isVes && r.exchangeRateUsed ? Number(r.exchangeRateUsed) : null;
+
+      // Tasa BCV para convertir a Bs. Factura VES → usa la tasa congelada
+      // en la recepción. Factura USD → busca la tasa BCV oficial del día.
+      let exchangeRate: number | null = null;
+      if (isVes && r.exchangeRateUsed) {
+        exchangeRate = Number(r.exchangeRateUsed) || null;
+      } else {
+        exchangeRate = await this.bcvRateForDate(dateStr);
+      }
+
+      const rate = exchangeRate ?? 0;
+      // Factura VES: el total en Bs ya es exacto de la factura física.
+      // Factura USD: derivamos Bs con la tasa BCV del día.
+      const totalBs = isVes && r.nativeTotal != null ? Number(r.nativeTotal) || 0 : totalUsd * rate;
+      const exemptBs = exemptUsd * rate;
+      const taxableBaseBs = taxableBaseUsd * rate;
+      const vatBs = vatUsd * rate;
 
       // ─── Validación de cumplimiento Art. 57 ───────────────────────────
       const warnings: string[] = [];
@@ -81,24 +121,27 @@ export class LibroComprasService {
       if (!generatesCredit) nonDeductibleVatUsd += vatUsd;
 
       rows.push({
-        date: toDateStr(r.receiptDate),
+        date: dateStr,
         documentKind: 'invoice',
         documentNumber: r.supplierInvoiceNumber,
         controlNumber: r.supplierControlNumber,
         supplierRif: supplier?.rif ?? '—',
         supplierName: supplier?.businessName ?? supplier?.tradeName ?? '—',
-        totalUsd: round2(totalUsd),
+        exchangeRate,
+        exemptBs: round2(exemptBs),
+        taxableBaseBs: round2(taxableBaseBs),
+        vatBs: round2(vatBs),
         totalBs: round2(totalBs),
         exemptUsd,
         taxableBaseUsd: round2(taxableBaseUsd),
         vatUsd: round2(vatUsd),
-        exchangeRate,
+        totalUsd: round2(totalUsd),
         generatesCredit,
         complianceWarnings: warnings,
       });
     }
 
-    const resumen = summarize(rows);
+    const resumen = summarizeRows(rows);
 
     return {
       period: { year, month, label: periodLabel(year, month) },
@@ -108,29 +151,6 @@ export class LibroComprasService {
       nonDeductibleVatUsd: round2(nonDeductibleVatUsd),
     };
   }
-}
-
-function summarize(
-  rows: Array<{ exemptUsd: number; taxableBaseUsd: number; vatUsd: number; totalUsd: number; totalBs: number }>,
-): LibroResumen {
-  return rows.reduce<LibroResumen>(
-    (acc, r) => ({
-      totalOperations: acc.totalOperations + 1,
-      totalExemptUsd: round2(acc.totalExemptUsd + r.exemptUsd),
-      totalTaxableBaseUsd: round2(acc.totalTaxableBaseUsd + r.taxableBaseUsd),
-      totalVatUsd: round2(acc.totalVatUsd + r.vatUsd),
-      totalUsd: round2(acc.totalUsd + r.totalUsd),
-      totalBs: round2(acc.totalBs + r.totalBs),
-    }),
-    {
-      totalOperations: 0,
-      totalExemptUsd: 0,
-      totalTaxableBaseUsd: 0,
-      totalVatUsd: 0,
-      totalUsd: 0,
-      totalBs: 0,
-    },
-  );
 }
 
 function toDateStr(d: Date | string): string {

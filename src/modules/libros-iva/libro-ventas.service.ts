@@ -6,7 +6,7 @@ import { SaleTicketEntity } from '@/modules/sales/infrastructure/persistence/rel
 import {
   monthRange,
   periodLabel,
-  type LibroResumen,
+  summarizeRows,
   isContribuyenteRif,
   type LibroVentasRow,
   type LibroVentasResult,
@@ -57,12 +57,19 @@ export class LibroVentasService {
       const isReturn = t.type === 'return';
       const sign = isReturn ? -1 : 1;
 
+      const exchangeRate = Number(t.exchangeRateUsdBs) || 0;
       const exemptUsd = sign * (Number(t.subtotalExemptUsd) || 0);
       const taxableBaseUsd = sign * (Number(t.subtotalTaxableUsd) || 0);
       const vatUsd = sign * (Number(t.vatAmountUsd) || 0);
       const totalUsd = sign * (Number(t.totalUsd) || 0);
       const totalBs = sign * (Number(t.totalBs) || 0);
-      const exchangeRate = Number(t.exchangeRateUsdBs) || 0;
+
+      // Conversión a Bs con la tasa BCV del día de la venta (congelada en
+      // el ticket). El totalBs ya viene del ticket; las bases las derivamos
+      // con la misma tasa para que el libro cuadre fila por fila.
+      const exemptBs = exemptUsd * exchangeRate;
+      const taxableBaseBs = taxableBaseUsd * exchangeRate;
+      const vatBs = vatUsd * exchangeRate;
 
       const customerRif = t.customer ? `${t.customer.documentType}-${t.customer.documentNumber}` : null;
       const isContribuyente = isContribuyenteRif(customerRif);
@@ -83,18 +90,21 @@ export class LibroVentasService {
         controlNumber: t.controlNumber,
         customerRif,
         customerName: t.customer?.fullName ?? 'CONSUMIDOR FINAL',
-        totalUsd: round2(totalUsd),
+        exchangeRate,
+        exemptBs: round2(exemptBs),
+        taxableBaseBs: round2(taxableBaseBs),
+        vatBs: round2(vatBs),
         totalBs: round2(totalBs),
         exemptUsd: round2(exemptUsd),
         taxableBaseUsd: round2(taxableBaseUsd),
         vatUsd: round2(vatUsd),
-        exchangeRate,
+        totalUsd: round2(totalUsd),
         byFiscalMachine,
         isContribuyente,
       });
     }
 
-    const resumen = summarize(rows);
+    const resumen = summarizeRows(rows);
 
     return {
       period: { year, month, label: periodLabel(year, month) },
@@ -109,29 +119,6 @@ export class LibroVentasService {
       },
     };
   }
-}
-
-function summarize(
-  rows: Array<{ exemptUsd: number; taxableBaseUsd: number; vatUsd: number; totalUsd: number; totalBs: number }>,
-): LibroResumen {
-  return rows.reduce<LibroResumen>(
-    (acc, r) => ({
-      totalOperations: acc.totalOperations + 1,
-      totalExemptUsd: round2(acc.totalExemptUsd + r.exemptUsd),
-      totalTaxableBaseUsd: round2(acc.totalTaxableBaseUsd + r.taxableBaseUsd),
-      totalVatUsd: round2(acc.totalVatUsd + r.vatUsd),
-      totalUsd: round2(acc.totalUsd + r.totalUsd),
-      totalBs: round2(acc.totalBs + r.totalBs),
-    }),
-    {
-      totalOperations: 0,
-      totalExemptUsd: 0,
-      totalTaxableBaseUsd: 0,
-      totalVatUsd: 0,
-      totalUsd: 0,
-      totalBs: 0,
-    },
-  );
 }
 
 function toDateStr(d: Date | string): string {

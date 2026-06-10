@@ -7,6 +7,7 @@ import { LibroComprasService } from './libro-compras.service';
 import { SupplierEntity } from '@/modules/suppliers/infrastructure/persistence/relational/entities/supplier.entity';
 import { SaleTicketEntity } from '@/modules/sales/infrastructure/persistence/relational/entities/sale-ticket.entity';
 import { GoodsReceiptEntity } from '@/modules/purchases/infrastructure/persistence/relational/entities/goods-receipt.entity';
+import { ExchangeRateEntity } from '@/modules/exchange-rates/infrastructure/persistence/relational/entities/exchange-rate.entity';
 
 /**
  * Libros de IVA (Ventas y Compras) conforme a SENIAT.
@@ -16,7 +17,7 @@ import { GoodsReceiptEntity } from '@/modules/purchases/infrastructure/persisten
  * supplier_control_number en goods_receipts (migration 1780000000011).
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([SaleTicketEntity, GoodsReceiptEntity, SupplierEntity])],
+  imports: [TypeOrmModule.forFeature([SaleTicketEntity, GoodsReceiptEntity, SupplierEntity, ExchangeRateEntity])],
   controllers: [LibrosIvaController],
   providers: [LibroVentasService, LibroComprasService],
   exports: [LibroVentasService, LibroComprasService],

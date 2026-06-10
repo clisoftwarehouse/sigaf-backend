@@ -167,6 +167,16 @@ export class CreateGoodsReceiptDto {
   supplierInvoiceNumber?: string;
 
   @ApiPropertyOptional({
+    example: '00-00012345',
+    description:
+      'Número de control de la factura del proveedor (SENIAT Art. 57). Necesario para que el IVA soportado genere crédito fiscal en el Libro de Compras.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  supplierControlNumber?: string;
+
+  @ApiPropertyOptional({
     example: 'purchase',
     enum: ['purchase', 'consignment'],
     description: 'Tipo de recepción',
