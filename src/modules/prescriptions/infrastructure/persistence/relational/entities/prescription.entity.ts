@@ -49,6 +49,14 @@ export class PrescriptionEntity extends EntityRelationalHelper {
   @Column('varchar', { name: 'doctor_id_number', length: 30, nullable: true })
   doctorIdNumber: string | null;
 
+  /**
+   * FK opcional al catálogo de prescribers. Si está seteado, los datos
+   * canónicos del médico vienen de ahí — `doctor_name` / `doctor_id_number`
+   * quedan como redundancia para récipes legacy.
+   */
+  @Column('uuid', { name: 'prescriber_id', nullable: true })
+  prescriberId: string | null;
+
   @Column('varchar', { name: 'prescription_number', length: 50, nullable: true })
   prescriptionNumber: string | null;
 

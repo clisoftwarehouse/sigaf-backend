@@ -39,6 +39,15 @@ export class PrescriptionsController {
     return this.prescriptionsService.findAll(query);
   }
 
+  @Get('pending/by-customer/:customerId')
+  @UseGuards(JwtOrTerminalApiKeyGuard)
+  @ApiOperation({
+    summary: 'Récipes con saldo pendiente de un cliente. Usado por el POS al cargar venta de controlados.',
+  })
+  findPendingByCustomer(@Param('customerId', ParseUUIDPipe) customerId: string) {
+    return this.prescriptionsService.findPendingByCustomer(customerId);
+  }
+
   @Get(':id')
   @UseGuards(JwtOrTerminalApiKeyGuard)
   @ApiOperation({ summary: 'Obtener récipe por id (con items)' })
@@ -69,5 +78,19 @@ export class PrescriptionsController {
   @ApiOperation({ summary: 'Anular récipe (no se puede deshacer)' })
   cancel(@Param('id', ParseUUIDPipe) id: string) {
     return this.prescriptionsService.cancel(id);
+  }
+
+  @Post(':id/dispense')
+  @UseGuards(JwtOrTerminalApiKeyGuard)
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Registrar dispensación de items del récipe. Actualiza quantity_dispensed y status. Llamado por el POS al cerrar venta de controlados.',
+  })
+  dispense(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { items: Array<{ prescriptionItemId: string; quantity: number }> },
+  ) {
+    return this.prescriptionsService.dispense(id, body);
   }
 }

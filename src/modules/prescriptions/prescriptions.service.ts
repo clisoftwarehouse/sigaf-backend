@@ -1,5 +1,5 @@
-import { Repository, DataSource } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { In, Repository, DataSource } from 'typeorm';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 
 import { QueryPrescriptionDto, CreatePrescriptionDto, UpdatePrescriptionDto } from './dto';
@@ -7,6 +7,13 @@ import { PrescriptionEntity } from './infrastructure/persistence/relational/enti
 import { ProductEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product.entity';
 import { PrescriptionItemEntity } from './infrastructure/persistence/relational/entities/prescription-item.entity';
 import { CustomerEntity } from '@/modules/customers/infrastructure/persistence/relational/entities/customer.entity';
+
+export type DispenseInput = {
+  items: Array<{
+    prescriptionItemId: string;
+    quantity: number;
+  }>;
+};
 
 const DEFAULT_VIGENCIA_DAYS = 30;
 
@@ -156,5 +163,97 @@ export class PrescriptionsService {
     presc.status = 'cancelled';
     await this.prescriptionRepo.save(presc);
     return this.findOne(id);
+  }
+
+  /**
+   * Récipes con saldo pendiente para un cliente: status active o
+   * partially_dispensed, no vencidos, con al menos un item con
+   * quantity_dispensed < quantity_prescribed. Usado por el POS para
+   * preguntarle al cajero "este cliente ya tiene récipe cargado".
+   */
+  async findPendingByCustomer(customerId: string): Promise<PrescriptionEntity[]> {
+    const now = new Date();
+    const prescs = await this.prescriptionRepo.find({
+      where: { customerId, status: In(['active', 'partially_dispensed']) },
+      relations: ['items', 'items.product'],
+      order: { issuedAt: 'DESC' },
+    });
+    return prescs.filter((p) => {
+      if (p.expiresAt && p.expiresAt < now) return false;
+      const hasRemaining = (p.items ?? []).some((i) => Number(i.quantityDispensed) < Number(i.quantityPrescribed));
+      return hasRemaining;
+    });
+  }
+
+  /**
+   * Registra dispensación parcial o total de un récipe. Valida que cada
+   * item no exceda quantity_prescribed - quantity_dispensed y actualiza
+   * el status del récipe automáticamente:
+   *   - active → partially_dispensed (si quedan saldos > 0)
+   *   - active/partially → fully_dispensed (si todos quedan en 0 restantes)
+   *
+   * Idempotencia: NO controla acá. El POS llama una vez al cerrar venta y
+   * usa el ticket como referencia. Si la misma dispensación se llama 2x,
+   * sumará dos veces. El operador debe revertir manualmente desde admin.
+   */
+  async dispense(prescriptionId: string, input: DispenseInput): Promise<PrescriptionEntity> {
+    if (!input.items || input.items.length === 0) {
+      throw new BadRequestException('Debe indicar al menos un item a dispensar');
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const presc = await manager.findOne(PrescriptionEntity, {
+        where: { id: prescriptionId },
+        relations: ['items'],
+      });
+      if (!presc) throw new NotFoundException('Récipe no encontrado');
+      if (presc.status === 'cancelled') {
+        throw new BadRequestException('Récipe anulado, no se puede dispensar');
+      }
+      if (presc.status === 'fully_dispensed') {
+        throw new BadRequestException('Récipe ya completamente dispensado');
+      }
+      if (presc.expiresAt && presc.expiresAt < new Date()) {
+        throw new BadRequestException('Récipe vencido');
+      }
+
+      const itemMap = new Map(presc.items.map((i) => [i.id, i]));
+
+      // Validar y actualizar cada item solicitado.
+      for (const req of input.items) {
+        const item = itemMap.get(req.prescriptionItemId);
+        if (!item) {
+          throw new BadRequestException(`Item ${req.prescriptionItemId} no pertenece a este récipe`);
+        }
+        const qty = Number(req.quantity);
+        if (!Number.isFinite(qty) || qty <= 0) {
+          throw new BadRequestException('Cantidad a dispensar debe ser mayor a cero');
+        }
+        const dispensed = Number(item.quantityDispensed) || 0;
+        const prescribed = Number(item.quantityPrescribed) || 0;
+        const remaining = prescribed - dispensed;
+        if (qty > remaining + 0.0001) {
+          throw new BadRequestException(`Item excede saldo. Pedido: ${qty}, saldo: ${remaining.toFixed(3)}`);
+        }
+        item.quantityDispensed = dispensed + qty;
+        await manager.save(item);
+      }
+
+      // Recargar items y recalcular status.
+      const items = await manager.find(PrescriptionItemEntity, {
+        where: { prescriptionId },
+      });
+      const allFull = items.every((i) => Number(i.quantityDispensed) >= Number(i.quantityPrescribed));
+      const anyDispensed = items.some((i) => Number(i.quantityDispensed) > 0);
+
+      if (allFull) presc.status = 'fully_dispensed';
+      else if (anyDispensed) presc.status = 'partially_dispensed';
+      await manager.save(presc);
+
+      return manager.findOneOrFail(PrescriptionEntity, {
+        where: { id: prescriptionId },
+        relations: ['customer', 'items', 'items.product'],
+      });
+    });
   }
 }

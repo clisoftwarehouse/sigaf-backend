@@ -95,6 +95,14 @@ export class SaleTicketEntity extends EntityRelationalHelper {
   @Column('uuid', { name: 'reference_ticket_id', nullable: true })
   referenceTicketId: string | null;
 
+  /**
+   * FK opcional al récipe médico que justificó la venta de productos
+   * controlados. Null para ventas sin controlados. Si tiene valor, el
+   * registro de dispensación se computa contra `prescription_items`.
+   */
+  @Column('uuid', { name: 'prescription_id', nullable: true })
+  prescriptionId: string | null;
+
   @ManyToOne(() => SaleTicketEntity, { onDelete: 'RESTRICT', nullable: true })
   @JoinColumn({ name: 'reference_ticket_id' })
   referenceTicket: SaleTicketEntity | null;
