@@ -7,6 +7,7 @@ import { PrescriptionEntity } from './infrastructure/persistence/relational/enti
 import { ProductEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product.entity';
 import { PrescriptionItemEntity } from './infrastructure/persistence/relational/entities/prescription-item.entity';
 import { CustomerEntity } from '@/modules/customers/infrastructure/persistence/relational/entities/customer.entity';
+import { PrescriberEntity } from '@/modules/prescribers/infrastructure/persistence/relational/entities/prescriber.entity';
 
 export type DispenseInput = {
   items: Array<{
@@ -28,8 +29,52 @@ export class PrescriptionsService {
     private readonly customerRepo: Repository<CustomerEntity>,
     @InjectRepository(ProductEntity)
     private readonly productRepo: Repository<ProductEntity>,
+    @InjectRepository(PrescriberEntity)
+    private readonly prescriberRepo: Repository<PrescriberEntity>,
     private readonly dataSource: DataSource,
   ) {}
+
+  /**
+   * Busca un médico en el catálogo por cédula o por nombre normalizado.
+   * Si no existe, lo crea con los datos provistos. Asegura que cada récipe
+   * cargado desde el POS también alimente el catálogo de Médicos en lugar
+   * de quedar como texto suelto.
+   */
+  private async findOrCreatePrescriber(
+    doctorName: string,
+    doctorIdNumber: string | null,
+    manager: import('typeorm').EntityManager,
+  ): Promise<PrescriberEntity | null> {
+    const name = doctorName?.trim();
+    if (!name) return null;
+    const idNumber = doctorIdNumber?.trim() ?? null;
+    const repo = manager.getRepository(PrescriberEntity);
+
+    // 1. Match exacto por cédula o MPPS si vino. Esto es lo más fiable —
+    //    dos médicos pueden compartir nombre pero no cédula.
+    if (idNumber) {
+      const existing = await repo
+        .createQueryBuilder('p')
+        .where('p.nationalId = :id OR p.mppsNumber = :id', { id: idNumber })
+        .getOne();
+      if (existing) return existing;
+    }
+
+    // 2. Fallback: match por nombre exacto (case-insensitive). Si hay
+    //    duplicados con mismo nombre, usamos el primero. El admin puede
+    //    consolidarlos manualmente después.
+    const byName = await repo.createQueryBuilder('p').where('LOWER(p.fullName) = LOWER(:name)', { name }).getOne();
+    if (byName) return byName;
+
+    // 3. Crear nuevo médico con los datos disponibles.
+    const created = repo.create({
+      fullName: name,
+      nationalId: idNumber,
+      mppsNumber: null,
+      isActive: true,
+    });
+    return repo.save(created);
+  }
 
   async findAll(query: QueryPrescriptionDto): Promise<{
     data: PrescriptionEntity[];
@@ -98,10 +143,18 @@ export class PrescriptionsService {
     }
 
     return this.dataSource.transaction(async (manager) => {
+      // Buscar o crear el médico en el catálogo para que cada récipe del
+      // POS también alimente el listado de Médicos. Si falla por cualquier
+      // motivo, seguimos con doctorName como texto suelto (legacy fallback).
+      const prescriber = await this.findOrCreatePrescriber(dto.doctorName, dto.doctorIdNumber ?? null, manager).catch(
+        () => null,
+      );
+
       const presc = manager.create(PrescriptionEntity, {
         customerId: dto.customerId,
         doctorName: dto.doctorName,
         doctorIdNumber: dto.doctorIdNumber ?? null,
+        prescriberId: prescriber?.id ?? null,
         prescriptionNumber: dto.prescriptionNumber ?? null,
         issuedAt,
         expiresAt,
