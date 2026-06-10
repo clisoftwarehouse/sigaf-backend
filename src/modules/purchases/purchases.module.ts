@@ -9,6 +9,7 @@ import { PurchasesController } from './purchases.controller';
 import { InventoryModule } from '../inventory/inventory.module';
 import { ApprovalEngineService } from './approval-engine.service';
 import { ExchangeRatesModule } from '../exchange-rates/exchange-rates.module';
+import { AccountsPayableModule } from '../accounts-payable/accounts-payable.module';
 import { UserEntity } from '@/modules/users/infrastructure/persistence/relational/entities/user.entity';
 import { GoodsReceiptEntity } from './infrastructure/persistence/relational/entities/goods-receipt.entity';
 import { PurchaseOrderEntity } from './infrastructure/persistence/relational/entities/purchase-order.entity';
@@ -43,6 +44,7 @@ import { BranchGroupCategoryApprovalRuleEntity } from '@/modules/branch-groups/i
     PricesModule,
     ExchangeRatesModule,
     ClaimsModule,
+    AccountsPayableModule,
   ],
   controllers: [PurchasesController],
   providers: [PurchasesService, ApprovalEngineService],

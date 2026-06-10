@@ -16,6 +16,7 @@ import { PricesService } from '../prices/prices.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { ApprovalEngineService } from './approval-engine.service';
 import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
+import { AccountsPayableService } from '../accounts-payable/services/accounts-payable.service';
 import { GoodsReceiptEntity } from './infrastructure/persistence/relational/entities/goods-receipt.entity';
 import { PurchaseOrderEntity } from './infrastructure/persistence/relational/entities/purchase-order.entity';
 import { ProductEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product.entity';
@@ -73,6 +74,7 @@ export class PurchasesService {
     private readonly approvalEngine: ApprovalEngineService,
     private readonly exchangeRatesService: ExchangeRatesService,
     private readonly claimsService: ClaimsService,
+    private readonly accountsPayableService: AccountsPayableService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -743,6 +745,13 @@ export class PurchasesService {
         });
       }
 
+      // Hook CxP: si la recepción quedó aprobada (sin reaprobación pendiente),
+      // generamos la cuenta por pagar automáticamente. Si falla, no rompe el
+      // flujo — el AccountsPayableService loggea internamente.
+      if (!toleranceExceeded) {
+        await this.accountsPayableService.createFromReceipt(savedReceipt.id, userId).catch(() => {});
+      }
+
       const result = await this.findOneReceipt(savedReceipt.id);
       return {
         ...result,
@@ -880,6 +889,10 @@ export class PurchasesService {
             : 'Sin OCs asociadas'
         }`,
       );
+
+      // Hook CxP: ahora que la recepción quedó aprobada, generamos CxP.
+      // Idempotente: si ya existía, devuelve la existente sin duplicar.
+      await this.accountsPayableService.createFromReceipt(receipt.id, userId).catch(() => {});
 
       const result = await this.findOneReceipt(id);
       return { ...result, affectedOrders };

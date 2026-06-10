@@ -43,6 +43,7 @@ import { CashSessionsModule } from './modules/cash-sessions/cash-sessions.module
 import { PrescriptionsModule } from './modules/prescriptions/prescriptions.module';
 import { ExchangeRatesModule } from './modules/exchange-rates/exchange-rates.module';
 import { TherapeuticUsesModule } from './modules/therapeutic-uses/therapeutic-uses.module';
+import { AccountsPayableModule } from './modules/accounts-payable/accounts-payable.module';
 import { ActiveIngredientsModule } from './modules/active-ingredients/active-ingredients.module';
 import { InventoryTransfersModule } from './modules/inventory-transfers/inventory-transfers.module';
 import { PurchasesComparatorModule } from './modules/purchases-comparator/purchases-comparator.module';
@@ -111,6 +112,7 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     PurchasesModule,
     PurchasesComparatorModule,
     PurchasesIntelligenceModule,
+    AccountsPayableModule,
     ClaimsModule,
     ConsignmentsModule,
     ActiveIngredientsModule,
