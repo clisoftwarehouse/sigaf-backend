@@ -12,6 +12,7 @@ import {
   MaxLength,
   MinLength,
   IsOptional,
+  IsDateString,
 } from 'class-validator';
 
 export const CUSTOMER_DOCUMENT_TYPES = ['V', 'E', 'J', 'G', 'P'] as const;
@@ -82,6 +83,21 @@ export class CreateCustomerDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({ description: 'Alergias del paciente (alerta CRM)' })
+  @IsOptional()
+  @IsString()
+  allergies?: string;
+
+  @ApiPropertyOptional({ description: 'Condiciones crónicas (diabetes, HTA, etc.)' })
+  @IsOptional()
+  @IsString()
+  chronicConditions?: string;
+
+  @ApiPropertyOptional({ description: 'Fecha de nacimiento (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString()
+  birthDate?: string;
 
   @ApiPropertyOptional({ default: true })
   @IsOptional()

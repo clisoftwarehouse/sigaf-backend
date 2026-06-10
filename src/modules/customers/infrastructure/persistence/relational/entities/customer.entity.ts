@@ -67,6 +67,19 @@ export class CustomerEntity extends EntityRelationalHelper {
   @Column('text', { nullable: true })
   notes: string | null;
 
+  // ─── Perfil clínico / CRM (atención al cliente) ───────────────────────
+  /** Alergias del paciente. Se muestra como alerta al cajero en el POS. */
+  @Column('text', { nullable: true })
+  allergies: string | null;
+
+  /** Condiciones crónicas (diabetes, HTA, etc.). */
+  @Column('text', { name: 'chronic_conditions', nullable: true })
+  chronicConditions: string | null;
+
+  /** Fecha de nacimiento para saludo de cumpleaños / edad. */
+  @Column('date', { name: 'birth_date', nullable: true })
+  birthDate: Date | null;
+
   @Column('boolean', { name: 'is_active', default: true })
   isActive: boolean;
 

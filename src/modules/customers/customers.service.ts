@@ -101,7 +101,9 @@ export class CustomersService {
 
   async update(id: string, dto: UpdateCustomerDto): Promise<CustomerEntity> {
     const customer = await this.findOne(id);
-    const patch: Partial<CustomerEntity> = { ...dto };
+    // birthDate llega como string (YYYY-MM-DD); la columna `date` de TypeORM
+    // lo acepta en runtime. Casteamos para que TS no choque con Date.
+    const patch = { ...dto } as Partial<CustomerEntity>;
     if (dto.documentType) {
       patch.documentType = dto.documentType.toUpperCase() as CustomerEntity['documentType'];
     }

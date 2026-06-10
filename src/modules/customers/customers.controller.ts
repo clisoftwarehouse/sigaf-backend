@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 
 import { CustomersService } from './customers.service';
+import { ClinicalProfileService } from './clinical-profile.service';
 import { QueryCustomerDto, CreateCustomerDto, UpdateCustomerDto } from './dto';
 import { JwtOrTerminalApiKeyGuard } from '@/common/guards/jwt-or-terminal-api-key.guard';
 
@@ -28,7 +29,20 @@ interface RequestWithUser {
 @UseGuards(AuthGuard('jwt'))
 @Controller({ path: 'customers', version: '1' })
 export class CustomersController {
-  constructor(private readonly customersService: CustomersService) {}
+  constructor(
+    private readonly customersService: CustomersService,
+    private readonly clinicalProfileService: ClinicalProfileService,
+  ) {}
+
+  @Get(':id/clinical-profile')
+  @UseGuards(JwtOrTerminalApiKeyGuard)
+  @ApiOperation({
+    summary:
+      'Perfil de atención al cliente: última compra, recurrencia, alertas clínicas y récipes pendientes. Usado por el POS.',
+  })
+  clinicalProfile(@Param('id', ParseUUIDPipe) id: string) {
+    return this.clinicalProfileService.getProfile(id);
+  }
 
   @Get()
   @UseGuards(JwtOrTerminalApiKeyGuard)
