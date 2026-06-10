@@ -23,6 +23,14 @@ export class GoodsReceiptEntity extends EntityRelationalHelper {
   @Column('varchar', { name: 'supplier_invoice_number', length: 50, nullable: true })
   supplierInvoiceNumber: string | null;
 
+  /**
+   * Número de control de la factura del proveedor (SENIAT). Distinto del
+   * número de factura — es el consecutivo único de control fiscal exigido
+   * por el Art. 57 LIVA para que el IVA soportado genere crédito fiscal.
+   */
+  @Column('varchar', { name: 'supplier_control_number', length: 50, nullable: true })
+  supplierControlNumber: string | null;
+
   @Column('varchar', { name: 'receipt_type', length: 15, default: 'purchase' })
   receiptType: string;
 

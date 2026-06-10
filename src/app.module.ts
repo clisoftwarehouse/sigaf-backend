@@ -31,6 +31,7 @@ import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { TerminalsModule } from './modules/terminals/terminals.module';
 import { PurchasesModule } from './modules/purchases/purchases.module';
 import { TypeOrmConfigService } from './database/typeorm-config.service';
+import { LibrosIvaModule } from './modules/libros-iva/libros-iva.module';
 import { WarehousesModule } from './modules/warehouses/warehouses.module';
 import { PromotionsModule } from './modules/promotions/promotions.module';
 import { CategoriesModule } from './modules/categories/categories.module';
@@ -115,6 +116,7 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     PurchasesIntelligenceModule,
     AccountsPayableModule,
     PrescribersModule,
+    LibrosIvaModule,
     ClaimsModule,
     ConsignmentsModule,
     ActiveIngredientsModule,
