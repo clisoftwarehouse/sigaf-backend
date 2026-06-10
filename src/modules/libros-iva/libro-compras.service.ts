@@ -13,6 +13,9 @@ import {
   type LibroComprasResult,
 } from './libros-iva.types';
 
+/** Alícuota general del IVA vigente en Venezuela (16%). Ver investigación SENIAT. */
+const IVA_RATE = 0.16;
+
 /**
  * Construye el Libro de Compras del IVA para un período mensual.
  *
@@ -64,6 +67,10 @@ export class LibroComprasService {
       .where('r.receiptDate >= :start', { start })
       .andWhere('r.receiptDate < :end', { end })
       .andWhere('r.requiresReapproval = false')
+      // SENIAT: la mercancía en consignación NO es una compra hasta que se
+      // liquida — no genera crédito fiscal. Solo entran recepciones de tipo
+      // 'purchase' al libro de compras.
+      .andWhere('r.receiptType = :rt', { rt: 'purchase' })
       .orderBy('r.receiptDate', 'ASC')
       .addOrderBy('r.receiptNumber', 'ASC');
 
@@ -81,12 +88,20 @@ export class LibroComprasService {
 
     for (const r of receipts) {
       const supplier = supplierById.get(r.supplierId);
-      const taxableBaseUsd = Number(r.subtotalUsd) || 0;
       const vatUsd = Number(r.taxUsd) || 0;
-      const totalUsd = Number(r.totalUsd) || 0;
-      // exentas = total - base gravada - iva. Si el producto es exento el
-      // backend lo metió en subtotal sin IVA; computamos el remanente como
-      // exento para que el libro cuadre fila por fila.
+      const igtfUsd = Number(r.igtfUsd) || 0;
+
+      // CRÍTICO (SENIAT): el total de la operación en el libro de IVA excluye
+      // el IGTF (no es parte de la Ley del IVA). El ticket suma IGTF en su
+      // totalUsd, así que lo restamos para el libro.
+      const totalUsd = Math.max(0, (Number(r.totalUsd) || 0) - igtfUsd);
+
+      // Base imponible gravable: la derivamos del IVA al 16% para que sea
+      // 100% consistente con el crédito fiscal declarado. base = IVA / 0.16.
+      const taxableBaseUsd = vatUsd > 0 ? round2(vatUsd / IVA_RATE) : 0;
+
+      // Exentas = total de la operación − base gravable − IVA. Lo restante
+      // del total que no fue gravado son medicamentos / productos exentos.
       const exemptUsd = Math.max(0, round2(totalUsd - taxableBaseUsd - vatUsd));
 
       const dateStr = toDateStr(r.receiptDate);
@@ -102,12 +117,13 @@ export class LibroComprasService {
       }
 
       const rate = exchangeRate ?? 0;
-      // Factura VES: el total en Bs ya es exacto de la factura física.
-      // Factura USD: derivamos Bs con la tasa BCV del día.
-      const totalBs = isVes && r.nativeTotal != null ? Number(r.nativeTotal) || 0 : totalUsd * rate;
+      // Derivamos TODOS los montos Bs con la misma tasa para que la fila
+      // cuadre (exentas + base + IVA = total) y excluya el IGTF. No usamos
+      // nativeTotal directo porque podría incluir IGTF de la factura física.
       const exemptBs = exemptUsd * rate;
       const taxableBaseBs = taxableBaseUsd * rate;
       const vatBs = vatUsd * rate;
+      const totalBs = totalUsd * rate;
 
       // ─── Validación de cumplimiento Art. 57 ───────────────────────────
       const warnings: string[] = [];

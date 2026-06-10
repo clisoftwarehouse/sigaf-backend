@@ -61,15 +61,21 @@ export class LibroVentasService {
       const exemptUsd = sign * (Number(t.subtotalExemptUsd) || 0);
       const taxableBaseUsd = sign * (Number(t.subtotalTaxableUsd) || 0);
       const vatUsd = sign * (Number(t.vatAmountUsd) || 0);
-      const totalUsd = sign * (Number(t.totalUsd) || 0);
-      const totalBs = sign * (Number(t.totalBs) || 0);
+
+      // CRÍTICO (SENIAT): el total de la operación en el libro de IVA es
+      // base exenta + base gravable + IVA. El IGTF NO forma parte de la Ley
+      // del IVA, así que se EXCLUYE del total del libro aunque el ticket lo
+      // sume en su totalUsd. Por eso NO usamos t.totalUsd ni t.totalBs
+      // (ambos incluyen IGTF) — derivamos el total limpio acá.
+      const totalUsd = exemptUsd + taxableBaseUsd + vatUsd;
 
       // Conversión a Bs con la tasa BCV del día de la venta (congelada en
-      // el ticket). El totalBs ya viene del ticket; las bases las derivamos
-      // con la misma tasa para que el libro cuadre fila por fila.
+      // el ticket). Derivamos cada monto con la misma tasa para que el
+      // libro cuadre fila por fila y excluya el IGTF.
       const exemptBs = exemptUsd * exchangeRate;
       const taxableBaseBs = taxableBaseUsd * exchangeRate;
       const vatBs = vatUsd * exchangeRate;
+      const totalBs = totalUsd * exchangeRate;
 
       const customerRif = t.customer ? `${t.customer.documentType}-${t.customer.documentNumber}` : null;
       const isContribuyente = isContribuyenteRif(customerRif);
