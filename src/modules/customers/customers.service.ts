@@ -69,6 +69,13 @@ export class CustomersService {
     const documentNumber = dto.documentNumber.trim();
     const documentType = dto.documentType.toUpperCase() as CustomerEntity['documentType'];
 
+    // Idempotencia para el POS offline: si el cliente ya existe con el id que
+    // mandó el cliente (reintento de sync), lo devolvemos tal cual sin duplicar.
+    if (dto.id) {
+      const byId = await this.customerRepo.findOne({ where: { id: dto.id } });
+      if (byId) return byId;
+    }
+
     // Si existe ACTIVO con mismo documento, rechazo. Si existe INACTIVO,
     // lo reactivamos con los datos nuevos en vez de duplicar.
     const existing = await this.customerRepo.findOne({
@@ -76,6 +83,10 @@ export class CustomersService {
     });
     if (existing) {
       if (existing.isActive) {
+        // Si viene un id de cliente (sync offline) y el documento YA existe
+        // activo, fue creado por otra vía (otra terminal / admin). Devolvemos
+        // el existente en vez de romper el sync — el POST queda idempotente.
+        if (dto.id) return existing;
         throw new ConflictException(`Ya existe un cliente con documento ${documentType}-${documentNumber}`);
       }
       Object.assign(existing, dto, {

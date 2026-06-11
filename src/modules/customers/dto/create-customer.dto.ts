@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsEmail,
   Matches,
+  IsUUID,
   IsString,
   IsNumber,
   IsBoolean,
@@ -25,6 +26,13 @@ export const CUSTOMER_TYPES = ['retail', 'frecuente', 'corporativo'] as const;
 const DOC_NUMBER_REGEX = /^[A-Za-z0-9]{6,15}$/;
 
 export class CreateCustomerDto {
+  @ApiPropertyOptional({
+    description: 'Id generado por el cliente (POS offline). Hace el POST idempotente al reintentar el sync.',
+  })
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
   @ApiProperty({ enum: CUSTOMER_DOCUMENT_TYPES, example: 'V' })
   @IsEnum(CUSTOMER_DOCUMENT_TYPES)
   documentType: (typeof CUSTOMER_DOCUMENT_TYPES)[number];

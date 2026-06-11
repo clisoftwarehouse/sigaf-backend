@@ -12,6 +12,7 @@ import { SaleTicketPaymentEntity } from './infrastructure/persistence/relational
 import { InventoryLotEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/inventory-lot.entity';
 import { TerminalTicketCounterEntity } from './infrastructure/persistence/relational/entities/terminal-ticket-counter.entity';
 import { CashSessionEntity } from '@/modules/cash-sessions/infrastructure/persistence/relational/entities/cash-session.entity';
+import { CustomerEntity } from '@/modules/customers/infrastructure/persistence/relational/entities/customer.entity';
 import { PrescriptionEntity } from '@/modules/prescriptions/infrastructure/persistence/relational/entities/prescription.entity';
 import { CashMovementEntity } from '@/modules/cash-sessions/infrastructure/persistence/relational/entities/cash-movement.entity';
 import { PrescriptionItemEntity } from '@/modules/prescriptions/infrastructure/persistence/relational/entities/prescription-item.entity';
@@ -163,6 +164,21 @@ export class SalesService {
       }
       const changeUsd = round4(totalPaid - totalUsd);
 
+      // 6b. Resolver customerId de forma tolerante. Un cliente registrado en
+      // el POS offline puede aún no existir en backend (su POST se encola). El
+      // sync sube clientes ANTES que tickets, pero si por alguna razón el
+      // cliente no existe (ej. POST de cliente falló por conflicto de
+      // documento con otro id), NO rompemos la venta: la dejamos anónima en
+      // vez de fallar por el FK. La integridad de la venta manda sobre el
+      // linkage del cliente.
+      let resolvedCustomerId: string | null = dto.customerId ?? null;
+      if (resolvedCustomerId) {
+        const exists = await manager.exists(CustomerEntity, {
+          where: { id: resolvedCustomerId },
+        });
+        if (!exists) resolvedCustomerId = null;
+      }
+
       // 7. Asignar ticket_number atómicamente.
       const ticketNumber = await this.assignTicketNumber(manager, dto.terminalId);
 
@@ -175,7 +191,7 @@ export class SalesService {
         cashSessionId: dto.cashSessionId,
         terminalId: dto.terminalId,
         branchId: dto.branchId,
-        customerId: dto.customerId ?? null,
+        customerId: resolvedCustomerId,
         salespersonUserId: userId,
         status: 'finalized',
         type: 'sale',
