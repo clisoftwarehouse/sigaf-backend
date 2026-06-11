@@ -14,6 +14,11 @@ import {
 } from 'class-validator';
 
 export class CreatePrescriptionItemDto {
+  @ApiPropertyOptional({ description: 'Id generado por el cliente (POS offline). Si se omite, lo genera el backend.' })
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
   @ApiProperty()
   @IsUUID()
   productId: string;
@@ -37,6 +42,13 @@ export class CreatePrescriptionItemDto {
 }
 
 export class CreatePrescriptionDto {
+  @ApiPropertyOptional({
+    description: 'Id generado por el cliente (POS offline). Hace el POST idempotente al reintentar el sync.',
+  })
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
   @ApiProperty()
   @IsUUID()
   customerId: string;

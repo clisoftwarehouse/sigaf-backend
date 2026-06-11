@@ -118,6 +118,17 @@ export class PrescriptionsService {
   }
 
   async create(dto: CreatePrescriptionDto, userId?: string | null): Promise<PrescriptionEntity> {
+    // Idempotencia para el POS offline: si el récipe ya existe con el id que
+    // mandó el cliente (reintento de sync), lo devolvemos tal cual en vez de
+    // duplicar. El sync engine puede reintentar el POST sin miedo.
+    if (dto.id) {
+      const existing = await this.prescriptionRepo.findOne({
+        where: { id: dto.id },
+        relations: ['customer', 'items', 'items.product'],
+      });
+      if (existing) return existing;
+    }
+
     const customer = await this.customerRepo.findOne({
       where: { id: dto.customerId, isActive: true },
     });
@@ -151,6 +162,8 @@ export class PrescriptionsService {
       );
 
       const presc = manager.create(PrescriptionEntity, {
+        // Respetamos el id del cliente (POS offline) si vino; sino lo genera la DB.
+        ...(dto.id ? { id: dto.id } : {}),
         customerId: dto.customerId,
         doctorName: dto.doctorName,
         doctorIdNumber: dto.doctorIdNumber ?? null,
@@ -167,6 +180,8 @@ export class PrescriptionsService {
 
       const items = dto.items.map((i) =>
         manager.create(PrescriptionItemEntity, {
+          // Mismo criterio para los items: el ticket offline referencia este id.
+          ...(i.id ? { id: i.id } : {}),
           prescriptionId: saved.id,
           productId: i.productId,
           quantityPrescribed: i.quantityPrescribed,
