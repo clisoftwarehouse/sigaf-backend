@@ -33,6 +33,40 @@ function friendlyTable(table: string): string {
 }
 
 /**
+ * Nombre de columna de la DB → etiqueta legible para el usuario. Se usa cuando
+ * un constraint NOT NULL revienta y queremos decirle al usuario QUÉ campo le
+ * falta sin exponer el nombre crudo de la columna (`role_id` → "rol").
+ */
+const COLUMN_FRIENDLY_NAMES: Record<string, string> = {
+  role_id: 'rol',
+  branch_id: 'sucursal',
+  supplier_id: 'proveedor',
+  category_id: 'categoría',
+  brand_id: 'marca',
+  customer_id: 'cliente',
+  product_id: 'producto',
+  terminal_id: 'terminal',
+  cash_session_id: 'sesión de caja',
+  document_type: 'tipo de documento',
+  document_number: 'número de documento',
+  full_name: 'nombre completo',
+  first_name: 'nombre',
+  last_name: 'apellido',
+  email: 'correo electrónico',
+  password: 'contraseña',
+  phone: 'teléfono',
+  rif: 'RIF',
+  description: 'descripción',
+  short_name: 'nombre corto',
+  unit_price_usd: 'precio',
+  quantity: 'cantidad',
+};
+
+function friendlyColumn(column: string): string {
+  return COLUMN_FRIENDLY_NAMES[column] ?? column.replace(/_id$/, '').replace(/_/g, ' ');
+}
+
+/**
  * Extrae detalle legible de un error de constraint UNIQUE de PostgreSQL.
  * Ej: 'Key (rif)=(J-12345678-9) already exists.' → 'rif "J-12345678-9" ya existe'
  */
@@ -140,7 +174,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
         case '23502': {
           // not_null_violation
           body.statusCode = HttpStatus.BAD_REQUEST;
-          body.message = `Falta un campo requerido${driverError?.column ? `: ${driverError.column}` : ''}.`;
+          body.message = driverError?.column
+            ? `Falta completar el campo: ${friendlyColumn(driverError.column)}.`
+            : 'Falta completar un campo requerido.';
           break;
         }
         case '22P02': {
