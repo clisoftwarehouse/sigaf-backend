@@ -12,7 +12,6 @@ import { TerminalEntity } from '@/modules/terminals/infrastructure/persistence/r
 import { CategoryEntity } from '@/modules/categories/infrastructure/persistence/relational/entities/category.entity';
 import { InventoryLotEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/inventory-lot.entity';
 import { ProductBarcodeEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product-barcode.entity';
-import { ExchangeRateEntity } from '@/modules/exchange-rates/infrastructure/persistence/relational/entities/exchange-rate.entity';
 import { WarehouseLocationEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/warehouse-location.entity';
 import { TherapeuticUseEntity } from '@/modules/therapeutic-uses/infrastructure/persistence/relational/entities/therapeutic-use.entity';
 import { ActiveIngredientEntity } from '@/modules/active-ingredients/infrastructure/persistence/relational/entities/active-ingredient.entity';
@@ -32,7 +31,6 @@ import { ProductActiveIngredientEntity } from '@/modules/products/infrastructure
       TherapeuticUseEntity,
       TerminalEntity,
       WarehouseLocationEntity,
-      ExchangeRateEntity,
       InventoryLotEntity,
       KardexEntity,
       UserEntity,

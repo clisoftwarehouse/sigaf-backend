@@ -107,6 +107,14 @@ export class ExchangeRatesService {
       },
     });
     if (existing) {
+      // Misma fecha pero tasa distinta → el BCV corrigió o el valor previo
+      // quedó stale. "Actualizar" debe reflejar el valor vigente del API.
+      if (Number(existing.rate) !== Number(rate)) {
+        existing.rate = rate;
+        const updated = await this.repo.save(existing);
+        this.logger.log(`Tasa BCV del ${effectiveDate.toISOString().slice(0, 10)} actualizada a ${rate}`);
+        return updated;
+      }
       this.logger.log(`Tasa BCV del ${effectiveDate.toISOString().slice(0, 10)} ya registrada (${existing.rate})`);
       return existing;
     }

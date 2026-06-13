@@ -12,7 +12,6 @@ import { TerminalEntity } from '@/modules/terminals/infrastructure/persistence/r
 import { CategoryEntity } from '@/modules/categories/infrastructure/persistence/relational/entities/category.entity';
 import { InventoryLotEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/inventory-lot.entity';
 import { ProductBarcodeEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product-barcode.entity';
-import { ExchangeRateEntity } from '@/modules/exchange-rates/infrastructure/persistence/relational/entities/exchange-rate.entity';
 import { WarehouseLocationEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/warehouse-location.entity';
 import { TherapeuticUseEntity } from '@/modules/therapeutic-uses/infrastructure/persistence/relational/entities/therapeutic-use.entity';
 import { ActiveIngredientEntity } from '@/modules/active-ingredients/infrastructure/persistence/relational/entities/active-ingredient.entity';
@@ -51,8 +50,6 @@ export class DemoSeedService {
     @InjectRepository(TerminalEntity) private readonly terminalRepo: Repository<TerminalEntity>,
     @InjectRepository(WarehouseLocationEntity)
     private readonly locationRepo: Repository<WarehouseLocationEntity>,
-    @InjectRepository(ExchangeRateEntity)
-    private readonly rateRepo: Repository<ExchangeRateEntity>,
     @InjectRepository(InventoryLotEntity)
     private readonly lotRepo: Repository<InventoryLotEntity>,
     @InjectRepository(KardexEntity)
@@ -85,7 +82,6 @@ export class DemoSeedService {
     const products = await this.seedProducts(categories, brands, ingredients);
     await this.seedTerminals(branches);
     await this.seedLocations(branches);
-    await this.seedExchangeRates();
     await this.seedLots(products, branches, suppliers);
 
     this.logger.log('Demo seed completed.');
@@ -780,33 +776,6 @@ export class DemoSeedService {
             }),
           );
         }
-      }
-    }
-  }
-
-  // ── Exchange Rates (últimos 60 días) ────────────────────────────────
-  private async seedExchangeRates(): Promise<void> {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    let base = 36.5;
-    for (let i = 60; i >= 0; i -= 1) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i);
-      const existing = await this.rateRepo.findOne({
-        where: { effectiveDate: date, currencyFrom: 'USD', currencyTo: 'VES' },
-      });
-      if (!existing) {
-        base += (Math.random() - 0.3) * 0.15;
-        await this.rateRepo.save(
-          this.rateRepo.create({
-            currencyFrom: 'USD',
-            currencyTo: 'VES',
-            rate: round2(base),
-            source: 'BCV',
-            effectiveDate: date,
-            isOverridden: false,
-          }),
-        );
       }
     }
   }

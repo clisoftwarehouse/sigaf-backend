@@ -774,9 +774,10 @@ export class SalesService {
         const effectiveUnit = Number(originalItem.unitPriceUsd) * (1 - Number(originalItem.discountPercent) / 100);
         const vatRate = Number(originalItem.vatRate);
         const lineSubtotal = effectiveUnit * it.quantity;
+        // PVP con IVA incluido → desglose INVERSO (igual que en la venta).
         const lineSubtotalExempt = vatRate === 0 ? lineSubtotal : 0;
-        const lineSubtotalTaxable = vatRate > 0 ? lineSubtotal : 0;
-        const lineVat = lineSubtotalTaxable * vatRate;
+        const lineSubtotalTaxable = vatRate > 0 ? lineSubtotal / (1 + vatRate) : 0;
+        const lineVat = vatRate > 0 ? lineSubtotal - lineSubtotalTaxable : 0;
         const lineTotal = lineSubtotalExempt + lineSubtotalTaxable + lineVat;
 
         // Reversar lote: increment available, decrement sold.
@@ -1037,9 +1038,11 @@ export class SalesService {
     const discountPercent = itemDto.discountPercent ?? 0;
     const effectiveUnit = unitPriceUsd * (1 - discountPercent / 100);
     const lineSubtotal = effectiveUnit * itemDto.quantity;
+    // El precio (PVP) YA INCLUYE el IVA (norma venezolana): desglose INVERSO.
+    // base = precio / (1 + tasa), IVA = precio − base. NO se suma IVA encima.
     const lineSubtotalExempt = vatRate === 0 ? lineSubtotal : 0;
-    const lineSubtotalTaxable = vatRate > 0 ? lineSubtotal : 0;
-    const lineVat = lineSubtotalTaxable * vatRate;
+    const lineSubtotalTaxable = vatRate > 0 ? lineSubtotal / (1 + vatRate) : 0;
+    const lineVat = vatRate > 0 ? lineSubtotal - lineSubtotalTaxable : 0;
     const lineTotal = lineSubtotalExempt + lineSubtotalTaxable + lineVat;
 
     // Reservar (decrementar disponible, aumentar vendido).
