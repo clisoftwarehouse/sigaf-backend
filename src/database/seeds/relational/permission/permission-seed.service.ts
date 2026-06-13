@@ -30,6 +30,7 @@ const PERMISSIONS = [
   { code: 'pos.sell', description: 'Realizar ventas', module: 'pos' },
   { code: 'pos.void', description: 'Anular ventas', module: 'pos' },
   { code: 'pos.return', description: 'Devoluciones', module: 'pos' },
+  { code: 'pos.line.remove', description: 'Quitar ítem del carrito', module: 'pos' },
   { code: 'pos.cash_session', description: 'Gestionar sesión de caja', module: 'pos' },
   { code: 'pos.discount.override', description: 'Override de descuento manual', module: 'pos' },
   // Customers (B2C)
@@ -110,10 +111,13 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'cash.adjust',
     'audit.view',
     // Operaciones de supervisión en caja: el gerente es quien físicamente
-    // autoriza anulaciones y devoluciones cuando un cajero las requiere.
-    // Sin estos permisos, no podría usar su PIN para autorizar en el POS.
+    // autoriza anulaciones, devoluciones y borrado de ítems cuando un cajero
+    // las requiere. Sin estos permisos, no podría usar su PIN para autorizar
+    // en el POS. `cash.adjust` también lo habilita a autorizar cierres con
+    // descuadre.
     'pos.void',
     'pos.return',
+    'pos.line.remove',
     'pos.discount.override',
   ],
 };
