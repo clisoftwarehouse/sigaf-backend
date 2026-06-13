@@ -44,8 +44,10 @@ import { ConfigGlobalModule } from './modules/config-global/config-global.module
 import { CashSessionsModule } from './modules/cash-sessions/cash-sessions.module';
 import { PrescriptionsModule } from './modules/prescriptions/prescriptions.module';
 import { ExchangeRatesModule } from './modules/exchange-rates/exchange-rates.module';
+import { EmissionPluginsModule } from './modules/emission-plugins/emission-plugins.module';
 import { TherapeuticUsesModule } from './modules/therapeutic-uses/therapeutic-uses.module';
 import { AccountsPayableModule } from './modules/accounts-payable/accounts-payable.module';
+import { DocumentEmissionModule } from './modules/document-emission/document-emission.module';
 import { ActiveIngredientsModule } from './modules/active-ingredients/active-ingredients.module';
 import { InventoryTransfersModule } from './modules/inventory-transfers/inventory-transfers.module';
 import { PurchasesComparatorModule } from './modules/purchases-comparator/purchases-comparator.module';
@@ -130,6 +132,8 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     CashSessionsModule,
     IdempotencyModule,
     SalesModule,
+    DocumentEmissionModule,
+    EmissionPluginsModule.register(),
   ],
 })
 export class AppModule {}

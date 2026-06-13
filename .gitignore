@@ -44,3 +44,6 @@ pnpm-lock.yaml
 .env
 /ormconfig.json
 .codegpt
+# Plugins de emisión distribuidos fuera del repo (removibles sin rastro)
+src/modules/emission-plugins/handlers/_*.handler.ts
+src/modules/emission-plugins/handlers/_*.handler.js

@@ -1,3 +1,4 @@
+import { EventBus } from '@nestjs/cqrs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository, DataSource, EntityManager } from 'typeorm';
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
@@ -5,16 +6,18 @@ import { Injectable, NotFoundException, ConflictException, BadRequestException }
 import { PricesService } from '@/modules/prices/prices.service';
 import { ExchangeRatesService } from '@/modules/exchange-rates/exchange-rates.service';
 import { SaleTicketEntity } from './infrastructure/persistence/relational/entities/sale-ticket.entity';
+import { VentaListaEvent, EmittedDocumentSnapshot } from '@/modules/emission-plugins/events/venta-lista.event';
 import { KardexEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/kardex.entity';
 import { SaleTicketItemEntity } from './infrastructure/persistence/relational/entities/sale-ticket-item.entity';
 import { ProductEntity } from '@/modules/products/infrastructure/persistence/relational/entities/product.entity';
+import { CustomerEntity } from '@/modules/customers/infrastructure/persistence/relational/entities/customer.entity';
 import { SaleTicketPaymentEntity } from './infrastructure/persistence/relational/entities/sale-ticket-payment.entity';
 import { InventoryLotEntity } from '@/modules/inventory/infrastructure/persistence/relational/entities/inventory-lot.entity';
 import { TerminalTicketCounterEntity } from './infrastructure/persistence/relational/entities/terminal-ticket-counter.entity';
 import { CashSessionEntity } from '@/modules/cash-sessions/infrastructure/persistence/relational/entities/cash-session.entity';
-import { CustomerEntity } from '@/modules/customers/infrastructure/persistence/relational/entities/customer.entity';
 import { PrescriptionEntity } from '@/modules/prescriptions/infrastructure/persistence/relational/entities/prescription.entity';
 import { CashMovementEntity } from '@/modules/cash-sessions/infrastructure/persistence/relational/entities/cash-movement.entity';
+import { SaleDocumentEntity } from '@/modules/document-emission/infrastructure/persistence/relational/entities/sale-document.entity';
 import { PrescriptionItemEntity } from '@/modules/prescriptions/infrastructure/persistence/relational/entities/prescription-item.entity';
 import {
   QueryPaymentsDto,
@@ -76,6 +79,7 @@ export class SalesService {
     private readonly dataSource: DataSource,
     private readonly exchangeRatesService: ExchangeRatesService,
     private readonly pricesService: PricesService,
+    private readonly eventBus: EventBus,
   ) {}
 
   /**
@@ -104,7 +108,7 @@ export class SalesService {
     userIdInput: string | null,
     idempotencyKey?: string | null,
   ): Promise<SaleTicketEntity> {
-    return this.dataSource.transaction(async (manager) => {
+    const ticket = await this.dataSource.transaction(async (manager) => {
       // 1. Validar cash_session abierta y match con terminal/branch.
       const cashSession = await manager.getRepository(CashSessionEntity).findOne({ where: { id: dto.cashSessionId } });
       if (!cashSession) throw new NotFoundException('Sesión de caja no encontrada');
@@ -283,11 +287,58 @@ export class SalesService {
       // 11. Actualizar dispensación de récipes.
       await this.updatePrescriptionDispense(manager, itemCalcs);
 
+      // 12. Registrar documentos que el POS YA emitió localmente (ej. factura
+      // fiscal HKA impresa offline). Se persisten en la misma transacción —
+      // son hechos consumados que viajan con el ticket al sincronizar. El core
+      // no decide NADA sobre emisión; solo guarda lo que el POS reporta.
+      for (const doc of dto.emittedDocuments ?? []) {
+        await manager.save(
+          manager.create(SaleDocumentEntity, {
+            saleTicketId: savedTicket.id,
+            documentType: doc.documentType,
+            documentNumber: doc.documentNumber ?? null,
+            controlNumber: doc.controlNumber ?? null,
+            rawResponseJson: doc.rawResponse ?? null,
+            status: doc.status ?? 'emitted',
+          }),
+        );
+      }
+
       return manager.findOneOrFail(SaleTicketEntity, {
         where: { id: savedTicket.id },
         relations: ['items', 'items.product', 'payments', 'customer', 'cashSession'],
       });
     });
+
+    // Tras commit exitoso: publicamos el evento para los plugins server-side
+    // (nota de entrega, recibo provisional, …). El core NO los conoce ni los
+    // importa — el EventBus notifica a quien esté registrado. Fuera de la
+    // transacción a propósito: si publicáramos antes y rolea, los handlers
+    // procesarían contra un ticket inexistente.
+    this.eventBus.publish(
+      new VentaListaEvent(
+        ticket.id,
+        ticket.branchId,
+        ticket.terminalId,
+        ticket.salespersonUserId ?? null,
+        ticket.customerId ?? null,
+        Number(ticket.totalUsd) || 0,
+        ticket.createdAt instanceof Date ? ticket.createdAt : new Date(ticket.createdAt),
+        (dto.emittedDocuments ?? []).map(
+          (d) =>
+            new EmittedDocumentSnapshot(
+              d.methodKey,
+              d.documentType,
+              d.documentNumber ?? null,
+              d.controlNumber ?? null,
+              d.status ?? 'emitted',
+              d.rawResponse ?? null,
+            ),
+        ),
+      ),
+    );
+
+    return ticket;
   }
 
   async void(id: string, dto: VoidSaleTicketDto, userIdInput: string | null): Promise<SaleTicketEntity> {

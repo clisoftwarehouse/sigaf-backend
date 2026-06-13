@@ -9,6 +9,7 @@ import {
   Matches,
   IsNumber,
   IsString,
+  MaxLength,
   IsOptional,
   ArrayMinSize,
   IsDateString,
@@ -72,6 +73,44 @@ export class CreateSaleTicketPaymentDto {
   @IsOptional()
   @IsString()
   cardLast4?: string;
+}
+
+/**
+ * Documento emitido localmente por el POS (ej. factura fiscal HKA). Viaja con
+ * el ticket; el backend lo registra como `sale_document`. Naming neutro: es un
+ * documento de emisión, sin semántica fiscal/no-fiscal en el contrato.
+ */
+export class EmittedDocumentDto {
+  @ApiProperty({ description: 'Key del método de emisión (ej. hka_fiscal)' })
+  @IsString()
+  @MaxLength(50)
+  methodKey: string;
+
+  @ApiProperty({ description: 'Tipo de documento (ej. hka_fiscal)' })
+  @IsString()
+  @MaxLength(50)
+  documentType: string;
+
+  @ApiPropertyOptional({ description: 'Número de documento / factura fiscal' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  documentNumber?: string;
+
+  @ApiPropertyOptional({ description: 'Número de control fiscal' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  controlNumber?: string;
+
+  @ApiPropertyOptional({ enum: ['emitted', 'failed', 'voided'], default: 'emitted' })
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @ApiPropertyOptional({ description: 'Respuesta cruda del emisor (diagnóstico)' })
+  @IsOptional()
+  rawResponse?: Record<string, unknown>;
 }
 
 export class CreateSaleTicketDto {
@@ -144,4 +183,15 @@ export class CreateSaleTicketDto {
   @ValidateNested({ each: true })
   @Type(() => CreateSaleTicketPaymentDto)
   payments: CreateSaleTicketPaymentDto[];
+
+  @ApiPropertyOptional({
+    type: [EmittedDocumentDto],
+    description:
+      'Documentos que el POS ya emitió localmente (ej. factura fiscal HKA impresa offline). El backend los registra al persistir el ticket.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EmittedDocumentDto)
+  emittedDocuments?: EmittedDocumentDto[];
 }
